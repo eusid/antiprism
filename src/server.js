@@ -1,12 +1,26 @@
 var WebSocketServer = require("ws").Server,
-	wss = new WebSocketServer({port: 8080}),
-	messageController = require("./message_controller.js");
+	webSocketServer = new WebSocketServer({port: 8080}),
+	messageController = require("./message_controller.js"),
+	webSockets = {};
 
-wss.on("connection", function(webSocket) {
-	messageController.init(webSocket);
-	webSocket.on("message", function(message) {
-		messageController.handleMessage(message, function(response) {
-			webSocket.send(JSON.stringify(response));
+webSocketServer.on("connection", function(ws) {
+	webSockets[ws] = {};
+
+	ws
+		.on("message", function(message) {
+			messageController.handleMessage(message, {
+				response: function(response) {
+					ws.send(JSON.stringify(response));
+				},
+				session: function(data) {
+
+				}
+			});
+		})
+		.on("error", function() {
+			console.log("e", arguments);
+		})
+		.on("close", function() {
+			delete webSockets[ws];
 		});
-	});
 });

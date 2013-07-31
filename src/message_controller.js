@@ -25,18 +25,17 @@ var actions = {
 
 		delete data.action;
 		return action(data);
-	}
+	};
 
-exports.init = function(ws) {
-};
 exports.handleMessage = function(message, callback) {
 	var response;
 	try {
 		var data = JSON.parse(message);
-		response = parseRequest(data);
 	} catch (e) {
 		response = Error.JSON;
 	}
+
+	if (response !== Error.JSON) response = parseRequest(data);
 
 	if (!isNaN(response)) {
 		var error;
