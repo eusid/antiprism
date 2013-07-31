@@ -1,0 +1,3 @@
+[submodule "libs/jsipher"]
+	path = libs/jsipher
+	url = git@github.com:Gregoor/jsipher.git

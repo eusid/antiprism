@@ -1,0 +1,15 @@
+{
+  "name": "AntiPrismorator",
+  "description": "Furfm",
+  "author": "no@p.e",
+  "version": "0.0.1",
+  "dependencies": {
+	  "ws": "*"
+  },
+  "devDependencies": {
+    "vows": "*",
+	"mocha": "*",
+	"should": "*"
+  },
+  "engine": "node >= 0.6.6"
+}
