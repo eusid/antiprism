@@ -4,8 +4,8 @@ var actions = {
 				return p * c;
 			}, 1)};
 		},
-		echo: function(params) {
-			return params;
+		echo: function(data) {
+			return data;
 		}
 	},
 
@@ -27,19 +27,19 @@ var actions = {
 		return action(data);
 	};
 
-exports.handleMessage = function(message, callback) {
-	var response;
+exports.handleMessage = function(message, storage, callbacks) {
+	var result;
 	try {
 		var data = JSON.parse(message);
 	} catch (e) {
-		response = Error.JSON;
+		result = Error.JSON;
 	}
 
-	if (response !== Error.JSON) response = parseRequest(data);
+	if (result !== Error.JSON) result = parseRequest(data);
 
-	if (!isNaN(response)) {
+	if (!isNaN(result)) {
 		var error;
-		switch (response) {
+		switch (result) {
 			case Error.MISSING_ACTION:
 				error = "Missing action parameter.";
 				break;
@@ -53,8 +53,15 @@ exports.handleMessage = function(message, callback) {
 				error = "JSON parse error.";
 				break;
 		}
-		response = {"error": error};
+		result = {"error": error};
 	}
 
-	callback(response);
+	if (!result.response) {
+		callbacks.response(result);
+		return;
+	}
+
+	for (var callback in callbacks) {
+		callbacks[callback](result[callback]);
+	}
 }

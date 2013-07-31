@@ -8,12 +8,12 @@ webSocketServer.on("connection", function(ws) {
 
 	ws
 		.on("message", function(message) {
-			messageController.handleMessage(message, {
-				response: function(response) {
-					ws.send(JSON.stringify(response));
+			messageController.handleMessage(message, webSockets[ws], {
+				response: function(result) {
+					ws.send(JSON.stringify(result));
 				},
 				session: function(data) {
-
+					console.log(data);
 				}
 			});
 		})
