@@ -5,8 +5,8 @@ var WebSocketServer = require("ws").Server,
 wss.on("connection", function(webSocket) {
 	messageController.init(webSocket);
 	webSocket.on("message", function(message) {
-		messageController.handleMessage(message, function(result) {
-			webSocket.send(JSON.stringify(result));
+		messageController.handleMessage(message, function(response) {
+			webSocket.send(JSON.stringify(response));
 		});
 	});
 });

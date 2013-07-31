@@ -1,31 +1,61 @@
-var socket;
+var actions = {
+	multiply: function(data) {
+		return {r: data.numbers.reduce(function(p, c) {
+			return p * c;
+		}, 1)};
+	},
+	echo: function(params) {
+		return params;
+	}
+};
+
 exports.init = function(ws) {
 };
 
 var E = {
-	"INVALID_PARAMS":"parameters don't match the method's signature",
-	"JSON":"received message not in JSON-format"
+	"MISSING_ACTION": 0,
+	"INVALID_ACTION": 1,
+	"INVALID_PARAMS": 2,
+	"JSON": 3
 };
-var jsonRPC = require("./jsonrpc.js");
-var myFuncs = {};
-myFuncs.multiply = function(params) {
-	if(!(params instanceof Array) || params.length < 2)
-		throw E.INVALID_PARAMS;
-	return params[0]*params[1];
-}
-myFuncs.echo = function(params) {
-	return params;
+function parseRequest(data) {
+	var action, actionName = data.action;
+	if (!actionName) return E.MISSING_ACTION;
+
+	action = actions[actionName];
+	if (!action) return E.INVALID_ACTION;
+
+	delete data.action;
+	return action(data);
 }
 
 exports.handleMessage = function(message, callback) {
+	var response;
 	try {
-		try {
-			var json = JSON.parse(message);
-		} catch(e) {
-			throw E.JSON;
+		var data = JSON.parse(message);
+		response = parseRequest(data);
+	} catch (e) {
+		response = E.JSON;
+	}
+
+	if (!isNaN(response)) {
+		var error;
+		switch (response) {
+			case E.MISSING_ACTION:
+				error = "Missing action parameter.";
+				break;
+			case E.INVALID_ACTION:
+				error = "Action does not exist.";
+				break;
+			case E.INVALID_PARAMS:
+				error = "Invalid action parameters.";
+				break;
+			case E.JSON:
+				error = "JSON parse error.";
+				break;
 		}
-		callback(jsonRPC.call(myFuncs, json));
-	} catch(e) {
-		callback('message processing failed: '+e);
-	}	
+		response = {"error": error};
+	}
+
+	callback(response);
 }
