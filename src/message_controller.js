@@ -7,6 +7,7 @@ var E = {
 	"JSON":"received message not in JSON-format"
 };
 var jsonRPC = require("./jsonrpc.js");
+var myFuncs = {};
 myFuncs.multiply = function(params) {
 	if(!(params instanceof Array) || params.length < 2)
 		throw E.INVALID_PARAMS;
