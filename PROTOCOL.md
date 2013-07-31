@@ -1,6 +1,6 @@
-# Client to Server
+#Client to Server
 
-## Server Error Object
+##Server Error Object
 	{"error": <ERROR_CODE>}
 0. \[Success\]
 1. Invalid action
@@ -10,44 +10,57 @@
 5. Unknown server
 6. Unknown user
 
+##Unauthenticated messages:
 
-## Login
+###Login
 	{"action": "login", "user": "<YOUR_USERNAME>"}
-###Server Response
+Server Response
+
 	{"privateKey": "<ENCRYPTED_PRIVATE_KEY>", "publicKey": "<PUBLIC_KEY>", "encryptedValidationKey": "<ENCRYPTED_VALIDATION_KEY>"}
-###Error Codes: 2
 
-##Authentication
+Error Codes: 2
+
+###Authentication
 	{"action": "auth", "validationKey": "<DECRYPTED_VALIDATION_KEY>"}
-###Server Response
+Server Response
+
 	{}
-###Error Codes: 3
+
+Error Codes: 3
 
 
-## Authenticated messages:
+##Authenticated messages:
 
-##Add user
+###Add user
 	{"action": "addUser", "address": "<USER_ADDRESS>}
-###Server Response
+Server Response
+
 	{"userId": "<USER_ID>", "publicKey": "<PUBLIC_KEY>", "name":"<USERNAME>"}
-###Error Codes: 5, 6
 
-##Remove user
+Error Codes: 5, 6
+
+###Remove user
 	{"action": "removeUser", "userId": "<USER_ID>}
-###Server Response
-	{}
-###Error Codes: 6
+Server Response
 
-##Retrieve contacts
+	{}
+
+Error Codes: 6
+
+###Retrieve contacts
 	{"action": "contactList"}
-###Server Response
+Server Response
+
 	{"<USER_ID>": {"address": "<USER_ADDRESS", "u": "<USER_NAME>"}}
 
-##Sending messages
+
+###Sending messages
 	{"action": "send", "message": "<ENCRYPTED_MESSAGE>", "conversationId": "<CONVERSATION_ID>"}
-###Server Response
+Server Response
+
 	{"timestamp": "<TIMESTAMP>"}
-###Error Codes: 4
+
+Error Codes: 4
 
 
 #Server to Client:
