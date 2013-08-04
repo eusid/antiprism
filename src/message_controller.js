@@ -79,6 +79,9 @@ exports.handleMessage = function(message, storage, callbacks) {
 			case Error.INVALID_AUTH:
 				error = "Invalid authentication-key";
 				break;
+			case Error.UNKNOWN_USER:
+				error = "Tried to access unknown user.";
+				break;
 		}
 		result = {"error": error};
 	}
