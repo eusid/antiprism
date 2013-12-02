@@ -4,13 +4,15 @@
   "author": "no@p.e",
   "version": "0.0.1",
   "dependencies": {
+	  "redis": "*",
 	  "ws": "*",
 	  "node-bignumber": "*"
   },
   "devDependencies": {
     "vows": "*",
 	"mocha": "*",
-	"should": "*"
+	"should": "*",
+	"redis": "*"
   },
   "engine": "node >= 0.6.6"
 }
