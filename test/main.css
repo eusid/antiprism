@@ -2,10 +2,73 @@
 	width: 80%;
 }
 
+body {
+	margin: 0px;
+	padding: 0px;
+}
+
+h1 {
+	background-color: #555;
+	text-align: center;
+	padding: 2px;
+	margin: 0px;
+}
+
+#login {
+	padding: 1%;
+}
+
+#chat {
+	height: 90%;
+}
+
+#addFriend {
+	background: #bbb;
+	float: left;
+	height: 30px;
+	width: 15%;
+}
+
+#textField {
+	text-align: right;
+	vertical-align: middle;
+	float: right;
+	background: #ccc;
+	height: 30px;
+	width: 85%;
+}
+
+#addFriendTextField {
+	height: 100%;
+	width: 75%;
+	float: left;
+}
+
+#addFriendField {
+	height: 100%;
+	width: 25%;
+}
+
+#messageField {
+	width: 90%;
+	height: 100%;
+	float: left;
+}
+
+#sendButton {
+	width: 10%;
+	height: 100%;
+}
+
+select {
+	width: 100%;
+	height: 100%;
+}
+
 #messages {
 	background: #ddd;
 	float: right;
-	height: 80%;
+	height: 95%;
 	width: 85%;
 	overflow: auto;
 }
@@ -14,17 +77,6 @@
 	background: #bbb;
 	overflow: auto;
 	float: left;
-	height: 80%;
+	height: 95%;
 	width: 15%;
-}
-
-#textField {
-	background: #ccc;
-	height: 20%;
-	width: 100%;
-}
-
-select {
-	width: 100%;
-	height: 100%;
 }

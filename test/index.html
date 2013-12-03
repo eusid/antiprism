@@ -36,11 +36,15 @@
     </div>
 
     <div id="chat" style="display: none;">
-      <div id="friendList"></div>
+      <div id="friendList"></div>      
       <div id="messages"></div>
+      <div id="addFriend">
+        <input type="text" id="addFriendTextField">
+        <button id="addFriendField" onclick="sendMessage();">Add Friend</button>
+      </div>
       <div id="textField">
         <input type="text" id="messageField">
-        <button onclick="sendMessage();">Send</button>
+        <button id="sendButton" onclick="sendMessage();">Send</button>
       </div>
     </div>
   </body>

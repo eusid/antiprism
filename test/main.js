@@ -110,12 +110,14 @@ function displayMessages(messages) {
     ws.msgqueue = ws.msgqueue.concat(messages);
     return false;
   }
+  var messageDisplay = $('#messages');
   for(message in messages.from) {
     var plain = from+': '+ws.decryptmsg({from:from, msg:messages.from[message]});
     var messageContainer = document.createElement("p");
     messageContainer.innerText = plain;
-    $('#messages').append(messageContainer);  
+    messageDisplay.append(messageContainer);  
   }
+  messageDisplay.animate({ scrollTop: messageDisplay.prop("scrollHeight") - messageDisplay.height() }, 500);
   return true; 
 }
 
@@ -185,7 +187,7 @@ function initWS() {
         ws.sendObject({action:"auth","validationKey":utf8_b64enc(validationKey)}); 
       } catch (e) {
         ws.user = null;
-        alert("wrong password, fotze");
+        alert("wrong password");
       }
     }
     else if(response.convkey !== undefined) { // context: asked for conversationkey
@@ -209,8 +211,8 @@ function initWS() {
       ws.sendObject({action:"initConversation",convkeys:keys,user:response.user});
     }
     else if(response.msg) { // received msg, no clue yet if necessary keys are present
-      if(!ws.decryptmsg(response))
-        msgqueue.push(response);
+      if(response.from == $('select').val())
+        displayMessages({from:[response.msg]});
     }
     else if(response.contacts) {
       displayContacts(response.contacts);
