@@ -86,7 +86,7 @@ var sendClient,
 					if(err)
 						sendClient({error:err});
 				});
-			return {};
+			return {initiated:true,with:data.user};
 		},
 		retrieveMessages: function(data, storage) {
 			if(data.user === undefined)
