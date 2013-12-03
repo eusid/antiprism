@@ -93,11 +93,14 @@ var sendClient,
 				return Error.INVALID_PARAMS;
 			if(!storage.loggedIn)
 				return Error.INVALID_AUTH;
+			var start = parseInt(data.start), end = parseInt(data.end);
+			if(isNaN(start) || isNan(end))
+				return Error.INVALID_PARAMS;
 			if(data.user < storage.username) // lawl-sort
 				var convid = data.user+'.'+storage.username;
 			else
 				var convid = storage.username+'.'+data.user;
-			storage.redis.lrange("msgs."+convid, -10, -1, function(err, reply) {
+			storage.redis.lrange("msgs."+convid, start, end, function(err, reply) {
 				for(msg in reply)
 					reply[msg] = JSON.parse(reply[msg]);
 				sendClient({msglist:reply});
