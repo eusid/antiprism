@@ -94,7 +94,7 @@ var sendClient,
 			if(!storage.loggedIn)
 				return Error.INVALID_AUTH;
 			var start = parseInt(data.start), end = parseInt(data.end);
-			if(isNaN(start) || isNan(end))
+			if(isNaN(start) || isNaN(end))
 				return Error.INVALID_PARAMS;
 			if(data.user < storage.username) // lawl-sort
 				var convid = data.user+'.'+storage.username;
