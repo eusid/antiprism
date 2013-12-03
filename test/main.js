@@ -81,6 +81,7 @@ function sendMessage() {
   var msg = $('#messageField').val();
   var to = $('select').val();
   ws.sendMessage(to, msg);
+  displayMessage(msg, ws.user.name, $('#messages'));
 }
 
 function switchChatLogin() {
@@ -102,22 +103,26 @@ function displayContacts(contacts) {
   friendList.append(contactList);
 }
 
+function displayMessage(message, from, messageDisplay) {
+  var messageContainer = document.createElement("p");
+  messageContainer.innerText = from + ': ' + message;
+  messageDisplay.append(messageContainer);
+  messageDisplay.animate({ scrollTop: messageDisplay.prop("scrollHeight") - messageDisplay.height() }, 500);
+}
+
 function displayMessages(messages) {
-  var msg = {};
-  from = $('select').val();
+  var from = $('select').val();
   if(!ws.user.conversations[from]) {
     ws.getKey(from);
     ws.msgqueue = ws.msgqueue.concat(messages);
     return false;
   }
   var messageDisplay = $('#messages');
-  for(message in messages.from) {
-    var plain = from+': '+ws.decryptmsg({from:from, msg:messages.from[message]});
-    var messageContainer = document.createElement("p");
-    messageContainer.innerText = plain;
-    messageDisplay.append(messageContainer);  
+  for(message in messages) {
+      var plain = ws.decryptmsg({from:from, msg:messages[message].msg});
+      displayMessage(plain, from, messageDisplay);
   }
-  messageDisplay.animate({ scrollTop: messageDisplay.prop("scrollHeight") - messageDisplay.height() }, 500);
+  
   return true; 
 }
 
@@ -125,7 +130,7 @@ function onContactChange (ctx) {
   var contactName = ctx.target.value;
   var messageDiv = $('#messages');
   messageDiv.text("");
-  ws.sendObject({action:"retrieveMessages",user:contactName});
+  ws.sendObject({action:"retrieveMessages",user:contactName,start:-10,end:-1});
 }
 
 function initWS() {
@@ -211,8 +216,10 @@ function initWS() {
       ws.sendObject({action:"initConversation",convkeys:keys,user:response.user});
     }
     else if(response.msg) { // received msg, no clue yet if necessary keys are present
-      if(response.from == $('select').val())
-        displayMessages({from:[response.msg]});
+      if(response.from == $('select').val()) {
+        var message = ws.decryptmsg(response);
+        displayMessage(message, response.from, $('#messages'));
+      }
     }
     else if(response.contacts) {
       displayContacts(response.contacts);
