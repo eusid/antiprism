@@ -24,9 +24,16 @@
       $('button')[0].innerText = "Sign In";
     }
   }
+  function initMessageField() {
+    $('#messageField').keyup(function(e){
+      if(e.keyCode == 13) {
+          sendMessage();
+      }
+    });
+  }
 </script>
 
-  <body>
+  <body onload="initMessageField();">
     <h1>Antiprism Chat</h1>
     <div id="login">
       <span id="usernameRow">Username: <input type="text" id="username"><br></span>

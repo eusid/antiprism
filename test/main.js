@@ -78,7 +78,9 @@ function login() {
 }
 
 function sendMessage() {
-  var msg = $('#messageField').val();
+  var messageField = $('#messageField');
+  var msg = messageField.val();
+  messageField.val("");
   var to = $('select').val();
   ws.sendMessage(to, msg);
   displayMessage(msg, ws.user.name, $('#messages'));
@@ -120,7 +122,7 @@ function displayMessages(messages) {
   var messageDisplay = $('#messages');
   for(message in messages) {
       var plain = ws.decryptmsg({from:from, msg:messages[message].msg});
-      displayMessage(plain, from, messageDisplay);
+      displayMessage(plain, messages[message].from, messageDisplay);
   }
   
   return true; 
