@@ -93,26 +93,33 @@ var sendClient,
 				return Error.INVALID_PARAMS;
 			if(!storage.loggedIn)
 				return Error.INVALID_AUTH;
-			storage.redis.lrange("msgs."+storage.username+'.'+data.user, -10, -1, function(err, reply) {
-				ret = {to:reply};
-				storage.redis.lrange("msgs."+data.user+'.'+storage.username, -10, -1, function(err, reply) {
-					ret.from = reply;
-					sendClient({msglist:ret});
-				});
+			if(data.user < storage.username) // lawl-sort
+				var convid = data.user+'.'+storage.username;
+			else
+				var convid = storage.username+'.'+data.user;
+			storage.redis.lrange("msgs."+convid, -10, -1, function(err, reply) {
+				for(msg in reply)
+					reply[msg] = JSON.parse(reply[msg]);
+				sendClient({msglist:reply});
 			});
 			return {};
 		},
 		storeMessage: function(data, storage) {
 			if(data.user === undefined || data.msg === undefined)
 				return Error.INVALID_PARAMS;
-			storage.redis.rpush("msgs."+storage.username+'.'+data.user, data.msg, function(err, reply) {
+			var storeMsg = {ts:new Date().getTime(), from:storage.username, msg:data.msg};
+			if(data.user < storage.username) // lawl-sort
+				var convid = data.user+'.'+storage.username;
+			else
+				var convid = storage.username+'.'+data.user;
+			storage.redis.rpush("msgs."+convid, JSON.stringify(storeMsg), function(err, reply) {
 				if(err)
 					sendClient({error:err});
 			});
 			storage.redis.smembers("users."+data.user+".sess", function(err,reply) {
 				for(id in reply)
 					if(storage.sockets[reply[id]] !== undefined) // not sure if redis and node are in sync
-						storage.sockets[reply[id]].ctx({from:storage.username,msg:data.msg});
+						storage.sockets[reply[id]].ctx(storeMsg);
 			});
 			return {};
 		},
