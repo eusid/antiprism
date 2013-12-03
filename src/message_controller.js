@@ -101,9 +101,7 @@ var sendClient,
 			else
 				var convid = storage.username+'.'+data.user;
 			storage.redis.lrange("msgs."+convid, start, end, function(err, reply) {
-				for(msg in reply)
-					reply[msg] = JSON.parse(reply[msg]);
-				sendClient({msglist:reply});
+				sendClient({msglist:reply.map(JSON.parse});
 			});
 			return {};
 		},
