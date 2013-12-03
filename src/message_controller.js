@@ -1,5 +1,5 @@
 var sendClient,
-	actions = {
+	actions = { // <debug>
 		multiply: function(data) {
 			if(data.numbers == undefined)
 				return Error.INVALID_PARAMS;
@@ -16,7 +16,7 @@ var sendClient,
 		sendToId: function(data, storage) {
 			storage.sockets[data.id].ctx({msg:"it works!"});
 			return {id:storage.id};
-		},
+		}, // </debug>
 		register: function(data, storage) {
 			storage.redis.hexists("users."+data.username,"privkey",function(e,res) {
 				if(res)
@@ -30,7 +30,7 @@ var sendClient,
 						});
 				}
 			})
-			return {};
+			return 0;
 		},
 		login: function(data, storage) {
 			if(data.username === undefined)
@@ -49,7 +49,7 @@ var sendClient,
 					{validationKey: rsa.encrypt(randomString), pubkey: {n:reply.pubkeyN, e:reply.pubkeyE}, privkey: reply.privkey}
 				);
 			});
-			return {};
+			return 0;
 		},
 		contacts: function(data, storage) {
 			if(!storage.loggedIn)
@@ -57,7 +57,7 @@ var sendClient,
 			storage.redis.hgetall("convs."+storage.username, function(err,reply) {
 				sendClient({contacts:reply});
 			});
-			return {};
+			return 0;
 		},
 		pubkey: function(data, storage) {
 			if(data.user === undefined)
@@ -65,7 +65,7 @@ var sendClient,
 			storage.redis.hmget("users."+data.user, "pubkeyN", "pubkeyE", function(err,reply) {
 				sendClient({user:data.user,pubkey:{n:reply[0],e:reply[1]}});
 			});
-			return {};
+			return 0;
 		},
 		conversationKey: function(data, storage) {
 			if(data.user === undefined)
@@ -73,18 +73,25 @@ var sendClient,
 			storage.redis.hget("convs."+storage.username,data.user, function(err,reply) {
 				sendClient({user:data.user,convkey:reply});
 			});
-			return {};
+			return 0;
 		},
 		initConversation: function(data, storage) {
+			storage.redis.exists("convs."+storage.username,
+				function(err,reply) {
+					if(err)
+						return console.log({error:err});
+					if(reply)
+						sendClient({initiated:false,with:data.user});
+				});
 			storage.redis.hmset("convs."+storage.username,data.user,data.convkeys[0],
 				function(err,reply) {
 					if(err)
-						sendClient({error:err});
+						return console.log({error:err});
 				});
 			storage.redis.hmset("convs."+data.user,storage.username,data.convkeys[1],
 				function(err,reply) {
 					if(err)
-						sendClient({error:err});
+						return console.log({error:err});
 				});
 			return {initiated:true,with:data.user};
 		},
@@ -103,7 +110,7 @@ var sendClient,
 			storage.redis.lrange("msgs."+convid, start, end, function(err, reply) {
 				sendClient({msglist:reply.map(JSON.parse)});
 			});
-			return {};
+			return 0;
 		},
 		storeMessage: function(data, storage) {
 			if(data.user === undefined || data.msg === undefined)
@@ -115,14 +122,16 @@ var sendClient,
 				var convid = storage.username+'.'+data.user;
 			storage.redis.rpush("msgs."+convid, JSON.stringify(storeMsg), function(err, reply) {
 				if(err)
-					sendClient({error:err});
+					return console.log({error:err});
 			});
 			storage.redis.smembers("users."+data.user+".sess", function(err,reply) {
+				if(err)
+					return console.log({error:err});
 				for(id in reply)
 					if(storage.sockets[reply[id]] !== undefined) // not sure if redis and node are in sync
 						storage.sockets[reply[id]].ctx(storeMsg);
 			});
-			return {};
+			return 0;
 		},
 		auth: function(data, storage) {
 			if(!data.validationKey)
@@ -133,9 +142,9 @@ var sendClient,
 			storage.loggedIn = true;
 			storage.redis.sadd("users."+storage.username+".sess", storage.id, function(err, reply) {
 				if(err)
-					sendClient({error:err});
+					console.log({error:err});
 			});
-			return {success:true};
+			return {loggedIn:true};
 		},
 
 	},
@@ -195,13 +204,6 @@ exports.handleMessage = function(message, storage, callbacks) {
 		}
 		result = {"error": error};
 	}
-
-	if (!result.response) {
-		callbacks.response(result);
-		return;
-	}
-
-	for (var callback in callbacks) {
-		callbacks[callback](result[callback]);
-	}
+	if(result)
+		sendClient(result);
 }

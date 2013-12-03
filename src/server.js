@@ -13,8 +13,7 @@ webSocketServer.on("connection", function(ws) {
 	webSockets[wscount] = {id: wscount, ctx: function(msg){
 		ws.send(JSON.stringify(msg));
 	}};
-	var session = webSockets[wscount];
-	wscount += 1;
+	var session = webSockets[wscount++];
 	session.sockets = webSockets;
 	session.redis = redis;
 	ws
