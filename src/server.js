@@ -2,7 +2,7 @@ var WebSocketServer = require("ws").Server,
 	webSocketServer = new WebSocketServer({port: 8080}),
 	messageController = require("./message_controller.js"),
 	webSockets = {}, wscount = 0,
-	redis = require("redis").createClient(31334);
+	redis = require("redis").createClient();
 
 redis.keys("users.*.sess", function(err,reply) { // clear sessions
 	for(x in reply)
