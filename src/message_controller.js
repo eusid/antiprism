@@ -93,8 +93,12 @@ var sendClient,
 				return Error.INVALID_PARAMS;
 			if(!storage.loggedIn)
 				return Error.INVALID_AUTH;
-			storage.redis.lrange("msgs."+storage.username+'.'+data.user, -10, 10, function(err, reply) {
-				sendClient({msglist:reply});
+			storage.redis.lrange("msgs."+storage.username+'.'+data.user, -10, -1, function(err, reply) {
+				ret = {to:reply};
+				storage.redis.lrange("msgs."+data.user+'.'+storage.username, -10, -1, function(err, reply) {
+					ret.from = reply;
+					sendClient({msglist:ret});
+				}
 			});
 			return {};
 		},
