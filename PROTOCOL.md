@@ -1,10 +1,11 @@
 #Client to Server
 
 ##Server Error Object
-	{"error": <ERROR_CODE>}
-0. \[Success\]
-1. Invalid action
+	{"error": "<description>", code:<id>}
+0. \[Success\] (is not sent back to client)
+1. Missing action
 2. Invalid username
+3. Invalid Action
 3. Invalid key
 4. Invalid conversation ID
 5. Unknown server
@@ -12,56 +13,58 @@
 
 ##Unauthenticated messages:
 
-###Login
-	{"action": "login", "user": "<YOUR_USERNAME>"}
+###Login-Request - implemented
+	{"action": "login", "user": NAME}
 Server Response
 
-	{"privateKey": "<ENCRYPTED_PRIVATE_KEY>", "publicKey": "<PUBLIC_KEY>", "encryptedValidationKey": "<ENCRYPTED_VALIDATION_KEY>"}
+	{"validationKey": .., "pubkey": ..., "privkey": ...}
 
-Error Codes: 2
-
-###Authentication
-	{"action": "auth", "validationKey": "<DECRYPTED_VALIDATION_KEY>"}
+###Authentication - implemented
+	{"action": "auth", "validationKey": ...}
 Server Response
 
-	{}
-
-Error Codes: 3
+	ERROR || {loggedIn: true};
 
 
 ##Authenticated messages:
 
-###Add user
-	{"action": "addUser", "address": "<USER_ADDRESS>}
+###Get Pubkey - implemented
+	{"action": "pubkey", "user": NAME}
 Server Response
 
-	{"userId": "<USER_ID>", "publicKey": "<PUBLIC_KEY>", "name":"<USERNAME>"}
+	{"user":NAME,"pubkey":PUBKEY}
 
-Error Codes: 5, 6
-
-###Remove user
-	{"action": "removeUser", "userId": "<USER_ID>}
+###Initiate Conversation - implemented
+	{"action": "initConversation", "user": NAME, convkeys:[OWN_KEY,TARGETS_KEY]}
 Server Response
 
-	{}
+	{"initiated":false|true, "with":USER} (false if already initiated before)
 
-Error Codes: 6
-
-###Retrieve contacts
-	{"action": "contactList"}
+###Remove user - not yet implemented
+	{"action": "removeUser", "user": NAME}
 Server Response
 
-	{"<USER_ID>": {"address": "<USER_ADDRESS", "u": "<USER_NAME>"}}
+	{"deleted": USER}
 
+###Get single conversationkey - implemented
+	{"action":"conversationKey","user":NAME}
+Server Response
+	
+	{"user": USER, "convkey":CONVERSATION_KEY}
+	(convkey is null if it doesn't exist, you should initiate first)
 
-###Sending messages
-	{"action": "send", "message": "<ENCRYPTED_MESSAGE>", "conversationId": "<CONVERSATION_ID>"}
+###Retrieve contactlist - implemented
+	{"action": "contacs"}
 Server Response
 
-	{"timestamp": "<TIMESTAMP>"}
+	{"contacts": [{USER: ENCRYPTED_CONVERSATIONKEY},...]}
 
-Error Codes: 4
+###Sending messages - implemented
+	{"action": "storeMessage", "msg": ENCRYPTED_MESSAGE, "user": NAME}
+Server Response
 
+	{"ts": TIMESTAMP}
 
 #Server to Client:
-
+###Received new message
+	{"ts":TIMESTAMP, "from":NAME, "msg":ENCRYPTED_MESSAGE}

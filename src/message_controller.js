@@ -51,6 +51,19 @@ var sendClient,
 			});
 			return 0;
 		},
+		auth: function(data, storage) {
+			if(!data.validationKey)
+				return Error.INVALID_PARAMS;
+			var validationKey = new Buffer(data.validationKey, 'base64').toString('utf8');
+			if(storage.validationKey == undefined || validationKey != storage.validationKey)
+				return Error.INVALID_AUTH;
+			storage.loggedIn = true;
+			storage.redis.sadd("users."+storage.username+".sess", storage.id, function(err, reply) {
+				if(err)
+					console.log({error:err});
+			});
+			return {loggedIn:true};
+		},
 		contacts: function(data, storage) {
 			if(!storage.loggedIn)
 				return Error.INVALID_AUTH;
@@ -132,26 +145,13 @@ var sendClient,
 						storage.sockets[reply[id]].ctx(storeMsg);
 			});
 			return 0;
-		},
-		auth: function(data, storage) {
-			if(!data.validationKey)
-				return Error.INVALID_PARAMS;
-			var validationKey = new Buffer(data.validationKey, 'base64').toString('utf8');
-			if(storage.validationKey == undefined || validationKey != storage.validationKey)
-				return Error.INVALID_AUTH;
-			storage.loggedIn = true;
-			storage.redis.sadd("users."+storage.username+".sess", storage.id, function(err, reply) {
-				if(err)
-					console.log({error:err});
-			});
-			return {loggedIn:true};
-		},
-
+		}
 	},
 
 	Error = {
-		"JSON": 1,
-		"MISSING_ACTION": 2,
+		"JSON": -1,
+		"MISSING_ACTION": 1,
+		"INVALID_NAME": 2,
 		"INVALID_ACTION": 3,
 		"INVALID_PARAMS": 4,
 		"UNKNOWN_USER": 5,
@@ -202,7 +202,7 @@ exports.handleMessage = function(message, storage, callbacks) {
 				error = "Tried to access unknown user.";
 				break;
 		}
-		result = {"error": error};
+		result = {"error": error, code: result};
 	}
 	if(result)
 		sendClient(result);
