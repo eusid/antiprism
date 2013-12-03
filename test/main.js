@@ -229,6 +229,10 @@ function initWS() {
       }
     }
     else if(response.contacts) {
+      for (contact in response.contacts) {
+        if(!contact in Object.keys(ws.user.conversations))
+          ws.user.conversations[contact] = decryptRSA(response.contacts[contact],ws.user.pubkey,ws.user.privkey);
+      }
       displayContacts(response.contacts);
     }
     else if(response.msglist) {
