@@ -206,8 +206,7 @@ function initWS() {
         ws.sendObject({action:"pubkey",user:response.user});
       else {
         ws.user.conversations[response.user] = decryptRSA(response.convkey,ws.user.pubkey,ws.user.privkey);
-
-        displayMessages(ws.msgqueue);
+        //displayMessages(ws.msgqueue);
       }
     }
     else if(response.pubkey) { // context: wants to create/encrypt conversationkey
