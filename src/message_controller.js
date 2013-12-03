@@ -98,7 +98,7 @@ var sendClient,
 				storage.redis.lrange("msgs."+data.user+'.'+storage.username, -10, -1, function(err, reply) {
 					ret.from = reply;
 					sendClient({msglist:ret});
-				}
+				});
 			});
 			return {};
 		},
