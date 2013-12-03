@@ -1,4 +1,4 @@
-ws = new WebSocket("ws://localhost:8080");
+ws = new WebSocket("ws://192.168.1.101:8080");
 
 function hex2a(hex) {
     var str = '';
@@ -69,7 +69,6 @@ function register() {
   keypair.crypt = encryptAES(keypair.privkey, ws.user.password);
   ws.sendObject({action:"register", username:ws.user.name, pubkey:keypair.pubkey, privkey:keypair.crypt});
   console.log("Registrationprocess completed.");
-  login();
 }
 
 function login() {
@@ -84,6 +83,10 @@ function sendMessage() {
   var to = $('select').val();
   ws.sendMessage(to, msg);
   displayMessage(msg, ws.user.name, $('#messages'));
+}
+
+function addFriend() {
+  ws.getKey($('#addFriendTextField').val());
 }
 
 function switchChatLogin() {
@@ -102,6 +105,7 @@ function displayContacts(contacts) {
     label.innerText = contact;
     contactList.appendChild(label);
   }
+  friendList.innerText = "";
   friendList.append(contactList);
 }
 
@@ -183,7 +187,7 @@ function initWS() {
         ws.sendObject({action:"login","username":ws.user.name});
       else
         alert("username already taken!");
-        switchChatLogin();
+        //switchChatLogin();
     }
     else if(response.validationKey) { // context: login
       ws.user.pubkey = response.pubkey;
@@ -202,6 +206,7 @@ function initWS() {
         ws.sendObject({action:"pubkey",user:response.user});
       else {
         ws.user.conversations[response.user] = decryptRSA(response.convkey,ws.user.pubkey,ws.user.privkey);
+
         displayMessages(ws.msgqueue);
       }
     }
@@ -231,6 +236,9 @@ function initWS() {
     }
     else if(response.success) {
       switchChatLogin();
+      ws.sendObject({action:"contacts"});
+    }
+    else if(response.initiated) {
       ws.sendObject({action:"contacts"});
     }
   };
