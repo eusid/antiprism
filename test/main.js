@@ -1,4 +1,4 @@
-ws = new WebSocket("ws://192.168.1.101:8080");
+ws = new WebSocket("ws://localhost:8080");
 
 function hex2a(hex) {
     var str = '';
@@ -105,7 +105,7 @@ function displayContacts(contacts) {
     label.innerText = contact;
     contactList.appendChild(label);
   }
-  friendList.innerText = "";
+  friendList.text("");
   friendList.append(contactList);
 }
 
