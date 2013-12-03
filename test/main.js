@@ -79,7 +79,8 @@ function login() {
 
 function sendMessage() {
   var msg = $('#messageField').val();
-  ws.sendMessage("LongJohn", msg);
+  var to = $('select').val();
+  ws.sendMessage(to, msg);
 }
 
 function switchChatLogin() {
