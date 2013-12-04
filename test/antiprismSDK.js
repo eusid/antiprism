@@ -61,7 +61,7 @@ var antiprism = (function() {
 				ws.storage.events["convkey"] = function(msg) {
 					console.log("got key!");
 					if(msg.convkey)
-						ws.storage.conversations[user] = decryptRSA(msg.convkey,ws.storage.pubkey,ws.storage.privkey);
+						ws.storage.conversations[user] = utils.decryptRSA(msg.convkey,ws.storage.pubkey,ws.storage.privkey);
 					else
 						return actions.initConversation(user,callback);
 					if(callback)
