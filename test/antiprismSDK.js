@@ -61,7 +61,7 @@ var antiprism = (function() {
 				ws.storage.events["convkey"] = function(msg) {
 					console.log("got key!");
 					if(msg.convkey)
-						ws.storage.conversations[user] = msg.convkey;
+						ws.storage.conversations[user] = decryptRSA(msg.convkey,ws.storage.pubkey,ws.storage.privkey);
 					else
 						return actions.initConversation(user,callback);
 					if(callback)
@@ -81,9 +81,6 @@ var antiprism = (function() {
 					if(!ws.storage.conversations[msg.from]) {
 						ws.storage.inqueue.push(msg);
 						helpers.getKey(msg.from, function (resp) {
-							if(!resp.convkey)
-								return;
-							ws.storage.conversations[msg.from] = resp.convkey;
 							while(ws.storage.inqueue.length)
 								ws.storage.events.msg(ws.storage.inqueue.shift());
 						});
