@@ -131,14 +131,14 @@ var antiprism = (function() {
 				ws.sendObject({action:"contacts"});
 				ws.storage.events["contacts"] = callback ? callback : debug;
 			},
-			initConversation: function(username,callback) {
-				ws.sendObject({action:"pubkey",user:username}); // request pubkey first
+			initConversation: function(user,callback) {
+				ws.sendObject({action:"pubkey",user:user}); // request pubkey first
 				ws.storage.events["pubkey"] = function(msg) {
 					var conversationkey = rng_get_string(32), keys = [];
-					ws.storage.conversations.username = conversationkey;
+					ws.storage.conversations[user] = conversationkey;
 					keys.push(utils.encryptRSA(conversationkey, ws.storage.pubkey));
 					keys.push(utils.encryptRSA(conversationkey, msg.pubkey));
-					ws.sendObject({action:"initConversation", user:username, convkeys:keys});
+					ws.sendObject({action:"initConversation", user:user, convkeys:keys});
 				}
 				ws.storage.events["initiated"] = callback ? callback : debug;
 			},
@@ -155,7 +155,7 @@ var antiprism = (function() {
 			sendMessage: function(user, message, callback) {
 				if(!ws.storage.conversations[user])
 					return helpers.getKey(user, function() { actions.sendMessage(user,message,callback); });
-				var encrypted = encryptAES(message, ws.storage.conversations[user]);
+				var encrypted = utils.encryptAES(message, ws.storage.conversations[user]);
 				ws.sendObject({action:"storeMessage",user:user,msg:encrypted});
 				ws.storage.events["ts"] = callback;
 			},
