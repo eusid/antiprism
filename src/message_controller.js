@@ -140,11 +140,18 @@ var sendClient,
 			storage.redis.smembers("users."+data.user+".sess", function(err,reply) {
 				if(err)
 					return console.log({error:err});
-				for(id in reply)
-					if(storage.sockets[reply[id]] !== undefined) // not sure if redis and node are in sync
-						storage.sockets[reply[id]].ctx(storeMsg);
+				var ret = reply;
+				storage.redis.smembers("users."+storage.username+".sess", function(err,reply) {
+					if(err)
+						return console.log({error:err});
+					delete reply[reply.indexOf(storage.id)]; // don't push back to sending session
+					ret.concat(reply);
+					for(id in ret)
+						if(storage.sockets[ret[id]] !== undefined) // not sure if redis and node are in sync
+							storage.sockets[ret[id]].ctx(storeMsg);
+				});
 			});
-			return 0;
+			return {ts:storeMsg.ts};
 		}
 	},
 

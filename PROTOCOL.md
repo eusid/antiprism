@@ -63,7 +63,7 @@ Server Response
 	{"action": "storeMessage", "msg": ENCRYPTED_MESSAGE, "user": NAME}
 Server Response
 
-	{"ts": TIMESTAMP}
+	- none, but message gets broadcasted to other active sessions -
 
 #Server to Client:
 ###Received new message
