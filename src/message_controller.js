@@ -152,17 +152,18 @@ var sendClient,
 			storage.redis.smembers("users."+data.user+".sess", function(err,reply) {
 				if(err)
 					return console.log({error:err});
-				var ret = reply;
+				for(id in reply)
+						if(storage.sockets[reply[id]] !== undefined) // not sure if redis and node are in sync
+							storage.sockets[reply[id]].ctx(storeMsg);
 				storage.redis.smembers("users."+storage.username+".sess", function(err,reply) {
 					if(err)
 						return console.log({error:err});
-					if(reply.length > 1) // if we need to push to multiple sessions, we need the "to"-field
-						storeMsg.to = data.user;
-					delete reply[reply.indexOf(storage.id)]; // don't push back to sending session
-					ret.concat(reply);
-					for(id in ret)
-						if(storage.sockets[ret[id]] !== undefined) // not sure if redis and node are in sync
-							storage.sockets[ret[id]].ctx(storeMsg);
+					storeMsg.to = data.user;
+					delete storeMsg.from;
+					for(id in reply)
+						if(storage.sockets[reply[id]] !== undefined // not sure if redis and node are in sync
+							&& reply[id] != storage.id) // do not push back to sending user
+							storage.sockets[reply[id]].ctx(storeMsg);
 				});
 			});
 			return {ts:storeMsg.ts, sent:true};

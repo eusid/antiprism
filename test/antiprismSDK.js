@@ -83,7 +83,8 @@ var antiprism = (function() {
 				ws.storage.events = callbacks;
 				var msgHandler = callbacks.msg;
 				ws.storage.events.msg = function(msg) {
-					var keyUser = msg.from || msg.to;
+					//console.log("got msg:");console.log(msg);
+					var keyUser = msg.to || msg.from;
 					if(ws.storage.conversations[keyUser]) {
 						msg.msg = utils.decryptAES(msg.msg, ws.storage.conversations[keyUser]);
 						msgHandler(msg);
