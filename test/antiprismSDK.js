@@ -55,28 +55,57 @@ var antiprism = (function() {
 				return rsa.decrypt(cipher);
 			}
 		},
+		helpers = {
+			getKey: function(user, callback) {
+				ws.sendObject({action:"conversationKey",user:user});
+				ws.storage.events["convkey"] = function(msg) {
+					console.log("got key!");
+					if(msg.convkey)
+						ws.storage.conversations[user] = msg.convkey;
+					else
+						return actions.initConversation(user,callback);
+					if(callback)
+						callback(msg);
+				};
+			}
+		},
 		actions = {
 			// default-usage: antiprism.init(user,password,0,0,{msg, error});
 			init: function(user,password,server,port,callbacks) {
 				ws = new WebSocket("ws://"+(server?server:"localhost")+':'+(port?port:8080));
 				actions.ws = ws; // only 4 debug!
-				ws.storage = {user:user, password:utils.buildAESKey(password), conversations:{}, msgqueue:[]};
+				ws.storage = {user:user, password:utils.buildAESKey(password), conversations:{}, outqueue:[], inqueue:[]};
 				ws.storage.events = callbacks;
+				var msgHandler = callbacks.msg;
+				ws.storage.events.msg = function(msg) {
+					if(!ws.storage.conversations[msg.from]) {
+						ws.storage.inqueue.push(msg);
+						helpers.getKey(msg.from, function (resp) {
+							if(!resp.convkey)
+								return;
+							ws.storage.conversations[msg.from] = resp.convkey;
+							while(ws.storage.inqueue.length)
+								ws.storage.events.msg(ws.storage.inqueue.shift());
+						});
+					} else {
+						msg.msg = utils.decryptAES(msg.msg, ws.storage.conversations[msg.from]);
+						msgHandler(msg);
+					}
+				};
 				ws.onmessage = function(msg) {
 					var response = JSON.parse(msg.data);
 					//debug(response);
 					for(field in response)
 						if(Object.keys(ws.storage.events).indexOf(field) != -1)
 							ws.storage.events[field](response);
-				}
+				};
 				ws.onopen = function() {
-					if(ws.storage.msgqueue.length)
-						for(i in ws.storage.msgqueue)
-							ws.sendObject(ws.storage.msgqueue[i]);
-				}
+					while(ws.storage.outqueue.length)
+						ws.sendObject(ws.storage.outqueue.shift());
+				};
 				ws.sendObject = function(msg) {
 					if(ws.readyState != 1)
-						return ws.storage.msgqueue.push(msg)
+						return ws.storage.outqueue.push(msg)
 					ws.send(JSON.stringify(msg));
 				};
 			},
@@ -96,7 +125,7 @@ var antiprism = (function() {
 				ws.storage.events["loggedIn"] = callback ? callback : debug;
 			},
 			register: function(callback) {
-				keypair = utils.generateKeypair();
+				var keypair = utils.generateKeypair();
 				keypair.crypt = utils.encryptAES(keypair.privkey, ws.storage.password);
 				ws.sendObject({action:"register", username:ws.storage.user, pubkey:keypair.pubkey, privkey:keypair.crypt});
 				ws.storage.events["registered"] = function() { actions.login(callback?callback:debug); };
@@ -116,9 +145,22 @@ var antiprism = (function() {
 				}
 				ws.storage.events["initiated"] = callback ? callback : debug;
 			},
-			getMessages: function(user, start, end, callback) {
-				ws.sendObject({action:"retrieveMessages",user:username, start:start, end:end});
-				ws.storage.events["msglist"] = callback ? callback : debug;
+			getMessages: function(user, start, end, callback) { // start = -10, end = -1 -> last 10 msgs!
+				ws.sendObject({action:"retrieveMessages",user:user, start:start, end:end});
+				ws.storage.events["msglist"] = function(msg) {
+					if(!ws.storage.conversations[user])
+						return helpers.getKey(user, function() { actions.getMessages(user,start,end,callback); });
+					for(x in msg.msglist)
+						msg.msglist[x].msg = decryptAES(msg.msglist[x].msg, ws.storage.conversations[user]);
+					callback(msg);
+				}
+			},
+			sendMessage: function(user, message, callback) {
+				if(!ws.storage.conversations[user])
+					return helpers.getKey(user, function() { actions.sendMessage(user,message,callback); });
+				var encrypted = encryptAES(message, ws.storage.conversations[user]);
+				ws.sendObject({action:"storeMessage",user:user,msg:encrypted});
+				ws.storage.events["ts"] = callback;
 			},
 			close: function() {
 				ws.close();
