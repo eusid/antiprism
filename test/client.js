@@ -2,10 +2,6 @@ $(document).ready(function () {
   client.init();
 });
 
-function addFriend(){console.log("addFriend() worked!");}
-function sendMessage(){console.log("sendMessage() worked!");}
-
-
 var utils = {
   switchLoginAbility: function() {
     var loginClass = $('.login');
@@ -28,16 +24,17 @@ var utils = {
   getPassword: function() {
     return $('#password').val();
   },
+  messageDisplay: $('#messages'),
   register: function() {
     return $('#registration').prop('checked');
   },
   setOnClickEvents: function() {
     $('#registration')[0].onclick = utils.changeButton;
     $('#signInButton')[0].onclick = client.login;
-    $('#addFriendButton')[0].onclick = addFriend;
-    $('#sendButton')[0].onclick = sendMessage;
+    $('#addFriendButton')[0].onclick = client.addFriend;
+    $('#sendButton')[0].onclick = client.sendMessage;
   },
-  enterKeyEvents: function(sendMessageFunction) {
+  enterKeyEvents: function() {
     $('#login').find(".textField").keyup(function(e){
       if(e.keyCode == 13) {
           client.login();
@@ -45,9 +42,14 @@ var utils = {
     });
     $('#messageField').keyup(function(e){
       if(e.keyCode == 13) {
-          sendMessageFunction();
+          client.sendMessage();
       }
     });
+    $('#addFriendField').keyup(function(e){
+      if(e.keyCode == 13) {
+        client.addFriend();
+      }
+    })
   },
   displayContacts: function(msg) {
     var friendList = $('#friendList');
@@ -65,19 +67,47 @@ var utils = {
   },
   onContactChange: function(ctx) {
     var contactName = ctx.target.value;
-    var messageDiv = $('#messages');
-    messageDiv.text("");
-    antiprism.getMessages(contactName, -10, -1, utils.displayMessages);
+    utils.messageDisplay.text("");
+    client.getMessages(contactName);
+  },
+  displayMessage: function(message) {
+    //console.log(message);
+    var messageContainer = document.createElement("p");
+    var username = message.from || utils.getUsername();
+    var time = (new Date(message.ts)).toLocaleString().split(' ')[1];
+    messageContainer.innerText = '<' + time + '> ' + username + ': ' + message.msg;
+    utils.messageDisplay.append(messageContainer);
+    utils.messageDisplay.animate({ scrollTop: utils.messageDisplay.prop("scrollHeight") - utils.messageDisplay.height() }, 500);
   },
   displayMessages: function(msg) {
-    console.log(msg);
+    for(i in msg.msglist) {
+      utils.displayMessage(msg.msglist[i]);
+    }
   },
 }
 
 var client = {
   init: function() {
-    utils.enterKeyEvents(sendMessage);
+    utils.enterKeyEvents();
     utils.setOnClickEvents();
+  },
+  getMessages: function(contactName) {
+    antiprism.getMessages(contactName, -10, -1, utils.displayMessages);
+  },
+  sendMessage: function() {
+    var messageField = $('#messageField');
+    var message = messageField.val();
+    var to = $('select').val();
+
+    messageField.val('');
+    antiprism.sendMessage(to, message, function(msg) {
+        utils.displayMessage({to:to,ts:msg.ts,msg:message});
+    });
+  },
+  addFriend: function() {
+    antiprism.initConversation($('#addFriendField').val(), function() {
+      antiprism.getContacts(utils.displayContacts);
+    });
   },
   login: function() {
     var username = utils.getUsername();
@@ -85,7 +115,7 @@ var client = {
     var registration = utils.register();
 
     utils.switchLoginAbility();
-    antiprism.init(username, password,0,0,{msg:antiprism.debug,error:antiprism.debug});
+    antiprism.init(username, password,0,0,{msg:utils.displayMessage,error:antiprism.debug});
 
     var callback = function() {
       utils.switchChatLogin();
