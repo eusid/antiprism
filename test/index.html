@@ -2,46 +2,29 @@
 <html>
   <head>
     <title>JavaScript Crypto Demo, using JS-RSA and CryptoJS (AES)</title>
+    <link rel="stylesheet" type="text/css" href="main.css" />
+  <script language="JavaScript" type="text/javascript" src="libs/include.js"></script>
   </head>
 
-<link rel="stylesheet" type="text/css" href="main.css" />
-<script language="JavaScript" type="text/javascript" src="libs/include.js"></script>
-<script type="text/javascript">
-  function changeButton() {
-    if($('#registration').prop('checked')) {
-      $('button')[0].innerText = "Sign Up";
-    } else {
-      $('button')[0].innerText = "Sign In";
-    }
-  }
-  function initMessageField() {
-    $('#messageField').keyup(function(e){
-      if(e.keyCode == 13) {
-          sendMessage();
-      }
-    });
-  }
-</script>
-
-  <body onload="initMessageField();">
+  <body>
     <h1>Antiprism Chat</h1>
     <div id="login">
-      <span id="usernameRow">Username: <input type="text" id="username"><br></span>
-      <span id="passwordRow">Password: <input type="password" id="password"><br></span>
-      <span id="checkboxRow">Registrate? <input type="checkbox" id ="registration" name="registration" onclick="changeButton();"></span>
-      <button onclick="initWS();">Sign In</button>
+      <span id="usernameRow">Username: <input class="textField login" type="text" id="username"><br></span>
+      <span id="passwordRow">Password: <input class="textField login" type="password" id="password"><br></span>
+      <span id="checkboxRow">Registrate? <input class="login" type="checkbox" id ="registration"></span>
+      <button class="login" id="signInButton">Sign In</button>
     </div>
 
     <div id="chat" style="display: none;">
       <div id="friendList"></div>      
       <div id="messages"></div>
       <div id="addFriend">
-        <input type="text" id="addFriendTextField">
-        <button id="addFriendField" onclick="addFriend();">Add Friend</button>
+        <input class="textField" type="text" id="addFriendField">
+        <button id="addFriendButton">Add Friend</button>
       </div>
       <div id="textField">
-        <input type="text" id="messageField">
-        <button id="sendButton" onclick="sendMessage();">Send</button>
+        <input class="textField" type="text" id="messageField">
+        <button id="sendButton">Send</button>
       </div>
     </div>
   </body>
