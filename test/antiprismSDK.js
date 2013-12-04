@@ -71,8 +71,8 @@ var antiprism = (function() {
 				}
 				ws.onopen = function() {
 					if(ws.storage.msgqueue.length)
-						for(i in queue)
-							ws.sendObject(queue[i]);
+						for(i in ws.storage.msgqueue)
+							ws.sendObject(ws.storage.msgqueue[i]);
 				}
 				ws.sendObject = function(msg) {
 					if(ws.readyState != 1)
