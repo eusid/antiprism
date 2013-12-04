@@ -31,10 +31,16 @@ var utils = {
   register: function() {
     return $('#registration').prop('checked');
   },
-  enterKeyEvents: function(loginFunction, sendMessageFunction) {
+  setOnClickEvents: function() {
+    $('#registration')[0].onclick = utils.changeButton;
+    $('#signInButton')[0].onclick = client.login;
+    $('#addFriendButton')[0].onclick = addFriend;
+    $('#sendButton')[0].onclick = sendMessage;
+  },
+  enterKeyEvents: function(sendMessageFunction) {
     $('#login').find(".textField").keyup(function(e){
       if(e.keyCode == 13) {
-          loginFunction();
+          client.login();
       }
     });
     $('#messageField').keyup(function(e){
@@ -47,30 +53,25 @@ var utils = {
 
 var client = {
   init: function() {
-    function login() {
-      var username = utils.getUsername();
-      var password = utils.getPassword();
-      var registration = utils.register();
+    utils.enterKeyEvents(sendMessage);
+    utils.setOnClickEvents();
+  },
+  login: function() {
+    var username = utils.getUsername();
+    var password = utils.getPassword();
+    var registration = utils.register();
 
-      utils.switchLoginAbility();
-      antiprism.init(username, password,0,0,{msg:antiprism.debug,error:antiprism.debug});
+    utils.switchLoginAbility();
+    antiprism.init(username, password,0,0,{msg:antiprism.debug,error:antiprism.debug});
 
-      var callback = function() {
-        utils.switchChatLogin();
-        antiprism.getContacts(client.displayContacts);
-      }
-      if(registration)
-        antiprism.register(callback)
-      else
-        antiprism.login(callback)
+    var callback = function() {
+      utils.switchChatLogin();
+      antiprism.getContacts(client.displayContacts);
     }
-
-    utils.enterKeyEvents(login, sendMessage);
-
-    $('#registration')[0].onclick = utils.changeButton;
-    $('#signInButton')[0].onclick = login;
-    $('#addFriendButton')[0].onclick = addFriend;
-    $('#sendButton')[0].onclick = sendMessage;
+    if(registration)
+      antiprism.register(callback)
+    else
+      antiprism.login(callback)
   },
   displayContacts: function(msg) {
     var friendList = $('#friendList');
