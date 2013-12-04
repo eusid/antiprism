@@ -57,7 +57,7 @@ var client = {
 
       var callback = function() {
         utils.switchChatLogin();
-        antiprism.getContacts();
+        antiprism.getContacts(client.displayContacts);
       }
       if(registration)
         antiprism.register(callback)
@@ -71,7 +71,20 @@ var client = {
     $('#signInButton')[0].onclick = login;
     $('#addFriendButton')[0].onclick = addFriend;
     $('#sendButton')[0].onclick = sendMessage;
+  },
+  displayContacts: function(msg) {
+    var friendList = $('#friendList');
+    var contactList = document.createElement("select");
+    contactList.size = 2; //sizeproperty has to be set because fuck that shit
+    //contactList.addEventListener("change",onContactChange);
 
+    for (contact in msg.contacts) {
+      var label = document.createElement("option");
+      label.innerText = contact;
+      contactList.appendChild(label);
+    }
+    friendList.text("");
+    friendList.append(contactList);
   }
 }
 
