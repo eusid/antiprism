@@ -57,13 +57,22 @@ var antiprism = (function() {
 		},
 		helpers = {
 			getKey: function(user, callback) {
+				if(ws.storage.conversations[user])
+					callback()
 				ws.sendObject({action:"conversationKey",user:user});
 				ws.storage.events["convkey"] = function(msg) {
-					console.log("got key!");
+					console.log("got key from user "+msg.user+": "+msg.convkey);
+					console.log("decrypting convkey with privkey:"+ws.storage.privkey);
+					console.log("decrypted convkey: "+utils.decryptRSA(msg.convkey,ws.storage.pubkey,ws.storage.privkey));
 					if(msg.convkey)
-						ws.storage.conversations[user] = utils.decryptRSA(msg.convkey,ws.storage.pubkey,ws.storage.privkey);
+						ws.storage.conversations[msg.user] = utils.decryptRSA(msg.convkey,ws.storage.pubkey,ws.storage.privkey);
 					else
-						return actions.initConversation(user,callback);
+						return actions.initConversation(user,function(resp) {
+							console.log("initiated");
+							debug(resp);
+							if(resp.initiated)
+								callback(msg);
+						});
 					if(callback)
 						callback(msg);
 				};
@@ -78,15 +87,16 @@ var antiprism = (function() {
 				ws.storage.events = callbacks;
 				var msgHandler = callbacks.msg;
 				ws.storage.events.msg = function(msg) {
-					if(!ws.storage.conversations[msg.from]) {
+					var keyUser = msg.from ? msg.from : msg.to;
+					if(ws.storage.conversations[keyUser]) {
+						msg.msg = utils.decryptAES(msg.msg, ws.storage.conversations[msg.from]);
+						msgHandler(msg);
+					} else {
 						ws.storage.inqueue.push(msg);
 						helpers.getKey(msg.from, function (resp) {
 							while(ws.storage.inqueue.length)
 								ws.storage.events.msg(ws.storage.inqueue.shift());
 						});
-					} else {
-						msg.msg = utils.decryptAES(msg.msg, ws.storage.conversations[msg.from]);
-						msgHandler(msg);
 					}
 				};
 				ws.onmessage = function(msg) {
@@ -112,7 +122,7 @@ var antiprism = (function() {
 					ws.storage.pubkey = response.pubkey;
 	      			try {
 						var privkey = utils.decryptAES(response.privkey,ws.storage.password);
-						ws.storage.user.privkey = privkey;
+						ws.storage.privkey = privkey;
 						var validationKey = utils.decryptRSA(response.validationKey, response.pubkey, privkey);
 						ws.sendObject({action:"auth","validationKey":utils.utf8_b64enc(validationKey)}); 
 					} catch (e) {
@@ -129,15 +139,19 @@ var antiprism = (function() {
 			},
 			getContacts: function(callback) {
 				ws.sendObject({action:"contacts"});
-				ws.storage.events["contacts"] = callback ? callback : debug;
+				ws.storage.events["contacts"] = function(msg) {
+					for(user in msg.contacts)
+						ws.storage.conversations[user] = utils.decryptRSA(msg.contacts[user],ws.storage.pubkey,ws.storage.privkey);
+					callback(msg);
+				};
 			},
 			initConversation: function(user,callback) {
 				ws.sendObject({action:"pubkey",user:user}); // request pubkey first
 				ws.storage.events["pubkey"] = function(msg) {
-					var conversationkey = rng_get_string(32), keys = [];
-					ws.storage.conversations[user] = conversationkey;
-					keys.push(utils.encryptRSA(conversationkey, ws.storage.pubkey));
-					keys.push(utils.encryptRSA(conversationkey, msg.pubkey));
+					var convkey = rng_get_string(32), keys = [];
+					ws.storage.conversations[user] = convkey;
+					keys.push(utils.encryptRSA(convkey, ws.storage.pubkey));
+					keys.push(utils.encryptRSA(convkey, msg.pubkey));
 					ws.sendObject({action:"initConversation", user:user, convkeys:keys});
 				}
 				ws.storage.events["initiated"] = callback ? callback : debug;
@@ -146,7 +160,11 @@ var antiprism = (function() {
 				ws.sendObject({action:"retrieveMessages",user:user, start:start, end:end});
 				ws.storage.events["msglist"] = function(msg) {
 					if(!ws.storage.conversations[user])
-						return helpers.getKey(user, function() { actions.getMessages(user,start,end,callback); });
+						return helpers.getKey(user, function() {
+							for(x in msg.msglist)
+								msg.msglist[x].msg = utils.decryptAES(msg.msglist[x].msg, ws.storage.conversations[user]);
+							callback(msg);
+						});
 					for(x in msg.msglist)
 						msg.msglist[x].msg = utils.decryptAES(msg.msglist[x].msg, ws.storage.conversations[user]);
 					callback(msg);
