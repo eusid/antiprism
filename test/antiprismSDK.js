@@ -65,9 +65,9 @@ var antiprism = (function() {
 				ws.onmessage = function(msg) {
 					var response = JSON.parse(msg.data);
 					//debug(response);
-					for(event in ws.storage.events)
-						if(Object.keys(response).indexOf(event) != -1)
-							ws.storage.events[event](response);
+					for(field in response)
+						if(Object.keys(ws.storage.events).indexOf(field) != -1)
+							ws.storage.events[field](response);
 				}
 				ws.sendObject = function(msg) { ws.send(JSON.stringify(msg)); };
 			},
@@ -91,6 +91,9 @@ var antiprism = (function() {
 					}
 				};
 				ws.storage.events["loggedIn"] = callback ? callback : debug;
+			},
+			register: function(callback) {
+				
 			},
 			getContacts: function(callback) {
 				ws.sendObject({action:"contacts"});
