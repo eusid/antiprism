@@ -59,8 +59,8 @@ var antiprism = (function() {
 			// default-usage: antiprism.init(user,password,0,0,{msg, error});
 			init: function(user,password,server,port,callbacks) {
 				ws = new WebSocket("ws://"+(server?server:"localhost")+':'+(port?port:8080));
-				actions.ws = ws;
-				ws.storage = {user:user, password:utils.buildAESKey(password)};
+				actions.ws = ws; // only 4 debug!
+				ws.storage = {user:user, password:utils.buildAESKey(password), conversations:{}, msgqueue:[]};
 				ws.storage.events = callbacks;
 				ws.onmessage = function(msg) {
 					var response = JSON.parse(msg.data);
@@ -69,16 +69,19 @@ var antiprism = (function() {
 						if(Object.keys(ws.storage.events).indexOf(field) != -1)
 							ws.storage.events[field](response);
 				}
-				ws.sendObject = function(msg) { ws.send(JSON.stringify(msg)); };
+				ws.onopen = function() {
+					if(ws.storage.msgqueue.length)
+						for(i in queue)
+							ws.sendObject(queue[i]);
+				}
+				ws.sendObject = function(msg) {
+					if(ws.readyState != 1)
+						return ws.storage.msgqueue.push(msg)
+					ws.send(JSON.stringify(msg));
+				};
 			},
 			login: function(callback) {
-				var loginAction = function() {
-					ws.sendObject({action:"login",username:ws.storage.user});
-				}
-				if(ws.readyState != 1)
-					ws.onopen = loginAction;
-				else
-					loginAction();
+				ws.sendObject({action:"login",username:ws.storage.user});
 				ws.storage.events["validationKey"] = function(response) {
 					ws.storage.pubkey = response.pubkey;
 	      			try {
@@ -93,12 +96,30 @@ var antiprism = (function() {
 				ws.storage.events["loggedIn"] = callback ? callback : debug;
 			},
 			register: function(callback) {
-				
+				keypair = utils.generateKeypair();
+				keypair.crypt = utils.encryptAES(keypair.privkey, ws.storage.password);
+				ws.sendObject({action:"register", username:ws.storage.user, pubkey:keypair.pubkey, privkey:keypair.crypt});
+				ws.storage.events["registered"] = function() { actions.login(callback?callback:debug); };
 			},
 			getContacts: function(callback) {
 				ws.sendObject({action:"contacts"});
-				ws.storage.events["contacts"] = callback ? callback :debug;
+				ws.storage.events["contacts"] = callback ? callback : debug;
 			},
+			initConversation: function(username,callback) {
+				ws.sendObject({action:"pubkey",user:username}); // request pubkey first
+				ws.storage.events["pubkey"] = function(msg) {
+					var conversationkey = rng_get_string(32), keys = [];
+					ws.storage.conversations.username = conversationkey;
+					keys.push(utils.encryptRSA(conversationkey, ws.storage.pubkey));
+					keys.push(utils.encryptRSA(conversationkey, msg.pubkey));
+					ws.sendObject({action:"initConversation", user:username, convkeys:keys});
+				}
+				ws.storage.events["initiated"] = callback ? callback : debug;
+			},
+			getMessages: function(user, start, end, callback) {
+				ws.sendObject({action:"retrieveMessages",user:username, start:start, end:end});
+				ws.storage.events["msglist"] = callback ? callback : debug;
+			}
 			close: function() {
 				ws.close();
 				delete ws;
