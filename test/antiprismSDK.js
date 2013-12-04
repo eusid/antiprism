@@ -88,7 +88,7 @@ var antiprism = (function() {
 						var privkey = utils.decryptAES(response.privkey,ws.storage.password);
 						ws.storage.user.privkey = privkey;
 						var validationKey = utils.decryptRSA(response.validationKey, response.pubkey, privkey);
-						ws.sendObject({action:"auth","validationKey":utf8_b64enc(validationKey)}); 
+						ws.sendObject({action:"auth","validationKey":utils.utf8_b64enc(validationKey)}); 
 					} catch (e) {
 						callback(0);
 					}
@@ -119,7 +119,7 @@ var antiprism = (function() {
 			getMessages: function(user, start, end, callback) {
 				ws.sendObject({action:"retrieveMessages",user:username, start:start, end:end});
 				ws.storage.events["msglist"] = callback ? callback : debug;
-			}
+			},
 			close: function() {
 				ws.close();
 				delete ws;
