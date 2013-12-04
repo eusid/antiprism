@@ -156,8 +156,8 @@ var sendClient,
 				storage.redis.smembers("users."+storage.username+".sess", function(err,reply) {
 					if(err)
 						return console.log({error:err});
-					storeMsg.to = data.user;
-					delete storeMsg.from;
+					if(reply.length > 1) // if we need to push to multiple sessions, we need the "to"-field
+						storeMsg.to = data.user;
 					delete reply[reply.indexOf(storage.id)]; // don't push back to sending session
 					ret.concat(reply);
 					for(id in ret)

@@ -61,14 +61,10 @@ var antiprism = (function() {
 					callback()
 				ws.sendObject({action:"conversationKey",user:user});
 				ws.storage.events["convkey"] = function(msg) {
-					console.log("got key from user "+msg.user+": "+msg.convkey);
-					console.log("decrypting convkey with privkey:"+ws.storage.privkey);
-					console.log("decrypted convkey: "+utils.decryptRSA(msg.convkey,ws.storage.pubkey,ws.storage.privkey));
 					if(msg.convkey)
 						ws.storage.conversations[msg.user] = utils.decryptRSA(msg.convkey,ws.storage.pubkey,ws.storage.privkey);
 					else
 						return actions.initConversation(user,function(resp) {
-							console.log("initiated");
 							debug(resp);
 							if(resp.initiated)
 								callback(msg);
@@ -81,19 +77,19 @@ var antiprism = (function() {
 		actions = {
 			// default-usage: antiprism.init(user,password,0,0,{msg, error});
 			init: function(user,password,server,port,callbacks) {
-				ws = new WebSocket("ws://"+(server?server:"localhost")+':'+(port?port:8080));
+				ws = new WebSocket("ws://"+(server||"localhost")+':'+(port||8080));
 				actions.ws = ws; // only 4 debug!
 				ws.storage = {user:user, password:utils.buildAESKey(password), conversations:{}, outqueue:[], inqueue:[]};
 				ws.storage.events = callbacks;
 				var msgHandler = callbacks.msg;
 				ws.storage.events.msg = function(msg) {
-					var keyUser = msg.from ? msg.from : msg.to;
+					var keyUser = msg.from || msg.to;
 					if(ws.storage.conversations[keyUser]) {
-						msg.msg = utils.decryptAES(msg.msg, ws.storage.conversations[msg.from]);
+						msg.msg = utils.decryptAES(msg.msg, ws.storage.conversations[keyUser]);
 						msgHandler(msg);
 					} else {
 						ws.storage.inqueue.push(msg);
-						helpers.getKey(msg.from, function (resp) {
+						helpers.getKey(keyUser, function (resp) {
 							while(ws.storage.inqueue.length)
 								ws.storage.events.msg(ws.storage.inqueue.shift());
 						});
@@ -113,6 +109,7 @@ var antiprism = (function() {
 				ws.sendObject = function(msg) {
 					if(ws.readyState != 1)
 						return ws.storage.outqueue.push(msg)
+					//console.log("quering server:");console.log(msg);
 					ws.send(JSON.stringify(msg));
 				};
 			},
