@@ -14,7 +14,7 @@
 ##Unauthenticated messages:
 
 ###Login-Request - implemented
-	{"action": "login", "user": NAME}
+	{"action": "login", "username": NAME}
 Server Response
 
 	{"validationKey": .., "pubkey": ..., "privkey": ...}
