@@ -108,6 +108,18 @@ var sendClient,
 				});
 			return {initiated:true,with:data.user};
 		},
+		countMessages: function(data, storage) {
+			if(data.user < storage.username) // lawl-sort
+				var convid = data.user+'.'+storage.username;
+			else
+				var convid = storage.username+'.'+data.user;
+			storage.redis.llen("msgs."+convid, function(err, reply) {
+				if(err)
+					return console.log({error:err});
+				sendClient({msgcount:reply, user:data.user});
+			});
+			return 0;
+		},
 		retrieveMessages: function(data, storage) {
 			if(data.user === undefined)
 				return Error.INVALID_PARAMS;

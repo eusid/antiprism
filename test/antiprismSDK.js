@@ -156,6 +156,10 @@ var antiprism = (function() {
 				}
 				ws.storage.events["initiated"] = callback ? callback : debug;
 			},
+			countMessages: function(user, callback) {
+				ws.sendObject({action:"countMessages", user:user});
+				ws.storage.events["msgcount"] = callback ? callback : debug;
+			},
 			getMessages: function(user, start, end, callback) { // start = -10, end = -1 -> last 10 msgs!
 				ws.sendObject({action:"retrieveMessages",user:user, start:start, end:end});
 				ws.storage.events["msglist"] = function(msg) {
