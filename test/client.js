@@ -49,6 +49,29 @@ var utils = {
       }
     });
   },
+  displayContacts: function(msg) {
+    var friendList = $('#friendList');
+    var contactList = document.createElement("select");
+    contactList.size = 2; //sizeproperty has to be set because fuck that shit
+    contactList.addEventListener("change",utils.onContactChange);
+
+    for (contact in msg.contacts) {
+      var label = document.createElement("option");
+      label.innerText = contact;
+      contactList.appendChild(label);
+    }
+    friendList.text("");
+    friendList.append(contactList);
+  },
+  onContactChange: function(ctx) {
+    var contactName = ctx.target.value;
+    var messageDiv = $('#messages');
+    messageDiv.text("");
+    antiprism.getMessages(contactName, -10, -1, utils.displayMessages);
+  },
+  displayMessages: function(msg) {
+    console.log(msg);
+  },
 }
 
 var client = {
@@ -66,26 +89,13 @@ var client = {
 
     var callback = function() {
       utils.switchChatLogin();
-      antiprism.getContacts(client.displayContacts);
+      antiprism.getContacts(utils.displayContacts);
     }
     if(registration)
       antiprism.register(callback)
     else
       antiprism.login(callback)
   },
-  displayContacts: function(msg) {
-    var friendList = $('#friendList');
-    var contactList = document.createElement("select");
-    contactList.size = 2; //sizeproperty has to be set because fuck that shit
-    //contactList.addEventListener("change",onContactChange);
-
-    for (contact in msg.contacts) {
-      var label = document.createElement("option");
-      label.innerText = contact;
-      contactList.appendChild(label);
-    }
-    friendList.text("");
-    friendList.append(contactList);
-  }
+  
 }
 
