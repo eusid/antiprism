@@ -35,13 +35,13 @@ h1 {
 	width: 85%;
 }
 
-#addFriendTextField {
+#addFriendField {
 	height: 100%;
 	width: 75%;
 	float: left;
 }
 
-#addFriendField {
+#addFriendButton {
 	height: 100%;
 	width: 25%;
 }
