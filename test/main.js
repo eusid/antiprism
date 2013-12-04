@@ -237,7 +237,7 @@ function initWS() {
     else if(response.msglist) {
       displayMessages(response.msglist);
     }
-    else if(response.success) {
+    else if(response.loggedIn) {
       switchChatLogin();
       ws.sendObject({action:"contacts"});
     }
