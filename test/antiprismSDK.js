@@ -1,6 +1,6 @@
 var antiprism = (function() {
 	var ws,
-		debug = function(obj) { console.log("[DEBUG]:"); console.log(obj); },
+		debug = function(obj) { };//console.log("[DEBUG]:"); console.log(obj); },
 		utils = {
 			hex2a: function(hex) {
 				var str = '';
@@ -19,17 +19,17 @@ var antiprism = (function() {
 			},
 			decryptAES: function(cipher, key) {
 				cipher = atob(cipher);
-				var iv = parseLatin(cipher.substring(0,16));
-				var cipher = parseLatin(cipher.substring(16));
-				var key = parseLatin(key);
+				var iv = utils.parseLatin(cipher.substring(0,16));
+				var cipher = utils.parseLatin(cipher.substring(16));
+				var key = utils.parseLatin(key);
 				var decrypted = CryptoJS.AES.decrypt({ciphertext:cipher},key,{iv:iv});
 				return CryptoJS.enc.Utf8.stringify(decrypted);
 			},
 			encryptAES: function(string, key) {
-				var key = parseLatin(key);
-				var iv = parseLatin(rng_get_string(16));
+				var key = utils.parseLatin(key);
+				var iv = utils.parseLatin(rng_get_string(16));
 				var cipher = CryptoJS.AES.encrypt(string, key, { iv: iv });
-				return btoa(hex2a(cipher.iv+cipher.ciphertext));
+				return btoa(utils.hex2a(cipher.iv+cipher.ciphertext));
 			},
 			buildAESKey: function(password) {
 				var salt = "i_iz_static_salt";
@@ -59,13 +59,13 @@ var antiprism = (function() {
 			// default-usage: antiprism.init(user,password,0,0,{msg, error, loggedIn});
 			init: function(user,password,server,port,callbacks) {
 				ws = new WebSocket("ws://"+(server?server:"localhost")+':'+(port?port:8080));
-				ws.storage = {user:user, password:password};
+				ws.storage = {user:user, password:utils.buildAESKey(password)};
 				ws.storage.events = callbacks;
 				ws.onmessage = function(msg) {
 					var response = JSON.parse(msg.data);
 					debug(response);
 					for(event in ws.storage.events)
-						if(event in Object.keys(response))
+						if(Object.keys(response).indexOf(event) != -1)
 							ws.storage.events[event](response);
 				}
 				ws.sendObject = function(msg) { ws.send(JSON.stringify(msg)); };
@@ -74,11 +74,11 @@ var antiprism = (function() {
 			login: function(callback) {
 				ws.sendObject({action:"login",username:ws.storage.user});
 				ws.storage.events["validationKey"] = function(response) {
-					ws.user.pubkey = response.pubkey;
+					ws.storage.pubkey = response.pubkey;
 	      			try {
-						var privkey = decryptAES(response.privkey,ws.storage.user.password);
+						var privkey = utils.decryptAES(response.privkey,ws.storage.password);
 						ws.storage.user.privkey = privkey;
-						var validationKey = decryptRSA(response.validationKey, response.pubkey, privkey);
+						var validationKey = utils.decryptRSA(response.validationKey, response.pubkey, privkey);
 						ws.sendObject({action:"auth","validationKey":utf8_b64enc(validationKey)}); 
 					} catch (e) {
 						callback(0);
