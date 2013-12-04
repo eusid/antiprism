@@ -1,6 +1,6 @@
 var antiprism = (function() {
 	var ws,
-		debug = function(obj) { };//console.log("[DEBUG]:"); console.log(obj); },
+		debug = function(obj) { console.log("[DEBUG]:"); console.log(obj); },
 		utils = {
 			hex2a: function(hex) {
 				var str = '';
@@ -56,23 +56,29 @@ var antiprism = (function() {
 			}
 		},
 		actions = {
-			// default-usage: antiprism.init(user,password,0,0,{msg, error, loggedIn});
+			// default-usage: antiprism.init(user,password,0,0,{msg, error});
 			init: function(user,password,server,port,callbacks) {
 				ws = new WebSocket("ws://"+(server?server:"localhost")+':'+(port?port:8080));
+				actions.ws = ws;
 				ws.storage = {user:user, password:utils.buildAESKey(password)};
 				ws.storage.events = callbacks;
 				ws.onmessage = function(msg) {
 					var response = JSON.parse(msg.data);
-					debug(response);
+					//debug(response);
 					for(event in ws.storage.events)
 						if(Object.keys(response).indexOf(event) != -1)
 							ws.storage.events[event](response);
 				}
 				ws.sendObject = function(msg) { ws.send(JSON.stringify(msg)); };
-				ws.onopen = function() { actions.login(callbacks.loggedIn); };
 			},
 			login: function(callback) {
-				ws.sendObject({action:"login",username:ws.storage.user});
+				var loginAction = function() {
+					ws.sendObject({action:"login",username:ws.storage.user});
+				}
+				if(ws.readyState != 1)
+					ws.onopen = loginAction;
+				else
+					loginAction();
 				ws.storage.events["validationKey"] = function(response) {
 					ws.storage.pubkey = response.pubkey;
 	      			try {
@@ -84,13 +90,17 @@ var antiprism = (function() {
 						callback(0);
 					}
 				};
-				ws.storage.events["loggedIn"] = callback;
+				ws.storage.events["loggedIn"] = callback ? callback : debug;
+			},
+			getContacts: function(callback) {
+				ws.sendObject({action:"contacts"});
+				ws.storage.events["contacts"] = callback ? callback :debug;
 			},
 			close: function() {
 				ws.close();
 				delete ws;
-			}
+			},
+			debug: debug
 		};
-
 	return actions;
 })();
