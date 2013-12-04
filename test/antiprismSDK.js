@@ -151,7 +151,7 @@ var antiprism = (function() {
 					if(!ws.storage.conversations[user])
 						return helpers.getKey(user, function() { actions.getMessages(user,start,end,callback); });
 					for(x in msg.msglist)
-						msg.msglist[x].msg = decryptAES(msg.msglist[x].msg, ws.storage.conversations[user]);
+						msg.msglist[x].msg = utils.decryptAES(msg.msglist[x].msg, ws.storage.conversations[user]);
 					callback(msg);
 				}
 			},
