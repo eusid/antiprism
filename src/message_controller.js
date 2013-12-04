@@ -165,7 +165,7 @@ var sendClient,
 							storage.sockets[ret[id]].ctx(storeMsg);
 				});
 			});
-			return {ts:storeMsg.ts};
+			return {ts:storeMsg.ts, sent:true};
 		}
 	},
 

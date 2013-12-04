@@ -176,7 +176,7 @@ var antiprism = (function() {
 					return helpers.getKey(user, function() { actions.sendMessage(user,message,callback); });
 				var encrypted = utils.encryptAES(message, ws.storage.conversations[user]);
 				ws.sendObject({action:"storeMessage",user:user,msg:encrypted});
-				ws.storage.events["ts"] = callback;
+				ws.storage.events["sent"] = callback;
 			},
 			close: function() {
 				ws.close();
