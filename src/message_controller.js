@@ -120,7 +120,9 @@ var helpers = {
 			return 0;
 		},
 		initConversation: function(data, storage) {
-			storage.redis.exists("convs."+storage.username, function(err,reply) {
+			if(data.user === undefined || !data.convkeys)
+				return Error.INVALID_PARAMS;
+			storage.redis.hexists("convs."+storage.username, data.user, function(err,reply) {
 				if(err)
 					return console.log({error:err});
 				if(reply)
