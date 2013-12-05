@@ -6,7 +6,8 @@
   "dependencies": {
 	  "redis": "*",
 	  "ws": "*",
-	  "node-bignumber": "*"
+	  "node-bignumber": "*",
+	  "node-static": "*"
   },
   "devDependencies": {
     "vows": "*",

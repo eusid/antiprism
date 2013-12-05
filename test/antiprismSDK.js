@@ -76,8 +76,8 @@ var antiprism = (function() {
 		},
 		actions = {
 			// default-usage: antiprism.init(user,password,0,0,{msg, error});
-			init: function(user,password,server,port,callbacks) {
-				ws = new WebSocket("ws://"+(server||"localhost")+':'+(port||8080));
+			init: function(user,password,host,callbacks) {
+				ws = new WebSocket(host);
 				actions.ws = ws; // only 4 debug!
 				ws.storage = {user:user, password:utils.buildAESKey(password), conversations:{}, outqueue:[], inqueue:[]};
 				ws.storage.events = callbacks;

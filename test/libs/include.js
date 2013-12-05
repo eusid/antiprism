@@ -10,8 +10,8 @@ var SimpleInclude = (function () {
 			"libs/aes.js",
 			"libs/CryptJS-core-min.js",
 			"libs/scrypt.js",
-			"antiprismSDK.js",
-			"client.js"
+			"main.js",
+			"antiprismSDK.js"		
 		],
 		include = function(path) {
 			var x = document.createElement("script");

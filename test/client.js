@@ -24,7 +24,9 @@ var utils = {
   getPassword: function() {
     return $('#password').val();
   },
-  messageDisplay: $('#messages'),
+  messageDisplay: function() {
+	return $('#messages');
+  },
   register: function() {
     return $('#registration').prop('checked');
   },
@@ -67,7 +69,7 @@ var utils = {
   },
   onContactChange: function(ctx) {
     var contactName = ctx.target.value;
-    utils.messageDisplay.text("");
+    utils.messageDisplay().text("");
     utils.getContactByName(contactName).className = "";
     client.getMessages(contactName);
   },
@@ -89,8 +91,8 @@ var utils = {
       var username = message.from || utils.getUsername();
       var time = (new Date(message.ts)).toLocaleString().split(' ')[1];
       messageContainer.innerText = '<' + time + '> ' + username + ': ' + message.msg;
-      utils.messageDisplay.append(messageContainer);
-      utils.messageDisplay.animate({ scrollTop: utils.messageDisplay.prop("scrollHeight") - utils.messageDisplay.height() }, 500);
+      utils.messageDisplay().append(messageContainer);
+      utils.messageDisplay().animate({ scrollTop: utils.messageDisplay().prop("scrollHeight") - utils.messageDisplay().height() }, 500);
     } else {
       var contact = utils.getContactByName(message.from || message.to);
       contact.className = "newMessage";
@@ -132,8 +134,8 @@ var client = {
     var password = utils.getPassword();
     var registration = utils.register();
 
-    
-    antiprism.init(username, password,0,0,{msg:function(msg) { //"192.168.1.101"
+    var host = location.origin.replace(/^http/, 'ws');
+    antiprism.init(username, password, host, {msg:function(msg) { //"192.168.1.101"
       utils.displayMessage(msg);
     },error:antiprism.debug});
 
