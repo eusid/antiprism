@@ -4,13 +4,9 @@ var WebSocketServer = require("ws").Server,
 	webSockets = {}, wscount = 1,
 	redis = require("redis").createClient();
 
-// clean redis at startup
 redis.keys("sess.*", function(err,reply) { // clear sessions
-	for(x in reply) {
-		var user = reply[x].substr(reply.indexOf(".")+1);
-		redis.hdel("users."+user, "online", function(err,reply) {});
-		redis.del(reply[x], function(err,reply) {});
-	}
+	for(id in reply)
+		redis.del(reply[id], function(err,reply) {});
 });
 
 webSocketServer.on("connection", function(ws) {
@@ -32,8 +28,17 @@ webSocketServer.on("connection", function(ws) {
 			console.log("e", arguments);
 		})
 		.on("close", function() {
-			session.redis.srem("sess."+session.username, session.id, function(err,reply) {});
-			session.redis.hincrby("users."+session.username,"online",-1,function(err,reply) {});
+			session.redis.srem("sess."+session.username, session.id, function(err,reply) {
+				session.redis.scard("sess."+session.username, function(err, reply) {
+					if(err)
+						return console.log({error:err});
+					if(!parseInt(reply))
+						session.redis.hgetall("convs."+session.username, function(err, contacts) {
+							for (user in contacts)
+								messageController.helpers.broadcast(session, user, {online:false, user:session.username});
+						});
+				});
+			});
 			delete webSockets[session.id];
 		});
 });

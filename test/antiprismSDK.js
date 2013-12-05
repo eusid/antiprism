@@ -82,6 +82,9 @@ var antiprism = (function() {
 				ws.storage = {user:user, password:utils.buildAESKey(password), conversations:{}, outqueue:[], inqueue:[]};
 				ws.storage.events = callbacks;
 				var msgHandler = callbacks.msg;
+				ws.storage.events.online = function(msg) {
+					debug(msg);
+				};
 				ws.storage.events.msg = function(msg) {
 					//console.log("got msg:");console.log(msg);
 					var keyUser = msg.to || msg.from;

@@ -1,4 +1,16 @@
-var sendClient,
+var helpers = {
+		broadcast: function(storage, user, msg, callback) {
+			storage.redis.smembers("sess."+user, function(err,reply) {
+				if(err)
+					return console.log({error:err});
+				for(id in reply) {
+					if(storage.sockets[reply[id]] !== undefined) // not sure if redis and node are in sync
+						storage.sockets[reply[id]].ctx(msg);
+				}
+			});
+			if(callback) callback();
+		}
+	},
 	actions = { // <debug>
 		multiply: function(data) {
 			if(data.numbers == undefined)
@@ -20,9 +32,9 @@ var sendClient,
 		register: function(data, storage) {
 			storage.redis.hexists("users."+data.username,"privkey",function(e,res) {
 				if(res)
-					sendClient({'registered':false});
+					helpers.sendClient({'registered':false});
 				else {
-					sendClient({'registered':true});
+					helpers.sendClient({'registered':true});
 					storage.redis.hmset("users."+data.username,
 						{pubkeyN: data.pubkey.n, pubkeyE: data.pubkey.e, privkey: data.privkey},
 						function(err,res) {
@@ -37,15 +49,15 @@ var sendClient,
 				return Error.INVALID_PARAMS;
 			storage.redis.hgetall("users."+data.username, function(err,reply) {
 				if(!reply)
-					return sendClient({error:"unknown user"});
-				sendClient({redisreply:reply});
+					return helpers.sendClient({error:"unknown user"});
+				helpers.sendClient({redisreply:reply});
 				storage.username = data.username;
 				var randomString = require('crypto').randomBytes(32).toString();
 				var rsa = new (require('node-bignumber').Key)();
 				var pubkey = {n:reply.pubkeyN, e:reply.pubkeyE};
 				rsa.setPublic(reply.pubkeyN, reply.pubkeyE);
 				storage.validationKey = randomString;
-				sendClient(
+				helpers.sendClient(
 					{validationKey: rsa.encrypt(randomString), pubkey: {n:reply.pubkeyN, e:reply.pubkeyE}, privkey: reply.privkey}
 				);
 			});
@@ -61,8 +73,16 @@ var sendClient,
 			storage.redis.sadd("sess."+storage.username, storage.id, function(err, reply) {
 				if(err)
 					console.log({error:err});
+				storage.redis.scard("sess."+storage.username, function(err, reply) {
+					if(err)
+						return console.log({error:err});
+					if(parseInt(reply) == 1)
+						storage.redis.hgetall("convs."+storage.username, function(err, contacts) {
+							for (user in contacts)
+								helpers.broadcast(storage, user, {online:true, user:storage.username});
+						});
+				});
 			});
-			storage.redis.hincrby("users."+storage.username,"online",1,function(err,reply) {});
 			return {loggedIn:true};
 		},
 		contacts: function(data, storage) {
@@ -70,14 +90,14 @@ var sendClient,
 				return Error.INVALID_AUTH;
 			storage.redis.hgetall("convs."+storage.username, function(err,contacts) {
 				if(!contacts)
-					return sendClient({contacts:[]});
+					return helpers.sendClient({contacts:[]});
 				var ret = {}, usersLeft = Object.keys(contacts).length;
 				for(user in contacts)
-					storage.redis.hget("users."+user, "online", function(err,reply) {
+					storage.redis.scard("sess."+user, function(err,reply) {
 						ret[user] = {key:contacts[user],online:!!parseInt(reply)};
 						usersLeft--;
 						if(!usersLeft)
-							sendClient({contacts:ret});
+							helpers.sendClient({contacts:ret});
 					});
 			});
 			return 0;
@@ -86,7 +106,7 @@ var sendClient,
 			if(data.user === undefined)
 				return Error.INVALID_PARAMS;
 			storage.redis.hmget("users."+data.user, "pubkeyN", "pubkeyE", function(err,reply) {
-				sendClient({user:data.user,pubkey:{n:reply[0],e:reply[1]}});
+				helpers.sendClient({user:data.user,pubkey:{n:reply[0],e:reply[1]}});
 			});
 			return 0;
 		},
@@ -94,7 +114,7 @@ var sendClient,
 			if(data.user === undefined)
 				return Error.INVALID_PARAMS;
 			storage.redis.hget("convs."+storage.username,data.user, function(err,reply) {
-				sendClient({user:data.user,convkey:reply});
+				helpers.sendClient({user:data.user,convkey:reply});
 			});
 			return 0;
 		},
@@ -104,7 +124,7 @@ var sendClient,
 					if(err)
 						return console.log({error:err});
 					if(reply)
-						sendClient({initiated:false,with:data.user});
+						helpers.sendClient({initiated:false,with:data.user});
 				});
 			storage.redis.hmset("convs."+storage.username,data.user,data.convkeys[0],
 				function(err,reply) {
@@ -126,7 +146,7 @@ var sendClient,
 			storage.redis.llen("msgs."+convid, function(err, reply) {
 				if(err)
 					return console.log({error:err});
-				sendClient({msgcount:reply, user:data.user});
+				helpers.sendClient({msgcount:reply, user:data.user});
 			});
 			return 0;
 		},
@@ -143,7 +163,7 @@ var sendClient,
 			else
 				var convid = storage.username+'.'+data.user;
 			storage.redis.lrange("msgs."+convid, start, end, function(err, reply) {
-				sendClient({msglist:reply.map(JSON.parse)});
+				helpers.sendClient({msglist:reply.map(JSON.parse)});
 			});
 			return 0;
 		},
@@ -159,22 +179,16 @@ var sendClient,
 				if(err)
 					return console.log({error:err});
 			});
-			storage.redis.smembers("sess."+data.user, function(err,reply) {
+			helpers.broadcast(storage, data.user, storeMsg);
+			storage.redis.smembers("sess."+storage.username, function(err,reply) {
 				if(err)
 					return console.log({error:err});
+				storeMsg.to = data.user;
+				delete storeMsg.from;
 				for(id in reply)
-						if(storage.sockets[reply[id]] !== undefined) // not sure if redis and node are in sync
-							storage.sockets[reply[id]].ctx(storeMsg);
-				storage.redis.smembers("sess."+storage.username, function(err,reply) {
-					if(err)
-						return console.log({error:err});
-					storeMsg.to = data.user;
-					delete storeMsg.from;
-					for(id in reply)
-						if(storage.sockets[reply[id]] !== undefined // not sure if redis and node are in sync
-							&& reply[id] != storage.id) // do not push back to sending user
-							storage.sockets[reply[id]].ctx(storeMsg);
-				});
+					if(storage.sockets[reply[id]] !== undefined // not sure if redis and node are in sync
+						&& reply[id] != storage.id) // do not push back to sending user
+						storage.sockets[reply[id]].ctx(storeMsg);
 			});
 			return {ts:storeMsg.ts, sent:true};
 		}
@@ -201,8 +215,9 @@ var sendClient,
 		return action(data, storage);
 	};
 
+exports.helpers = helpers;
 exports.handleMessage = function(message, storage, callbacks) {
-	sendClient = callbacks.response;
+	helpers.sendClient = callbacks.response;
 	var result;
 	try {
 		var data = JSON.parse(message);
@@ -237,5 +252,5 @@ exports.handleMessage = function(message, storage, callbacks) {
 		result = {"error": error, code: result};
 	}
 	if(result)
-		sendClient(result);
+		helpers.sendClient(result);
 }
