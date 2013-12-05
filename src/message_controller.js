@@ -91,14 +91,15 @@ var helpers = {
 			storage.redis.hgetall("convs."+storage.username, function(err,contacts) {
 				if(!contacts)
 					return helpers.sendClient({contacts:[]});
-				var ret = {}, usersLeft = Object.keys(contacts).length;
-				for(user in contacts)
-					storage.redis.scard("sess."+user, function(err,reply) {
-						ret[user] = {key:contacts[user],online:!!parseInt(reply)};
-						usersLeft--;
-						if(!usersLeft)
+				var ret = {}, users = Object.keys(contacts), usersIndex = users.length;
+				for(i in users) {
+					storage.redis.scard("sess."+users[i], function(err,reply) {
+						usersIndex--;
+						ret[users[usersIndex]] = {key:contacts[users[usersIndex]],online:!!parseInt(reply)};
+						if(!usersIndex)
 							helpers.sendClient({contacts:ret});
 					});
+				}
 			});
 			return 0;
 		},
