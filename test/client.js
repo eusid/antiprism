@@ -25,7 +25,7 @@ var utils = {
     return $('#password').val();
   },
   messageDisplay: function() {
-	return $('#messages');
+    return $('#messages');
   },
   register: function() {
     return $('#registration').prop('checked');
@@ -54,6 +54,7 @@ var utils = {
     })
   },
   displayContacts: function(msg) {
+    console.log(msg);
     var friendList = $('#friendList');
     var contactList = document.createElement("select");
     contactList.size = 2; //sizeproperty has to be set because fuck that shit
@@ -135,9 +136,9 @@ var client = {
     var registration = utils.register();
 
     var host = location.origin.replace(/^http/, 'ws');
-    antiprism.init(username, password, host, {msg:function(msg) { //"192.168.1.101"
+    antiprism.init(username, password,host,{msg:function(msg) { //"192.168.1.101"
       utils.displayMessage(msg);
-    },error:antiprism.debug});
+    },error:antiprism.debug,online:antiprism.debug});
 
     var callback = function(msg) {
       if(msg) {
