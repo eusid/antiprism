@@ -77,3 +77,8 @@ select {
 	height: 95%;
 	width: 15%;
 }
+
+.newMessage {
+	color: red;
+	background-color: #ffdddd;
+}
