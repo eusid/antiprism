@@ -68,16 +68,33 @@ var utils = {
   onContactChange: function(ctx) {
     var contactName = ctx.target.value;
     utils.messageDisplay.text("");
+    utils.getContactByName(contactName).className = "";
     client.getMessages(contactName);
   },
+  getContactByName: function(contactName) {
+    var containsString = ":contains(" + contactName + ")";
+    var contacts = $('option').filter(containsString);
+
+    if (contacts.length == 1)
+      return contacts[0];
+    for (i in contacts) {
+      if(contacts[i].innerText == x) return contacts[i]
+    }
+  },
   displayMessage: function(message) {
-    //console.log(message);
-    var messageContainer = document.createElement("p");
-    var username = message.from || utils.getUsername();
-    var time = (new Date(message.ts)).toLocaleString().split(' ')[1];
-    messageContainer.innerText = '<' + time + '> ' + username + ': ' + message.msg;
-    utils.messageDisplay.append(messageContainer);
-    utils.messageDisplay.animate({ scrollTop: utils.messageDisplay.prop("scrollHeight") - utils.messageDisplay.height() }, 500);
+    console.log(message);
+    var selectedContact = $('select').val();
+    if (selectedContact == message.from || selectedContact == message.to || utils.getUsername() == message.from) {
+      var messageContainer = document.createElement("p");
+      var username = message.from || utils.getUsername();
+      var time = (new Date(message.ts)).toLocaleString().split(' ')[1];
+      messageContainer.innerText = '<' + time + '> ' + username + ': ' + message.msg;
+      utils.messageDisplay.append(messageContainer);
+      utils.messageDisplay.animate({ scrollTop: utils.messageDisplay.prop("scrollHeight") - utils.messageDisplay.height() }, 500);
+    } else {
+      var contact = utils.getContactByName(message.from || message.to);
+      contact.className = "newMessage";
+    }
   },
   displayMessages: function(msg) {
     for(i in msg.msglist) {
@@ -110,16 +127,22 @@ var client = {
     });
   },
   login: function() {
+    utils.switchLoginAbility();
     var username = utils.getUsername();
     var password = utils.getPassword();
     var registration = utils.register();
 
-    utils.switchLoginAbility();
-    antiprism.init(username, password,0,0,{msg:utils.displayMessage,error:antiprism.debug});
+    
+    antiprism.init(username, password,0,0,{msg:function(msg) { //"192.168.1.101"
+      utils.displayMessage(msg);
+    },error:antiprism.debug});
 
-    var callback = function() {
-      utils.switchChatLogin();
-      antiprism.getContacts(utils.displayContacts);
+    var callback = function(msg) {
+      if(msg) {
+        $('h1')[0].innerText = $('h1')[0].innerText + " (" + utils.getUsername() + ")";
+        utils.switchChatLogin();
+        antiprism.getContacts(utils.displayContacts);
+      } else utils.switchLoginAbility();
     }
     if(registration)
       antiprism.register(callback)
