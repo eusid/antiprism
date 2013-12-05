@@ -139,7 +139,7 @@ var antiprism = (function() {
 				ws.sendObject({action:"contacts"});
 				ws.storage.events["contacts"] = function(msg) {
 					for(user in msg.contacts)
-						ws.storage.conversations[user] = utils.decryptRSA(msg.contacts[user],ws.storage.pubkey,ws.storage.privkey);
+						ws.storage.conversations[user] = utils.decryptRSA(msg.contacts[user].key,ws.storage.pubkey,ws.storage.privkey);
 					callback(msg);
 				};
 			},

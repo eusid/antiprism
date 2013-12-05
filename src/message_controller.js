@@ -58,17 +58,27 @@ var sendClient,
 			if(storage.validationKey == undefined || validationKey != storage.validationKey)
 				return Error.INVALID_AUTH;
 			storage.loggedIn = true;
-			storage.redis.sadd("users."+storage.username+".sess", storage.id, function(err, reply) {
+			storage.redis.sadd("sess."+storage.username, storage.id, function(err, reply) {
 				if(err)
 					console.log({error:err});
 			});
+			storage.redis.hincrby("users."+storage.username,"online",1,function(err,reply) {});
 			return {loggedIn:true};
 		},
 		contacts: function(data, storage) {
 			if(!storage.loggedIn)
 				return Error.INVALID_AUTH;
-			storage.redis.hgetall("convs."+storage.username, function(err,reply) {
-				sendClient({contacts:reply});
+			storage.redis.hgetall("convs."+storage.username, function(err,contacts) {
+				if(!contacts)
+					return sendClient({contacts:[]});
+				var ret = {}, usersLeft = Object.keys(contacts).length;
+				for(user in contacts)
+					storage.redis.hget("users."+user, "online", function(err,reply) {
+						ret[user] = {key:contacts[user],online:!!parseInt(reply)};
+						usersLeft--;
+						if(!usersLeft)
+							sendClient({contacts:ret});
+					});
 			});
 			return 0;
 		},
@@ -149,13 +159,13 @@ var sendClient,
 				if(err)
 					return console.log({error:err});
 			});
-			storage.redis.smembers("users."+data.user+".sess", function(err,reply) {
+			storage.redis.smembers("sess."+data.user, function(err,reply) {
 				if(err)
 					return console.log({error:err});
 				for(id in reply)
 						if(storage.sockets[reply[id]] !== undefined) // not sure if redis and node are in sync
 							storage.sockets[reply[id]].ctx(storeMsg);
-				storage.redis.smembers("users."+storage.username+".sess", function(err,reply) {
+				storage.redis.smembers("sess."+storage.username, function(err,reply) {
 					if(err)
 						return console.log({error:err});
 					storeMsg.to = data.user;

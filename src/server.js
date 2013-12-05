@@ -1,12 +1,16 @@
 var WebSocketServer = require("ws").Server,
 	webSocketServer = new WebSocketServer({port: 8080}),
 	messageController = require("./message_controller.js"),
-	webSockets = {}, wscount = 0,
+	webSockets = {}, wscount = 1,
 	redis = require("redis").createClient();
 
-redis.keys("users.*.sess", function(err,reply) { // clear sessions
-	for(x in reply)
+// clean redis at startup
+redis.keys("sess.*", function(err,reply) { // clear sessions
+	for(x in reply) {
+		var user = reply[x].substr(reply.indexOf(".")+1);
+		redis.hdel("users."+user, "online", function(err,reply) {});
 		redis.del(reply[x], function(err,reply) {});
+	}
 });
 
 webSocketServer.on("connection", function(ws) {
@@ -28,7 +32,8 @@ webSocketServer.on("connection", function(ws) {
 			console.log("e", arguments);
 		})
 		.on("close", function() {
-			session.redis.srem("users."+session.username+".sess", session.id, function(err,reply) {});
+			session.redis.srem("sess."+session.username, session.id, function(err,reply) {});
+			session.redis.hincrby("users."+session.username,"online",-1,function(err,reply) {});
 			delete webSockets[session.id];
 		});
 });
