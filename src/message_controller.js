@@ -119,24 +119,22 @@ var helpers = {
 			return 0;
 		},
 		initConversation: function(data, storage) {
-			storage.redis.exists("convs."+storage.username,
-				function(err,reply) {
-					if(err)
-						return console.log({error:err});
-					if(reply)
-						helpers.sendClient({initiated:false,with:data.user});
-				});
-			storage.redis.hmset("convs."+storage.username,data.user,data.convkeys[0],
-				function(err,reply) {
-					if(err)
-						return console.log({error:err});
-				});
-			storage.redis.hmset("convs."+data.user,storage.username,data.convkeys[1],
-				function(err,reply) {
+			storage.redis.exists("convs."+storage.username, function(err,reply) {
+				if(err)
+					return console.log({error:err});
+				if(reply)
+					return helpers.sendClient({initiated:false,with:data.user});
+				helpers.sendClient({initiated:true,with:data.user});
+				storage.redis.hmset("convs."+storage.username,data.user,data.convkeys[0], function(err,reply) {
 					if(err)
 						return console.log({error:err});
 				});
-			return {initiated:true,with:data.user};
+				storage.redis.hmset("convs."+data.user,storage.username,data.convkeys[1], function(err,reply) {
+					if(err)
+						return console.log({error:err});
+				});
+			});
+			return 0;
 		},
 		countMessages: function(data, storage) {
 			if(data.user < storage.username) // lawl-sort
