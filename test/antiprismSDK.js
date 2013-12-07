@@ -75,19 +75,21 @@ var antiprism = (function() {
 			}
 		},
 		actions = {
-			// default-usage: antiprism.init(user,password,0,0,{msg, error});
+			// default-usage: antiprism.init(user,password,ws_link,callbacks);
+			/* initial callbacks:
+				[on]: error, msg, online, added
+			*/
 			init: function(user,password,host,callbacks) {
 				ws = new WebSocket(host);
 				actions.ws = ws; // only 4 debug!
 				ws.storage = {user:user, password:utils.buildAESKey(password), conversations:{}, outqueue:[], inqueue:[]};
 				ws.storage.events = callbacks;
-				var msgHandler = callbacks.msg;
+				var origHandlers = {msg:callbacks.msg, added:callbacks.added};
 				ws.storage.events.msg = function(msg) {
-					//console.log("got msg:");console.log(msg);
 					var keyUser = msg.to || msg.from;
 					if(ws.storage.conversations[keyUser]) {
 						msg.msg = utils.decryptAES(msg.msg, ws.storage.conversations[keyUser]);
-						msgHandler(msg);
+						origHandlers.msg(msg);
 					} else {
 						ws.storage.inqueue.push(msg);
 						helpers.getKey(keyUser, function (resp) {
@@ -95,6 +97,11 @@ var antiprism = (function() {
 								ws.storage.events.msg(ws.storage.inqueue.shift());
 						});
 					}
+				};
+				ws.storage.events.added = function(msg) {
+					ws.storage.conversations[msg.user] = msg.convkey;
+					delete msg.convkey;
+					origHandlers.added(msg);
 				};
 				ws.onmessage = function(msg) {
 					var response = JSON.parse(msg.data);
@@ -127,13 +134,13 @@ var antiprism = (function() {
 						callback(0);
 					}
 				};
-				ws.storage.events["loggedIn"] = callback ? callback : debug;
+				ws.storage.events["loggedIn"] = callback || debug;
 			},
 			register: function(callback) {
 				var keypair = utils.generateKeypair();
 				keypair.crypt = utils.encryptAES(keypair.privkey, ws.storage.password);
 				ws.sendObject({action:"register", username:ws.storage.user, pubkey:keypair.pubkey, privkey:keypair.crypt});
-				ws.storage.events["registered"] = function() { actions.login(callback?callback:debug); };
+				ws.storage.events["registered"] = function() { actions.login(callback || debug); };
 			},
 			getContacts: function(callback) {
 				ws.sendObject({action:"contacts"});
@@ -152,11 +159,11 @@ var antiprism = (function() {
 					keys.push(utils.encryptRSA(convkey, msg.pubkey));
 					ws.sendObject({action:"initConversation", user:user, convkeys:keys});
 				}
-				ws.storage.events["initiated"] = callback ? callback : debug;
+				ws.storage.events["initiated"] = callback || debug;
 			},
 			countMessages: function(user, callback) {
 				ws.sendObject({action:"countMessages", user:user});
-				ws.storage.events["msgcount"] = callback ? callback : debug;
+				ws.storage.events["msgcount"] = callback || debug;
 			},
 			getMessages: function(user, start, end, callback) { // start = -10, end = -1 -> last 10 msgs!
 				ws.sendObject({action:"retrieveMessages",user:user, start:start, end:end});

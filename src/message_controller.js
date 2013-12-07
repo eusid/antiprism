@@ -1,4 +1,5 @@
 var helpers = {
+		sendClient: undefined, // gets set on startup
 		broadcast: function(storage, user, msg, callback) {
 			storage.redis.smembers("sess."+user, function(err,reply) {
 				if(err)
@@ -11,24 +12,7 @@ var helpers = {
 			if(callback) callback();
 		}
 	},
-	actions = { // <debug>
-		multiply: function(data) {
-			if(data.numbers == undefined)
-				return Error.INVALID_PARAMS;
-			return {r: data.numbers.reduce(function(p, c) {
-				return p * c;
-			}, 1)};
-		},
-		echo: function(data) {
-			return data;
-		},
-		storage: function(data, storage) {
-			return {id:storage.id,name:storage.username};
-		},
-		sendToId: function(data, storage) {
-			storage.sockets[data.id].ctx({msg:"it works!"});
-			return {id:storage.id};
-		}, // </debug>
+	actions = {
 		register: function(data, storage) {
 			storage.redis.hexists("users."+data.username,"privkey",function(e,res) {
 				if(res)
@@ -50,7 +34,6 @@ var helpers = {
 			storage.redis.hgetall("users."+data.username, function(err,reply) {
 				if(!reply)
 					return helpers.sendClient({error:"unknown user"});
-				helpers.sendClient({redisreply:reply});
 				storage.username = data.username;
 				var randomString = require('crypto').randomBytes(32).toString();
 				var rsa = new (require('node-bignumber').Key)();
@@ -135,6 +118,7 @@ var helpers = {
 				storage.redis.hmset("convs."+data.user,storage.username,data.convkeys[1], function(err,reply) {
 					if(err)
 						return console.log({error:err});
+					helpers.broadcast(storage,data.user,{user:storage.username,convkey:data.convkeys[1],added:true});
 				});
 			});
 			return 0;
@@ -250,7 +234,8 @@ exports.handleMessage = function(message, storage, callbacks) {
 				error = "Tried to access unknown user.";
 				break;
 		}
-		result = {"error": error, code: result};
+		if(error)
+			result = {"error": error, code: result};
 	}
 	if(result)
 		helpers.sendClient(result);

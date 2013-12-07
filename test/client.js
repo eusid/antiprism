@@ -136,9 +136,17 @@ var client = {
     var registration = utils.register();
 
     var host = location.origin.replace(/^http/, 'ws');
-    antiprism.init(username, password,host,{msg:function(msg) { //"192.168.1.101"
-      utils.displayMessage(msg);
-    },error:antiprism.debug,online:antiprism.debug});
+    antiprism.init(username, password,host, {
+      msg: function(msg) {
+        utils.displayMessage(msg);
+      },
+      error: antiprism.debug,
+      online: antiprism.debug,
+      added: function(msg) {
+        console.log("got added by "+msg.user+", refreshing...");
+        antiprism.getContacts(utils.displayContacts);
+      }
+    });
 
     var callback = function(msg) {
       if(msg) {
