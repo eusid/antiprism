@@ -1,13 +1,16 @@
 antiprism
 =========
 
-### Server
- * to run, get redis up n running.
- * change redis port in head of server.js.
- * npm install.
- * run server
+a (not yet) distributed, scalable and end2end-encrypted chatserver  
+using node.js and redis (omg it's blazing fast!!11)
+
+### Dependencies
+only node.js stuff and redis!
+
+### Running the server
+ * get redis up n running
+ * `npm install`
+ * `node src/server.js <port> <redishost> <redisport> <redispass>`
  
 ### Client
- * check index.html
- * run: `socket = wsDemo("username","password",true)` (last param is whether to register the user or not)
- * try out shit.
+ * just nagivate to host:port :>
