@@ -1,4 +1,4 @@
-ntiprismSDK.js
+antiprismSDK.js
 =================
 
 ###Basic Facts  
