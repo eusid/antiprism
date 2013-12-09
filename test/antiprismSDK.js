@@ -8,6 +8,12 @@ var antiprism = (function() {
 					str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
 				return str;
 			},
+			a2hex: function(bin) {
+				var ret = "";
+				for(var i = 0; i < bin.length; i++)
+					ret+= bin.charCodeAt(i).toString(16);
+				return ret;
+			},
 			parseLatin: function(string) {
 				return CryptoJS.enc.Latin1.parse(string);
 			},
