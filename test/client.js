@@ -63,6 +63,7 @@ var utils = {
     for (contact in msg.contacts) {
       var label = document.createElement("option");
       label.innerText = contact;
+      label.id = 'label-'+contact;
       contactList.appendChild(label);
     }
     friendList.text("");
@@ -104,6 +105,11 @@ var utils = {
       utils.displayMessage(msg.msglist[i]);
     }
   },
+  playSound: function(mp3, fallback) {
+    var sound = new Audio();
+    sound.src = sound.canPlayType("audio/mpeg")?mp3:fallback;
+    sound.play();
+  }
 }
 
 var client = {
@@ -138,6 +144,17 @@ var client = {
     var host = location.origin.replace(/^http/, 'ws');
     antiprism.init(username, password,host, {
       msg: function(msg) {
+        var selected = $('select').val();
+        if(!msg.to && (msg.from != selected || !document.hasFocus())) {
+          if(!$('#muteButton')[0].checked)
+            utils.playSound("ios.mp3");
+          if(selected != msg.from)
+            $('#label-'+msg.from)
+             .css('background-color','#8C001A')
+              .click(function() {
+                $(this).removeAttr('style');
+              });
+        }
         utils.displayMessage(msg);
       },
       error: antiprism.debug,

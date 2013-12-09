@@ -78,6 +78,12 @@ select {
 	width: 15%;
 }
 
+#mute {
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+
 .newMessage {
 	color: red;
 	background-color: #ffdddd;
