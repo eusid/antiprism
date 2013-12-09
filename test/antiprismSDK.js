@@ -83,8 +83,10 @@ var antiprism = (function() {
 				ws = new WebSocket(host);
 				actions.ws = ws; // only 4 debug!
 				ws.storage = {user:user, password:utils.buildAESKey(password), conversations:{}, outqueue:[], inqueue:[]};
+				ws.storage.pingfails = 0;
 				ws.storage.events = callbacks;
-				var origHandlers = {msg:callbacks.msg, added:callbacks.added};
+				var origHandlers = {msg:callbacks.msg, added:callbacks.added},
+					timeoutms = 25000; // say hi every 25 seconds
 				ws.storage.events.msg = function(msg) {
 					var keyUser = msg.to || msg.from;
 					if(ws.storage.conversations[keyUser]) {
@@ -104,8 +106,9 @@ var antiprism = (function() {
 					origHandlers.added(msg);
 				};
 				ws.onmessage = function(msg) {
+					if(msg.data == "PONG")
+						return --ws.storage.pingfails;
 					var response = JSON.parse(msg.data);
-					//debug(response);
 					for(field in response)
 						if(Object.keys(ws.storage.events).indexOf(field) != -1)
 							ws.storage.events[field](response);
@@ -114,12 +117,24 @@ var antiprism = (function() {
 					while(ws.storage.outqueue.length)
 						ws.sendObject(ws.storage.outqueue.shift());
 				};
+				ws.onclose = function() {
+					clearInterval(ws.storage.pingID);
+					console.log("DEBUG: connection closed");
+				}
 				ws.sendObject = function(msg) {
 					if(ws.readyState != 1)
 						return ws.storage.outqueue.push(msg)
 					//console.log("quering server:");console.log(msg);
 					ws.send(JSON.stringify(msg));
 				};
+				ws.storage.pingID = setInterval(function() {
+					if(++ws.storage.pingfails < 2)
+						ws.send("PING");
+					else {
+						console.log("server doesn't answer, suicide now :(");
+						actions.close();
+					}
+				}, timeoutms);
 			},
 			login: function(callback) {
 				ws.sendObject({action:"login",username:ws.storage.user});
