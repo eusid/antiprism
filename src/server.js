@@ -9,7 +9,8 @@ var WebSocketServer = require("ws").Server,
 	messageController = require("./message_controller.js"),
 	webSockets = {}, wscount = 1,
 	timeouts = {}, timeoutms = 35000, // 35s for safety
-	redis = require("redis").createClient();
+	redis = require("redis").createClient(),
+	remoteServers = {};
 
 redis.keys("sess.*", function(err,reply) { // clear sessions
 	for(id in reply)
@@ -17,7 +18,7 @@ redis.keys("sess.*", function(err,reply) { // clear sessions
 });
 
 webSocketServer.on("connection", function(ws) {
-	webSockets[wscount] = {id: wscount, pingfail: 0, ctx: function(msg){
+	webSockets[wscount] = {id: wscount, remotes: remoteServers, pingfail: 0, ctx: function(msg){
 		ws.send(JSON.stringify(msg));
 	}};
 	var session = webSockets[wscount++],
@@ -31,7 +32,18 @@ webSocketServer.on("connection", function(ws) {
 				clearTimeout(timeouts[session.id]);
 				timeouts[session.id] = setTimeout(killSocket, timeoutms);
 				return ws.send("PONG");
-			};
+			}
+			if(message == "SERVER") { // handshake :>
+				session.isServer = true;
+				var addr = ws._socket.address(),
+					ip = ws.upgradeReq.headers['x-forwarded-for'] || addr.address,
+					connection = ip+':'+addr.port;
+				console.log("got msg from "+connection);
+				if(remoteServers[connection])
+					return console.log("i already haz "+connection);
+				remoteServers[connection] = {socket:ws};
+				return ws.send("SERVER");
+			}
 			messageController.handleMessage(message, session, {
 				response: session.ctx
 			});

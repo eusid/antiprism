@@ -10,10 +10,60 @@ var helpers = {
 				}
 			});
 			if(callback) callback();
+		},
+		registerServer: function(storage, host, callback) {
+			var hostinfo = host.split(":",2),
+				server = hostinfo[0],
+				port = hostinfo[1] || 80;
+			console.log("got "+server+" and "+port);
+			if(!(require("net")).isIPv4(server)) {
+				(require("dns")).lookup(server, 4, function(err,ip) {
+					console.log("looked up "+host+", got "+err||ip);
+					if(err != null)
+						helpers.registerServer(storage, [ip,port].join(":"), callback);
+				});
+				return 0;
+			}
+			var ws = new (require("ws"))("ws://"+host);
+			 // REMOVE THIS LINE!
+			Object.prototype.toString = function() { return JSON.stringify(this); };
+			 // SERIOUSLY, REMOVE IT
+			ws
+				.on("open",function() {
+					ws.send("SERVER");
+					console.log("called "+host);
+				})
+				.on("message", function(msg) {
+					console.log("got back "+msg);
+				})
+				.sendObject = function(msg) { ws.send(JSON.stringify(msg)); };
+		},
+		redirect: function(storage, host, msg, callback) {
+			if(!storage.remotes[host])
+				return helpers.registerServer(storage, host, function() {
+					helpers.redirect(storage,host,msg,callback);
+				});
+			
+		},
+		parseRequest: function(data, storage) {
+			var action, actionName = data.action;
+			if (!actionName) return Error.MISSING_ACTION;
+
+			action = actions[actionName];
+			if (!action || action.constructor.prototype[actionName]) return Error.INVALID_ACTION;
+
+			delete data.action;
+			return action(data, storage);
 		}
 	},
 	actions = {
+		DBG_connect: function(data, storage) {
+			helpers.registerServer(storage, data.host);
+			return 0;
+		},
 		register: function(data, storage) {
+			if(data.username === undefined || data.username.indexOf("@") !== -1)
+				return Error.INVALID_NAME;
 			storage.redis.hexists("users."+data.username,"privkey",function(e,res) {
 				if(res)
 					helpers.sendClient({'registered':false});
@@ -97,6 +147,8 @@ var helpers = {
 		conversationKey: function(data, storage) {
 			if(data.user === undefined)
 				return Error.INVALID_PARAMS;
+			if(!storage.loggedIn)
+				return Error.INVALID_AUTH;
 			storage.redis.hget("convs."+storage.username,data.user, function(err,reply) {
 				helpers.sendClient({user:data.user,convkey:reply});
 			});
@@ -105,6 +157,8 @@ var helpers = {
 		initConversation: function(data, storage) {
 			if(data.user === undefined || !data.convkeys)
 				return Error.INVALID_PARAMS;
+			if(!storage.loggedIn)
+				return Error.INVALID_AUTH;
 			storage.redis.hexists("convs."+storage.username, data.user, function(err,reply) {
 				if(err)
 					return console.log({error:err});
@@ -124,6 +178,8 @@ var helpers = {
 			return 0;
 		},
 		countMessages: function(data, storage) {
+			if(!storage.loggedIn)
+				return Error.INVALID_AUTH;
 			if(data.user < storage.username) // lawl-sort
 				var convid = data.user+'.'+storage.username;
 			else
@@ -187,17 +243,6 @@ var helpers = {
 		"INVALID_PARAMS": 4,
 		"UNKNOWN_USER": 5,
 		"INVALID_AUTH": 6,
-	},
-
-	parseRequest = function(data, storage) {
-		var action, actionName = data.action;
-		if (!actionName) return Error.MISSING_ACTION;
-
-		action = actions[actionName];
-		if (!action || action.constructor.prototype[actionName]) return Error.INVALID_ACTION;
-
-		delete data.action;
-		return action(data, storage);
 	};
 
 exports.helpers = helpers;
@@ -210,7 +255,7 @@ exports.handleMessage = function(message, storage, callbacks) {
 		result = Error.JSON;
 	}
 
-	if (result !== Error.JSON) result = parseRequest(data, storage);
+	if (result !== Error.JSON) result = helpers.parseRequest(data, storage);
 
 	if (!isNaN(result)) {
 		var error;
