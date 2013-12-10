@@ -36,6 +36,7 @@ webSocketServer.on("connection", function(ws) {
 			if(message == "SYN") { // handshake :>
 				ws.send("ACK");
 				session.isServer = true;
+				clearTimeout(timeouts[session.id]); // DEBUG
 				var addr = ws._socket.address(),
 					ip = ws.upgradeReq.headers['x-forwarded-for'] || addr.address,
 					connection = ip+':'+addr.port;

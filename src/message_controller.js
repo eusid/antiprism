@@ -24,6 +24,9 @@ var helpers = {
 				});
 			var ws = new (require("ws"))("ws://"+host);
 			ws.outqueue = [];
+			ws.timeout = setInterval(function() {
+				ws.send("PING");
+			}, 25000);
 			ws
 				.on("open",function() {
 					ws.send("SYN");
@@ -38,6 +41,10 @@ var helpers = {
 					if(msg == "ACK") {
 						storage.remotes[host] = {socket:ws, callbacks:{}};
 						return callback?callback(0):0;
+					}
+					if(msg == "PONG") {
+						//TODO: something!?
+						return;
 					}
 					try {
 						var data = JSON.parse(msg);
@@ -80,7 +87,7 @@ var helpers = {
 						helpers.redirect(data,storage,callback);
 				});
 			var actions = Object.keys(RemoteAllowed),
-				event = actions[actions.indexOf(data.action)]
+				event = actions[actions.indexOf(data.action)];
 			if(event === undefined)
 				return console.log("currently unsupported action: "+data.action);
 			data.fromRemote = storage.username;

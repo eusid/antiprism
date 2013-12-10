@@ -112,6 +112,7 @@ var antiprism = (function() {
 					origHandlers.added(msg);
 				};
 				ws.onmessage = function(msg) {
+					console.log("got sth from server:"); console.log(msg);
 					if(msg.data == "PONG")
 						return --ws.storage.pingfails;
 					var response = JSON.parse(msg.data);
@@ -130,7 +131,7 @@ var antiprism = (function() {
 				ws.sendObject = function(msg) {
 					if(ws.readyState != 1)
 						return ws.storage.outqueue.push(msg)
-					//console.log("quering server:");console.log(msg);
+					console.log("quering server:");console.log(msg);
 					ws.send(JSON.stringify(msg));
 				};
 				ws.storage.pingID = setInterval(function() {
