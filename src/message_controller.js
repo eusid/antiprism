@@ -81,7 +81,7 @@ var helpers = {
 				event = actions[actions.indexOf(data.action)]
 			if(event === undefined)
 				return console.log("currently unsupported action: "+data.action);
-			data.forRemote = storage.username;
+			data.fromRemote = storage.username;
 			if(!storage.remotes[host].callbacks[storage.username])
 				storage.remotes[host].callbacks[storage.username] = {};
 			storage.remotes[host].callbacks[storage.username][event] = callback;
