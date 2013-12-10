@@ -16,14 +16,12 @@ var helpers = {
 				server = hostinfo[0],
 				port = hostinfo[1] || 80;
 			console.log("got "+server+" and "+port);
-			if(!(require("net")).isIPv4(server)) {
-				(require("dns")).lookup(server, 4, function(err,ip) {
+			if(!(require("net")).isIPv4(server))
+				return (require("dns")).lookup(server, 4, function(err,ip) {
 					console.log("looked up "+server+", got "+err||ip);
-					if(err != null)
+					if(err == null)
 						helpers.registerServer(storage, [ip,port].join(":"), callback);
 				});
-				return 0;
-			}
 			var ws = new (require("ws"))("ws://"+host);
 			ws.allowed = ["pubkey", "initConversation", "storeMessage"];
 			ws
@@ -35,7 +33,7 @@ var helpers = {
 				})
 				.on("message", function(msg) {
 					if(msg == "ACK") {
-						storage.remotes[host] = {socket:ws};
+						storage.remotes[host] = {socket:ws, callbacks:{}};
 						//return callback?callback():0;
 					}
 					try {
@@ -163,6 +161,7 @@ var helpers = {
 		pubkey: function(data, storage) {
 			if(data.user === undefined)
 				return Error.INVALID_PARAMS;
+			data.user = storage.isServer ? data.user.split("@")[0] : data.user;
 			if(data.user.indexOf("@") != -1)
 				helpers.redirect(data, storage, function(msg) {
 					helpers.sendClient(msg);
