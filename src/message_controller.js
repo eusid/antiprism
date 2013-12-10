@@ -38,13 +38,15 @@ var helpers = {
 						return storage.remotes[host] = {socket:ws};
 					try {
 						var data = JSON.parse(message);
-						if(data.action)
-						return helpers.parseRequest(msg);
+						console.log("got something from "+[data.fromRemote, host].join("@"));
+						console.log(msg);
+						if(!msg.action || ws.allowed.indexOf(msg.action) == -1)
+							throw Error.INVALID_ACTION;
 					} catch (e) {
-						var result = Error.JSON;
+						return ws.sendObject({error:e});
 					}
-					if(!isNaN(result))
-						ws.sendObject({error:result});
+					storage.username = msg.fromRemote;
+					helpers.parseRequest(msg,storage);						
 				})
 				.on("error", function(err) {
 					if(callback)
@@ -52,12 +54,20 @@ var helpers = {
 				})
 				.sendObject = function(msg) { ws.send(JSON.stringify(msg)); };
 		},
-		redirect: function(storage, host, msg, callback) {
+		redirect: function(data, storage, callback) {
+			var parts = data.user.split("@"),
+					user = parts[0],
+					host = parts[1];
 			if(!storage.remotes[host])
 				return helpers.registerServer(storage, host, function() {
-					helpers.redirect(storage,host,msg,callback);
+					helpers.redirect(data,storage,callback);
 				});
-						
+			data.user = user;
+			data.fromRemote = storage.username;
+			delete data.convkeys[0];
+			console.log("sending to "+[user,host].join("@"));
+			console.log(data);
+			storage.remotes[host].sendObject(data);			
 		},
 		parseRequest: function(data, storage) {
 			var action, actionName = data.action;
@@ -154,7 +164,10 @@ var helpers = {
 			if(data.user === undefined)
 				return Error.INVALID_PARAMS;
 			storage.redis.hmget("users."+data.user, "pubkeyN", "pubkeyE", function(err,reply) {
-				helpers.sendClient({user:data.user,pubkey:{n:reply[0],e:reply[1]}});
+				if(data.user.indexOf("@") == -1)
+					helpers.sendClient({user:data.user,pubkey:{n:reply[0],e:reply[1]}});
+				else
+					helpers.redirect(data, storage);
 			});
 			return 0;
 		},
@@ -179,6 +192,8 @@ var helpers = {
 				if(reply)
 					return helpers.sendClient({initiated:false,with:data.user});
 				helpers.sendClient({initiated:true,with:data.user});
+				if(data.user.indexOf("@") != -1)
+					helpers.redirect(data, storage);
 				if(convkeys[0])
 					storage.redis.hmset("convs."+storage.username,data.user,data.convkeys[0], function(err,reply) {
 						if(err)
@@ -236,7 +251,10 @@ var helpers = {
 				if(err)
 					return console.log({error:err});
 			});
-			helpers.broadcast(storage, data.user, storeMsg);
+			if(data.user.indexOf("@") == -1)
+				helpers.broadcast(storage, data.user, storeMsg);
+			else
+				helpers.redirect(storeMsg,storage);
 			storage.redis.smembers("sess."+storage.username, function(err,reply) {
 				if(err)
 					return console.log({error:err});
