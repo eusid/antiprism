@@ -38,7 +38,6 @@ webSocketServer.on("connection", function(ws) {
 				var addr = ws._socket.address(),
 					ip = ws.upgradeReq.headers['x-forwarded-for'] || addr.address,
 					connection = ip+':'+addr.port;
-				console.log("got msg from "+connection);
 				if(remoteServers[connection])
 					return console.log("i already haz "+connection);
 				remoteServers[connection] = {socket:ws, callbacks:{}};

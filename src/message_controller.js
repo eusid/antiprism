@@ -32,6 +32,8 @@ var helpers = {
 						callback();
 				})
 				.on("message", function(msg) {
+					console.log("got msg from "+host);
+					console.log(msg);
 					if(msg == "ACK") {
 						storage.remotes[host] = {socket:ws, callbacks:{}};
 						//return callback?callback():0;
@@ -41,10 +43,8 @@ var helpers = {
 						if(!msg.action || ws.allowed.indexOf(msg.action) == -1)
 							throw Error.INVALID_ACTION;
 					} catch (e) {
-						return ws.sendObject({error:e});
+						console.log("error: "+e);
 					}
-					console.log("got something from "+[data.fromRemote, host].join("@"));
-					console.log(msg);
 					msg.user = msg.user.split("@")[0];
 					//helpers.parseRequest(msg,storage);						
 				})
