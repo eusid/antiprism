@@ -42,7 +42,7 @@ webSocketServer.on("connection", function(ws) {
 				if(remoteServers[connection])
 					return console.log("i already haz "+connection);
 				remoteServers[connection] = {socket:ws};
-				return ws.send("SERVER");
+				return ws.send("ACK");
 			}
 			messageController.handleMessage(message, session, {
 				response: session.ctx

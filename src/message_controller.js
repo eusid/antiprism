@@ -25,16 +25,30 @@ var helpers = {
 				return 0;
 			}
 			var ws = new (require("ws"))("ws://"+host);
-			 // REMOVE THIS LINE!
-			Object.prototype.toString = function() { return JSON.stringify(this); };
-			 // SERIOUSLY, REMOVE IT
+			ws.allowed = ["pubkey", "initConversation", "storeMessage"];
 			ws
 				.on("open",function() {
 					ws.send("SERVER");
 					console.log("called "+host);
+					if(callback)
+						callback();
 				})
 				.on("message", function(msg) {
-					console.log("got back "+msg);
+					if(msg == "ACK")
+						return storage.remotes[host] = {socket:ws};
+					try {
+						var data = JSON.parse(message);
+						if(data.action)
+						return helpers.parseRequest(msg);
+					} catch (e) {
+						var result = Error.JSON;
+					}
+					if(!isNaN(result))
+						ws.sendObject({error:result});
+				})
+				.on("error", function(err) {
+					if(callback)
+						callback(err);
 				})
 				.sendObject = function(msg) { ws.send(JSON.stringify(msg)); };
 		},
@@ -43,7 +57,7 @@ var helpers = {
 				return helpers.registerServer(storage, host, function() {
 					helpers.redirect(storage,host,msg,callback);
 				});
-			
+						
 		},
 		parseRequest: function(data, storage) {
 			var action, actionName = data.action;
@@ -165,15 +179,17 @@ var helpers = {
 				if(reply)
 					return helpers.sendClient({initiated:false,with:data.user});
 				helpers.sendClient({initiated:true,with:data.user});
-				storage.redis.hmset("convs."+storage.username,data.user,data.convkeys[0], function(err,reply) {
-					if(err)
-						return console.log({error:err});
-				});
-				storage.redis.hmset("convs."+data.user,storage.username,data.convkeys[1], function(err,reply) {
-					if(err)
-						return console.log({error:err});
-					helpers.broadcast(storage,data.user,{user:storage.username,convkey:data.convkeys[1],added:true});
-				});
+				if(convkeys[0])
+					storage.redis.hmset("convs."+storage.username,data.user,data.convkeys[0], function(err,reply) {
+						if(err)
+							return console.log({error:err});
+					});
+				if(convkeys[1])
+					storage.redis.hmset("convs."+data.user,storage.username,data.convkeys[1], function(err,reply) {
+						if(err)
+							return console.log({error:err});
+						helpers.broadcast(storage,data.user,{user:storage.username,convkey:data.convkeys[1],added:true});
+					});
 			});
 			return 0;
 		},
