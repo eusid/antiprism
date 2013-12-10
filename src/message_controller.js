@@ -51,8 +51,10 @@ var helpers = {
 						if(data.action)
 							if(Object.keys(RemoteAllowed).indexOf(data.action) == -1)
 								throw Error.INVALID_ACTION;
-							else
-								helpers.parseRequest(msg,storage);
+							else {
+								// TODO: react to events
+								//helpers.parseRequest(msg,storage);
+							}
 						else if(data.fromRemote)
 							for(event in RemoteAllowed)
 								if(Object.keys(data).indexOf(RemoteAllowed[event]) !== -1) {
@@ -194,6 +196,7 @@ var helpers = {
 			data.user = storage.isServer ? data.user.split("@")[0] : data.user;
 			if(data.user.indexOf("@") != -1)
 				helpers.redirect(data, storage, function(msg) {
+					msg.user = data.user;
 					helpers.sendClient(msg);
 				});
 			else
