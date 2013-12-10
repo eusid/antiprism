@@ -48,7 +48,7 @@ var helpers = {
 								helpers.parseRequest(msg,storage);
 						else if(data.fromRemote)
 							for(event in RemoteAllowed)
-								if(Objects.keys(data).indexOf(RemoteAllowed[event])) {
+								if(Object.keys(data).indexOf(RemoteAllowed[event])) {
 									console.log("calling "+data.fromRemote+"'s callback for event: "+event);
 									storage.remotes[host][data.fromRemote][event](data, storage);
 								}
