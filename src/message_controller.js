@@ -42,7 +42,7 @@ var helpers = {
 					try {
 						var data = JSON.parse(msg);
 						if(!data.action)
-							if(RemoteAllowed.indexOf(data.action) == -1)
+							if(Object.keys(RemoteAllowed).indexOf(data.action) == -1)
 								throw Error.INVALID_ACTION;
 							else
 								helpers.parseRequest(msg,storage);

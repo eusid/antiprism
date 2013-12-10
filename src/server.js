@@ -34,6 +34,7 @@ webSocketServer.on("connection", function(ws) {
 				return ws.send("PONG");
 			}
 			if(message == "SYN") { // handshake :>
+				ws.send("ACK");
 				session.isServer = true;
 				var addr = ws._socket.address(),
 					ip = ws.upgradeReq.headers['x-forwarded-for'] || addr.address,
@@ -41,7 +42,6 @@ webSocketServer.on("connection", function(ws) {
 				if(remoteServers[connection])
 					return console.log("i already haz "+connection);
 				remoteServers[connection] = {socket:ws, callbacks:{}};
-				return ws.send("ACK");
 			}
 			messageController.handleMessage(message, session, {
 				response: session.ctx
