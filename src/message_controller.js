@@ -36,20 +36,20 @@ var helpers = {
 				.on("message", function(msg) {
 					if(msg == "ACK") {
 						storage.remotes[host] = {socket:ws};
-						return callback?callback():0;
+						//return callback?callback():0;
 					}
 					try {
-						var data = JSON.parse(message);
-						console.log("got something from "+[data.fromRemote, host].join("@"));
+						var data = JSON.parse(msg);
 						console.log(msg);
 						if(!msg.action || ws.allowed.indexOf(msg.action) == -1)
 							throw Error.INVALID_ACTION;
 					} catch (e) {
 						return ws.sendObject({error:e});
 					}
-					storage.username = msg.fromRemote;
+					console.log("got something from "+[data.fromRemote, host].join("@"));
+					console.log(msg);
 					msg.user = msg.user.split("@")[0];
-					helpers.parseRequest(msg,storage);						
+					//helpers.parseRequest(msg,storage);						
 				})
 				.on("error", function(err) {
 					if(callback)
@@ -66,7 +66,7 @@ var helpers = {
 					if(!err)
 						helpers.redirect(data,storage,callback);
 				});
-			var fromRemote = storage.username;
+			storage.remotes[host].callbacks[storage.username] = callback;
 			console.log("sending to "+[user,host].join("@"));
 			console.log(data);
 			storage.remotes[host].socket.sendObject(data);			
@@ -78,7 +78,6 @@ var helpers = {
 			action = actions[actionName];
 			if (!action || action.constructor.prototype[actionName]) return Error.INVALID_ACTION;
 
-			delete data.action;
 			return action(data, storage);
 		}
 	},
@@ -165,12 +164,14 @@ var helpers = {
 		pubkey: function(data, storage) {
 			if(data.user === undefined)
 				return Error.INVALID_PARAMS;
-			storage.redis.hmget("users."+data.user, "pubkeyN", "pubkeyE", function(err,reply) {
-				if(data.user.indexOf("@") == -1)
-					helpers.sendClient({user:data.user,pubkey:{n:reply[0],e:reply[1]}});
-				else
-					helpers.redirect(data, storage);
-			});
+			if(data.user.indexOf("@") != -1)
+				helpers.redirect(data, storage, function(msg) {
+					helpers.sendClient(msg);
+				});
+			else
+				storage.redis.hmget("users."+data.user, "pubkeyN", "pubkeyE", function(err,reply) {
+					helpers.sendClient({user:data.user,pubkey:{n:reply[0],e:reply[1]}});				
+				});
 			return 0;
 		},
 		conversationKey: function(data, storage) {

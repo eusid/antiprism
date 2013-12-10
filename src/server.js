@@ -41,7 +41,7 @@ webSocketServer.on("connection", function(ws) {
 				console.log("got msg from "+connection);
 				if(remoteServers[connection])
 					return console.log("i already haz "+connection);
-				remoteServers[connection] = {socket:ws};
+				remoteServers[connection] = {socket:ws, callbacks:{}};
 				return ws.send("ACK");
 			}
 			messageController.handleMessage(message, session, {
