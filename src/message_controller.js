@@ -23,12 +23,14 @@ var helpers = {
 						helpers.registerServer(storage, [ip,port].join(":"), callback);
 				});
 			var ws = new (require("ws"))("ws://"+host);
+			ws.outqueue = [];
 			ws
 				.on("open",function() {
 					ws.send("SYN");
-					console.log("called "+host);
-					if(callback)
-						callback();
+					console.log("said hi to "+host);
+					console.log("working queue now");
+					while(ws.outqueue.length)
+						ws.sendObject(ws.outqueue.shift());
 				})
 				.on("message", function(msg) {
 					console.log("got msg from "+host);
@@ -51,14 +53,20 @@ var helpers = {
 
 					} catch (e) {
 						console.log("error: "+e);
-					}
-					msg.user = msg.user.split("@")[0];						
+					}				
 				})
 				.on("error", function(err) {
 					if(callback)
 						callback(err);
 				})
-				.sendObject = function(msg) { ws.send(JSON.stringify(msg)); };
+				.sendObject = function(msg) {
+					console.log("sending to "+host);
+					console.log(msg);
+					if(ws.readyState != 1)
+						ws.outqueue.push(msg);
+					else
+						ws.send(JSON.stringify(msg));
+				};
 		},
 		redirect: function(data, storage, callback) {
 			var parts = data.user.split("@"),
