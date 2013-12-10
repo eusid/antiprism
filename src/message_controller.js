@@ -59,12 +59,12 @@ var helpers = {
 					user = parts[0],
 					host = parts[1];
 			if(!storage.remotes[host])
-				return helpers.registerServer(storage, host, function() {
-					helpers.redirect(data,storage,callback);
+				return helpers.registerServer(storage, host, function(err) {
+					if(!err)
+						helpers.redirect(data,storage,callback);
 				});
-			data.user = user;
-			data.fromRemote = storage.username;
 			delete data.convkeys[0];
+			var fromRemote = storage.username;
 			console.log("sending to "+[user,host].join("@"));
 			console.log(data);
 			storage.remotes[host].sendObject(data);			
@@ -192,18 +192,19 @@ var helpers = {
 				if(reply)
 					return helpers.sendClient({initiated:false,with:data.user});
 				helpers.sendClient({initiated:true,with:data.user});
-				if(data.user.indexOf("@") != -1)
+				var isLocal = data.user.indexOf("@") == -1;
+				if(!isLocal)
 					helpers.redirect(data, storage);
-				if(convkeys[0])
-					storage.redis.hmset("convs."+storage.username,data.user,data.convkeys[0], function(err,reply) {
-						if(err)
-							return console.log({error:err});
-					});
-				if(convkeys[1])
+				else if(convkeys[1])
 					storage.redis.hmset("convs."+data.user,storage.username,data.convkeys[1], function(err,reply) {
 						if(err)
 							return console.log({error:err});
 						helpers.broadcast(storage,data.user,{user:storage.username,convkey:data.convkeys[1],added:true});
+					});
+				if(convkeys[0])
+					storage.redis.hmset("convs."+storage.username,data.user,data.convkeys[0], function(err,reply) {
+						if(err)
+							return console.log({error:err});
 					});
 			});
 			return 0;
