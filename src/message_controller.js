@@ -48,6 +48,7 @@ var helpers = {
 						return ws.sendObject({error:e});
 					}
 					storage.username = msg.fromRemote;
+					msg.user = msg.user.split("@")[0];
 					helpers.parseRequest(msg,storage);						
 				})
 				.on("error", function(err) {
