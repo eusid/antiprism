@@ -28,15 +28,16 @@ var helpers = {
 			ws.allowed = ["pubkey", "initConversation", "storeMessage"];
 			ws
 				.on("open",function() {
-					callback();
 					ws.send("SERVER");
 					console.log("called "+host);
 					if(callback)
 						callback();
 				})
 				.on("message", function(msg) {
-					if(msg == "ACK")
-						return storage.remotes[host] = {socket:ws};
+					if(msg == "ACK") {
+						storage.remotes[host] = {socket:ws};
+						return callback?callback():0;
+					}
 					try {
 						var data = JSON.parse(message);
 						console.log("got something from "+[data.fromRemote, host].join("@"));
@@ -67,7 +68,7 @@ var helpers = {
 			var fromRemote = storage.username;
 			console.log("sending to "+[user,host].join("@"));
 			console.log(data);
-			storage.remotes[host].sendObject(data);			
+			storage.remotes[host].socket.sendObject(data);			
 		},
 		parseRequest: function(data, storage) {
 			var action, actionName = data.action;
