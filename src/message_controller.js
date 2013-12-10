@@ -36,7 +36,8 @@ var helpers = {
 					console.log(msg);
 					if(msg == "ACK") {
 						storage.remotes[host] = {socket:ws, callbacks:{}};
-						//return callback?callback():0;
+						return;
+						callback(0);
 					}
 					try {
 						var data = JSON.parse(msg);
