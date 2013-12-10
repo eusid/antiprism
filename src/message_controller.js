@@ -24,12 +24,12 @@ var helpers = {
 				});
 			var ws = new (require("ws"))("ws://"+host);
 			ws.outqueue = [];
+			ws.timeout = setInterval(function() {
+				ws.send("PING");
+			}, 25000);
 			ws
 				.on("open",function() {
 					ws.send("SYN");
-					ws.timeout = setInterval(function() {
-						ws.send("PING");
-					}, 25000);
 					console.log("said hi to "+host);
 					console.log("working queue now");
 					while(ws.outqueue.length)
@@ -42,23 +42,31 @@ var helpers = {
 						storage.remotes[host] = {socket:ws, callbacks:{}};
 						return callback?callback(0):0;
 					}
-					else if(msg == "PONG") {
-						//TODO: keepalive-duplex
+					if(msg == "PONG") {
+						//TODO: something!?
 						return;
 					}
 					try {
 						var data = JSON.parse(msg);
+						if(data.action)
+							if(Object.keys(RemoteAllowed).indexOf(data.action) == -1)
+								throw Error.INVALID_ACTION;
+							else {
+								// TODO: react to events
+								//helpers.parseRequest(msg,storage);
+							}
+						else if(data.fromRemote)
+							for(event in RemoteAllowed)
+								if(Object.keys(data).indexOf(RemoteAllowed[event]) !== -1) {
+									console.log("callbacks for "+data.fromRemote)
+									console.log(storage.remotes[host].callbacks[data.fromRemote]);
+									console.log("calling "+data.fromRemote+"'s callback for event: "+event);
+									storage.remotes[host].callbacks[data.fromRemote][event](data, storage);
+								}
+
 					} catch (e) {
-						return console.log("error: "+e);
-					}
-					if(data.fromRemote)
-						for(event in RemoteAllowed)
-							if(Object.keys(data).indexOf(RemoteAllowed[event]) !== -1) {
-								console.log("callbacks for "+data.fromRemote)
-								console.log(storage.remotes[host].callbacks[data.fromRemote]);
-								console.log("calling "+data.fromRemote+"'s callback for event: "+event);
-								storage.remotes[host].callbacks[data.fromRemote][event](data, storage);
-							}				
+						console.log("error: "+e);
+					}				
 				})
 				.on("error", function(err) {
 					if(callback)
@@ -217,14 +225,11 @@ var helpers = {
 					return console.log({error:err});
 				if(reply)
 					return helpers.sendClient({initiated:false,with:data.user});
-				data.user = storage.isServer ? data.user.split("@")[0] : data.user;
-				if(data.user.indexOf("@") != -1)
-					helpers.redirect(data, storage, function(msg) {
-						msg.user = data.user;
-						helpers.sendClient(msg);
-					});
 				helpers.sendClient({initiated:true,with:data.user});
-				if(convkeys[1])
+				var isLocal = data.user.indexOf("@") == -1;
+				if(!isLocal)
+					helpers.redirect(data, storage);
+				else if(convkeys[1])
 					storage.redis.hmset("convs."+data.user,storage.username,data.convkeys[1], function(err,reply) {
 						if(err)
 							return console.log({error:err});
