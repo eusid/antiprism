@@ -41,15 +41,17 @@ var helpers = {
 					}
 					try {
 						var data = JSON.parse(msg);
-						if(!data.action)
+						if(data.action)
 							if(Object.keys(RemoteAllowed).indexOf(data.action) == -1)
 								throw Error.INVALID_ACTION;
 							else
 								helpers.parseRequest(msg,storage);
 						else if(data.fromRemote)
 							for(event in RemoteAllowed)
-								if(Objects.keys(data).indexOf(RemoteAllowed[event]))
+								if(Objects.keys(data).indexOf(RemoteAllowed[event])) {
+									console.log("calling "+data.fromRemote+"'s callback for event: "+event);
 									storage.remotes[host][data.fromRemote][event](data, storage);
+								}
 
 					} catch (e) {
 						console.log("error: "+e);
@@ -60,8 +62,6 @@ var helpers = {
 						callback(err);
 				})
 				.sendObject = function(msg) {
-					console.log("sending to "+host);
-					console.log(msg);
 					if(ws.readyState != 1)
 						ws.outqueue.push(msg);
 					else
@@ -189,7 +189,7 @@ var helpers = {
 				});
 			else
 				storage.redis.hmget("users."+data.user, "pubkeyN", "pubkeyE", function(err,reply) {
-					helpers.sendClient({user:data.user,pubkey:{n:reply[0],e:reply[1]}});				
+					helpers.sendClient({user:data.user,pubkey:{n:reply[0],e:reply[1]},fromRemote:data.fromRemote});				
 				});
 			return 0;
 		},
