@@ -23,7 +23,6 @@ var helpers = {
 						helpers.registerServer(storage, [ip,port].join(":"), callback);
 				});
 			var ws = new (require("ws"))("ws://"+host);
-			ws.allowed = ["pubkey", "initConversation", "storeMessage"];
 			ws
 				.on("open",function() {
 					ws.send("SYN");
@@ -36,18 +35,24 @@ var helpers = {
 					console.log(msg);
 					if(msg == "ACK") {
 						storage.remotes[host] = {socket:ws, callbacks:{}};
-						return;
-						callback(0);
+						return callback?callback(0):0;
 					}
 					try {
 						var data = JSON.parse(msg);
-						if(!msg.action || ws.allowed.indexOf(msg.action) == -1)
-							throw Error.INVALID_ACTION;
+						if(!data.action)
+							if(RemoteAllowed.indexOf(data.action) == -1)
+								throw Error.INVALID_ACTION;
+							else
+								helpers.parseRequest(msg,storage);
+						else if(data.fromRemote)
+							for(event in RemoteAllowed)
+								if(Objects.keys(data).indexOf(RemoteAllowed[event]))
+									storage.remotes[host][data.fromRemote][event](data, storage);
+
 					} catch (e) {
 						console.log("error: "+e);
 					}
-					msg.user = msg.user.split("@")[0];
-					//helpers.parseRequest(msg,storage);						
+					msg.user = msg.user.split("@")[0];						
 				})
 				.on("error", function(err) {
 					if(callback)
@@ -64,7 +69,14 @@ var helpers = {
 					if(!err)
 						helpers.redirect(data,storage,callback);
 				});
-			storage.remotes[host].callbacks[storage.username] = callback;
+			var actions = Object.keys(RemoteAllowed),
+				event = actions[actions.indexOf(data.action)]
+			if(event === undefined)
+				return console.log("currently unsupported action: "+data.action);
+			data.forRemote = storage.username;
+			if(!storage.remotes[host].callbacks[storage.username])
+				storage.remotes[host].callbacks[storage.username] = {};
+			storage.remotes[host].callbacks[storage.username][event] = callback;
 			console.log("sending to "+[user,host].join("@"));
 			console.log(data);
 			storage.remotes[host].socket.sendObject(data);			
@@ -271,7 +283,11 @@ var helpers = {
 			return {ts:storeMsg.ts, sent:true};
 		}
 	},
-
+	RemoteAllowed = { 
+		pubkey: "pubkey",
+		initConversation: "initiated",
+		storeMessage: "msg"
+	},
 	Error = {
 		"JSON": -1,
 		"MISSING_ACTION": 1,
