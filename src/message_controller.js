@@ -18,7 +18,7 @@ var helpers = {
 			console.log("got "+server+" and "+port);
 			if(!(require("net")).isIPv4(server)) {
 				(require("dns")).lookup(server, 4, function(err,ip) {
-					console.log("looked up "+host+", got "+err||ip);
+					console.log("looked up "+server+", got "+err||ip);
 					if(err != null)
 						helpers.registerServer(storage, [ip,port].join(":"), callback);
 				});
@@ -28,6 +28,7 @@ var helpers = {
 			ws.allowed = ["pubkey", "initConversation", "storeMessage"];
 			ws
 				.on("open",function() {
+					callback();
 					ws.send("SERVER");
 					console.log("called "+host);
 					if(callback)
@@ -56,14 +57,13 @@ var helpers = {
 		},
 		redirect: function(data, storage, callback) {
 			var parts = data.user.split("@"),
-					user = parts[0],
-					host = parts[1];
+				user = parts[0],
+				host = parts[1];
 			if(!storage.remotes[host])
 				return helpers.registerServer(storage, host, function(err) {
 					if(!err)
 						helpers.redirect(data,storage,callback);
 				});
-			delete data.convkeys[0];
 			var fromRemote = storage.username;
 			console.log("sending to "+[user,host].join("@"));
 			console.log(data);
