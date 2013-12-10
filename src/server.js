@@ -33,7 +33,7 @@ webSocketServer.on("connection", function(ws) {
 				timeouts[session.id] = setTimeout(killSocket, timeoutms);
 				return ws.send("PONG");
 			}
-			if(message == "SERVER") { // handshake :>
+			if(message == "SYN") { // handshake :>
 				session.isServer = true;
 				var addr = ws._socket.address(),
 					ip = ws.upgradeReq.headers['x-forwarded-for'] || addr.address,

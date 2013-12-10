@@ -28,7 +28,7 @@ var helpers = {
 			ws.allowed = ["pubkey", "initConversation", "storeMessage"];
 			ws
 				.on("open",function() {
-					ws.send("SERVER");
+					ws.send("SYN");
 					console.log("called "+host);
 					if(callback)
 						callback();
@@ -40,7 +40,6 @@ var helpers = {
 					}
 					try {
 						var data = JSON.parse(msg);
-						console.log(msg);
 						if(!msg.action || ws.allowed.indexOf(msg.action) == -1)
 							throw Error.INVALID_ACTION;
 					} catch (e) {
