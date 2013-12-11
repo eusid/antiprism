@@ -92,16 +92,20 @@ var utils = {
     }
 
     try {
-      var contactName = ctx.toElement.childNodes[0].data;
+      var contactName = ctx.toElement.innerText;
       helper(contactName);
       
     } catch (e) {
       try {
-        console.log(ctx);
-        var contactName = ctx.toElement.parentNode.previousElementSibling.innerText;
+        console.log("first try catch block failed");
+        console.log(e.message);
+        globalctx = ctx;
+        var contactName = ctx.toElement.children[0];
         helper(contactName);
       } catch (e) {
-        var contactName = ctx.toElement.childNodes[0].innerText;
+        console.log("second try catch block failed");
+        console.log(e.message);
+        var contactName = ctx.toElement.parentNode.parentNode.childNodes[0].innerText;
         helper(contactName);
       }
     }
@@ -110,12 +114,15 @@ var utils = {
     var containsString = ":contains(" + contactName + ")";
     var contacts = $('li').filter(containsString);
 
-    if (contacts.length == 1)
+    if (contacts.length == 1 && contacts[0] != undefined)
       return contacts[0];
     for (var i in contacts) {
       if(contacts[i].innerText == contactName) 
         return contacts[i]
     }
+    console.log(contacts);
+    console.log(contactName);
+    throw "contact " + contactName + " not found :/";
   },
   displayMessage: function(message) {
     console.log(message);
@@ -131,8 +138,10 @@ var utils = {
       utils.messageDisplay().append(messageContainer);
       utils.messageDisplay().animate({ scrollTop: utils.messageDisplay().prop("scrollHeight") - utils.messageDisplay().height() }, 300);
     } else {
-      var contact = utils.getContactByName(message.from || message.to);
-      contact.className = "newMessage";
+      var contact = message.from || message.to;
+      //contact.classlist.add("newMessage")
+      console.log("got message from " + contact);
+      //TODO scheiße aufräumen î
     }
   },
   statusIcon: function() {
@@ -216,7 +225,8 @@ var client = {
           if(!$('#muteButton')[0].checked)
             utils.playSound("ios.mp3");
           if(selected != msg.from)
-            utils.getContactByName(msg.from).classList.add("newMessage");
+            console.log("got msg from " + msg.from);
+            //utils.getContactByName(msg.from).classList.add("newMessage");
         }
         utils.displayMessage(msg);
       },
