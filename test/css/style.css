@@ -18,3 +18,71 @@
     max-width: 100%;
 }
 
+body {
+	margin: 0px;
+	padding: 0px;
+	font-family: monospace;
+}
+
+/*h1 {
+	background-color: #555;
+	text-align: center;
+	padding: 2px;
+	margin: 0px;
+}*/
+
+#login {
+	padding: 1%;
+}
+
+#chat {
+	height: 90%;
+}
+
+#mute {
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+
+.newMessage {
+	color: red;
+	background-color: #ffdddd;
+}
+
+.contactList {
+	float: left;
+	width: 100%;
+}
+
+.icon{
+	background-image:url(https://fbstatic-a.akamaihd.net/rsrc.php/v2/yO/r/Jsxaj6wDwuy.png);
+	background-repeat:no-repeat;
+	background-size:auto;
+	background-position:-840px -402px;
+}
+
+.contactDiv {
+	width: 90%;
+	float: right;
+}
+
+.iconDiv {
+	width: 10%;
+	float: left;
+	text-align: center;
+}
+
+.active {
+	background-color: #ddd;
+}
+
+ul {
+	list-style-type:none;
+	margin:0;
+	padding:0;
+}
+
+li {
+	/*border: solid 1px;*/
+}
