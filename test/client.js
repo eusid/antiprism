@@ -129,7 +129,7 @@ var utils = {
       var time = (new Date(message.ts)).toLocaleString().split(' ')[1];
       messageContainer.innerText = '<' + time + '> ' + username + ': ' + message.msg;
       utils.messageDisplay().append(messageContainer);
-      utils.messageDisplay().animate({ scrollTop: utils.messageDisplay().prop("scrollHeight") - utils.messageDisplay().height() }, 500);
+      utils.messageDisplay().animate({ scrollTop: utils.messageDisplay().prop("scrollHeight") - utils.messageDisplay().height() }, 300);
     } else {
       var contact = utils.getContactByName(message.from || message.to);
       contact.className = "newMessage";
@@ -176,6 +176,8 @@ var client = {
   sendMessage: function() {
     var messageField = $('#messageField');
     var message = messageField.val();
+    if (!message)
+      return;
     var to = null;
     var $active = $('.active');
     if ($active.length)
@@ -190,7 +192,10 @@ var client = {
       utils.displayMessage({to:null,ts:(new Date()).getTime(),msg:"Fotze du hast keinen fucking Kontakt ausgewaehlt!!"});
   },
   addFriend: function() {
-    antiprism.initConversation($('#addFriendField').val(), function() {
+    var friend = $('#addFriendField').val();
+    if (!friend)
+      return;
+    antiprism.initConversation(friend, function() {
       antiprism.getContacts(utils.displayContacts);
     });
   },
