@@ -280,6 +280,9 @@ var helpers = {
 			if(data.user === undefined || data.msg === undefined)
 				return Error.INVALID_PARAMS;
 			var storeMsg = {ts:new Date().getTime(), from:storage.username, msg:data.msg};
+			console.log("storeMessage called! Data:");
+			console.log(data);
+			console.log("Callmode: "+storage.isServer?"Server2Server":"Standard");
 			if(storage.isServer) {
 				storeMsg.from = [data.fromRemote,storage.hostname].join("@");
 				data.user = data.user.split("@")[0];
@@ -291,7 +294,6 @@ var helpers = {
 			var other = data.user;
 			var isLocal = data.user.indexOf("@") == -1;
 			if(!isLocal) {
-				data.from = storeMsg.from;
 				helpers.redirect(data,storage, function(msg) {
 					console.log("callback called with msg:");
 					console.log(msg);
