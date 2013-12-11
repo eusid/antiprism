@@ -4,7 +4,7 @@ var helpers = {
 			storage.redis.smembers("sess."+user, function(err,reply) {
 				if(err)
 					return console.log({error:err});
-				for(id in reply) {
+				for(var id in reply) {
 					if(storage.sockets[reply[id]] !== undefined) // not sure if redis and node are in sync
 						storage.sockets[reply[id]].ctx(msg);
 				}
@@ -61,7 +61,7 @@ var helpers = {
 						return console.log({error:err});
 					if(parseInt(reply) == 1)
 						storage.redis.hgetall("convs."+storage.username, function(err, contacts) {
-							for (user in contacts)
+							for (var user in contacts)
 								helpers.broadcast(storage, user, {online:true, user:storage.username});
 						});
 				});
@@ -75,7 +75,7 @@ var helpers = {
 				if(!contacts)
 					return helpers.sendClient({contacts:[]});
 				var ret = {}, users = Object.keys(contacts), usersIndex = users.length;
-				for(i in users) {
+				for(var i in users) {
 					storage.redis.scard("sess."+users[(users.length - 1) - i], function(err,reply) {
 						usersIndex--;
 						ret[users[usersIndex]] = {key:contacts[users[usersIndex]],online:!!parseInt(reply)};
@@ -170,7 +170,7 @@ var helpers = {
 					return console.log({error:err});
 				storeMsg.to = data.user;
 				delete storeMsg.from;
-				for(id in reply)
+				for(var id in reply)
 					if(storage.sockets[reply[id]] !== undefined // not sure if redis and node are in sync
 						&& reply[id] != storage.id) // do not push back to sending user
 						storage.sockets[reply[id]].ctx(storeMsg);
