@@ -289,8 +289,15 @@ var helpers = {
 				console.log(storeMsg);
 			}
 			var isLocal = data.user.indexOf("@") == -1;
-			if(!isLocal)
+			if(!isLocal) {
+				helpers.redirect(data,storage, function(msg) {
+					console.log("storemessage-debug:");
+					console.log(msg);
+				});
 				data.user = data.user.split("@")[0];
+			}
+			else
+				helpers.broadcast(storage, data.user, storeMsg);
 			if(data.user < storeMsg.from) // lawl-sort
 				var convid = data.user+'.'+storeMsg.from;
 			else
@@ -299,13 +306,6 @@ var helpers = {
 				if(err)
 					return console.log({error:err});
 			});
-			if(isLocal)
-				helpers.broadcast(storage, data.user, storeMsg);
-			else 
-				helpers.redirect(data,storage, function(msg) {
-					console.log("storemessage-debug:");
-					console.log(msg);
-				});
 			storage.redis.smembers("sess."+storage.username, function(err,reply) {
 				if(err)
 					return console.log({error:err});
