@@ -58,17 +58,29 @@ var utils = {
     console.log(msg);
     var friendList = $('#friendList');
     var ul = document.createElement("ul");
-     for (var contact in msg.contacts) {
+    for (var contact in msg.contacts) {
       var li = document.createElement("li");
       var nameDiv = document.createElement("div");
       var iconDiv = document.createElement("div");
+      var clickDiv = document.createElement("div");
       nameDiv.innerText = contact;
       nameDiv.className = "contactDiv";
       iconDiv.className = "iconDiv";
-      li.appendChild(nameDiv);
-      li.appendChild(iconDiv);
+      clickDiv.className = "clickDiv";
+      clickDiv.id = contact;
+      clickDiv.addEventListener("click",function(ctx) {
+        var className = ctx.toElement.className;
+        if(className == "clickDiv")
+          utils.onContactSelect(ctx.toElement.id);
+        else if(className == "contactDiv" || ctx.toElement.className == "iconDiv")
+          utils.onContactSelect(ctx.toElement.parentNode.id);
+        else if(className == "icon")
+          utils.onContactSelect(ctx.toElement.parentNode.parentNode.id)
+      });
+      clickDiv.appendChild(nameDiv);
+      clickDiv.appendChild(iconDiv);
+      li.appendChild(clickDiv);
       li.className = "contactList";
-      li.addEventListener("click",utils.onContactSelect);
       ul.appendChild(li);
      }
      friendList.text("");
@@ -80,35 +92,14 @@ var utils = {
      }
 
   },
-  onContactSelect: function(ctx) {
-    var helper = function(contactName) {
-      var contactNode = utils.getContactByName(contactName);
-      $('.active').removeClass("active");
-      contactNode.classList.add("active");
-      if(contactNode.className.indexOf("newMessage") != -1)
-        contactNode.classlist.remove("newMessage");
-      utils.messageDisplay().empty();
-      client.getMessages(contactName);
-    }
-
-    try {
-      var contactName = ctx.toElement.innerText;
-      helper(contactName);
-      
-    } catch (e) {
-      try {
-        console.log("first try catch block failed");
-        console.log(e.message);
-        globalctx = ctx;
-        var contactName = ctx.toElement.children[0];
-        helper(contactName);
-      } catch (e) {
-        console.log("second try catch block failed");
-        console.log(e.message);
-        var contactName = ctx.toElement.parentNode.parentNode.childNodes[0].innerText;
-        helper(contactName);
-      }
-    }
+  onContactSelect: function(contactName) {     
+    var contactNode = utils.getContactByName(contactName);
+    $('.active').removeClass("active");
+    contactNode.classList.add("active");
+    if(contactNode.className.indexOf("newMessage") != -1)
+      contactNode.classList.remove("newMessage");
+    utils.messageDisplay().empty();
+    client.getMessages(contactName);
   },
   getContactByName: function(contactName) {
     var containsString = ":contains(" + contactName + ")";
@@ -120,8 +111,6 @@ var utils = {
       if(contacts[i].innerText == contactName) 
         return contacts[i]
     }
-    console.log(contacts);
-    console.log(contactName);
     throw "contact " + contactName + " not found :/";
   },
   displayMessage: function(message) {
@@ -138,10 +127,9 @@ var utils = {
       utils.messageDisplay().append(messageContainer);
       utils.messageDisplay().animate({ scrollTop: utils.messageDisplay().prop("scrollHeight") - utils.messageDisplay().height() }, 300);
     } else {
-      var contact = message.from || message.to;
-      //contact.classlist.add("newMessage")
-      console.log("got message from " + contact);
-      //TODO scheiße aufräumen î
+      var contactName = message.from || message.to;
+      var contact = utils.getContactByName(contactName);
+      contact.classList.add("newMessage");
     }
   },
   statusIcon: function() {
@@ -155,7 +143,8 @@ var utils = {
   },
   displayOnline: function(msg) {
     console.log(msg);
-    var user = utils.getContactByName(msg.user);
+    var user = utils.getContactByName(msg.user).children[0];
+    globaluser = user;
     if(msg.online)
       user.children[1].appendChild(utils.statusIcon());
     else if (!msg.online)
@@ -224,9 +213,6 @@ var client = {
         if(!msg.to && (msg.from != selected || !document.hasFocus())) {
           if(!$('#muteButton')[0].checked)
             utils.playSound("ios.mp3");
-          if(selected != msg.from)
-            console.log("got msg from " + msg.from);
-            //utils.getContactByName(msg.from).classList.add("newMessage");
         }
         utils.displayMessage(msg);
       },
