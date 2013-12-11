@@ -12,7 +12,7 @@ var WebSocketServer = require("ws").Server,
 	redis = require("redis").createClient();
 
 redis.keys("sess.*", function(err,reply) { // clear sessions
-	for(id in reply)
+	for(var id in reply)
 		redis.del(reply[id], function(err,reply) {});
 });
 
@@ -48,7 +48,7 @@ webSocketServer.on("connection", function(ws) {
 							return console.log({error:err});
 						if(!parseInt(reply))
 							session.redis.hgetall("convs."+session.username, function(err, contacts) {
-								for (user in contacts)
+								for (var user in contacts)
 									messageController.helpers.broadcast(session, user, {online:false, user:session.username});
 							});
 					});

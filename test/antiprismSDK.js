@@ -115,7 +115,7 @@ var antiprism = (function() {
 					if(msg.data == "PONG")
 						return --ws.storage.pingfails;
 					var response = JSON.parse(msg.data);
-					for(field in response)
+					for(var field in response)
 						if(Object.keys(ws.storage.events).indexOf(field) != -1)
 							ws.storage.events[field](response);
 				};
@@ -166,7 +166,7 @@ var antiprism = (function() {
 			getContacts: function(callback) {
 				ws.sendObject({action:"contacts"});
 				ws.storage.events["contacts"] = function(msg) {
-					for(user in msg.contacts)
+					for(var user in msg.contacts)
 						ws.storage.conversations[user] = utils.decryptRSA(msg.contacts[user].key,ws.storage.pubkey,ws.storage.privkey);
 					callback(msg);
 				};
@@ -191,11 +191,11 @@ var antiprism = (function() {
 				ws.storage.events["msglist"] = function(msg) {
 					if(!ws.storage.conversations[user])
 						return helpers.getKey(user, function() {
-							for(x in msg.msglist)
+							for(var x in msg.msglist)
 								msg.msglist[x].msg = utils.decryptAES(msg.msglist[x].msg, ws.storage.conversations[user]);
 							callback(msg);
 						});
-					for(x in msg.msglist)
+					for(var x in msg.msglist)
 						msg.msglist[x].msg = utils.decryptAES(msg.msglist[x].msg, ws.storage.conversations[user]);
 					callback(msg);
 				}
