@@ -226,14 +226,11 @@ var helpers = {
 				data.user = storage.isServer ? data.user.split("@")[0] : data.user;
 				if(data.user.indexOf("@") != -1)
 					helpers.redirect(data, storage, function(msg) {
-						msg.user = data.user;
+						msg.with = data.user;
 						helpers.sendClient(msg);
 					});
 				helpers.sendClient({initiated:true,with:data.user});
-				var isLocal = data.user.indexOf("@") == -1;
-				if(!isLocal)
-					helpers.redirect(data, storage);
-				else if(data.convkeys[1])
+				if(data.convkeys[1])
 					storage.redis.hmset("convs."+data.user,storage.username,data.convkeys[1], function(err,reply) {
 						if(err)
 							return console.log({error:err});
