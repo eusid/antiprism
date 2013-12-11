@@ -40,6 +40,7 @@ var helpers = {
 					console.log(msg);
 					if(msg == "ACK") {
 						storage.remotes[host] = {socket:ws, callbacks:{}};
+						storage.hostname = host;
 						return callback?callback(0):0;
 					}
 					if(msg == "PONG") {
@@ -55,7 +56,7 @@ var helpers = {
 								console.log("got something to parse:");
 								console.log(msg);
 								console.log("parsing-result:");
-								console.log(helpers.parseRequest(msg,storage)); // TODO: react to events
+								console.log(helpers.parseRequest(data,storage)); // TODO: react to events
 							}
 						else if(data.fromRemote)
 							for(var event in RemoteAllowed)
@@ -318,6 +319,7 @@ var helpers = {
 				var convid = other+'.'+storeMsg.from;
 			else
 				var convid = storeMsg.from+'.'+other;
+			console.log("pushing message to msgs."+convid);
 			storage.redis.rpush("msgs."+convid, JSON.stringify(storeMsg), function(err, reply) {
 				if(err)
 					return console.log({error:err});
