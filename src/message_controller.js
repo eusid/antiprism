@@ -109,10 +109,6 @@ var helpers = {
 		}
 	},
 	actions = {
-		DBG_connect: function(data, storage) {
-			helpers.registerServer(storage, data.host);
-			return 0;
-		},
 		register: function(data, storage) {
 			if(data.username === undefined || data.username.indexOf("@") !== -1)
 				return Error.INVALID_NAME;
@@ -231,6 +227,8 @@ var helpers = {
 						helpers.sendClient(msg);
 					});
 				helpers.sendClient({initiated:true,with:data.user});
+				console.log("initConversation inserting: ");
+				console.log(data);
 				if(data.convkeys[1])
 					storage.redis.hmset("convs."+data.user,storage.username,data.convkeys[1], function(err,reply) {
 						if(err)
