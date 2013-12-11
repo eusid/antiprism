@@ -24,25 +24,28 @@ body {
 	font-family: monospace;
 }
 
-/*h1 {
-	background-color: #555;
-	text-align: center;
-	padding: 2px;
+h1 {
+	background: rgb(219,220,226); /* Old browsers */
+	background: -moz-linear-gradient(top,  rgba(219,220,226,1) 0%, rgba(221,223,227,1) 100%); /* FF3.6+ */
+	background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(219,220,226,1)), color-stop(100%,rgba(221,223,227,1))); /* Chrome,Safari4+ */
+	background: -webkit-linear-gradient(top,  rgba(219,220,226,1) 0%,rgba(221,223,227,1) 100%); /* Chrome10+,Safari5.1+ */
+	background: -o-linear-gradient(top,  rgba(219,220,226,1) 0%,rgba(221,223,227,1) 100%); /* Opera 11.10+ */
+	background: -ms-linear-gradient(top,  rgba(219,220,226,1) 0%,rgba(221,223,227,1) 100%); /* IE10+ */
+	background: linear-gradient(to bottom,  rgba(219,220,226,1) 0%,rgba(221,223,227,1) 100%); /* W3C */
+	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#dbdce2', endColorstr='#dddfe3',GradientType=0 ); /* IE6-9 */
+	text-align: left;
+	padding: 10px;
 	margin: 0px;
-}*/
+}
 
 #login {
 	padding: 1%;
 }
 
-#chat {
-	height: 90%;
-}
-
 #mute {
 	position: absolute;
 	top: 0;
-	left: 0;
+	left: -60;
 }
 
 .newMessage {
@@ -51,6 +54,7 @@ body {
 }
 
 .contactList {
+	border-bottom: 1px solid gray;
 	float: left;
 	width: 100%;
 }
@@ -74,15 +78,11 @@ body {
 }
 
 .active {
-	background-color: #ddd;
+	background-color: #f3f3f3;
 }
 
 ul {
 	list-style-type:none;
 	margin:0;
 	padding:0;
-}
-
-li {
-	/*border: solid 1px;*/
 }
