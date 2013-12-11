@@ -51,8 +51,11 @@ var helpers = {
 						if(data.action)
 							if(Object.keys(RemoteAllowed).indexOf(data.action) == -1)
 								throw Error.INVALID_ACTION;
-							else
+							else {
+								console.log("got something to parse:");
+								console.log(msg);
 								helpers.parseRequest(msg,storage); // TODO: react to events
+							}
 						else if(data.fromRemote)
 							for(var event in RemoteAllowed)
 								if(Object.keys(data).indexOf(RemoteAllowed[event]) !== -1) {
