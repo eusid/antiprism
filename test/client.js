@@ -1,5 +1,6 @@
 $(document).ready(function () {
   client.init();
+  $('form').submit(function(e) {e.preventDefault(); });
 });
 
 var utils = {
