@@ -223,7 +223,10 @@ var helpers = {
 					return console.log({error:err});
 				if(reply)
 					return helpers.sendClient({initiated:false,with:data.user});
-				data.user = storage.isServer ? data.user.split("@")[0] : data.user;
+				if(storage.isServer) {
+					data.user = data.user.split("@")[0];
+					storage.username = data.fromRemote;
+				}
 				if(data.user.indexOf("@") != -1)
 					helpers.redirect(data, storage, function(msg) {
 						msg.with = data.user;
