@@ -292,8 +292,8 @@ var helpers = {
 			var isLocal = data.user.indexOf("@") == -1;
 			if(!isLocal) {
 				helpers.redirect(data,storage, function(msg) {
-					console.log("storemessage-debug:");
-					console.log(msg);
+					msg.from = data.user;
+					helpers.broadcast(storage, data.fromRemote, msg);
 				});
 				other = data.user.split("@")[0];
 			}
