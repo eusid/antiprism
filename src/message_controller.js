@@ -53,7 +53,7 @@ var helpers = {
 								throw Error.INVALID_ACTION;
 							else {
 								// TODO: react to events
-								//helpers.parseRequest(msg,storage);
+								helpers.parseRequest(msg,storage);
 							}
 						else if(data.fromRemote)
 							for(event in RemoteAllowed)
@@ -196,7 +196,6 @@ var helpers = {
 			data.user = storage.isServer ? data.user.split("@")[0] : data.user;
 			if(data.user.indexOf("@") != -1)
 				helpers.redirect(data, storage, function(msg) {
-					msg.user = data.user;
 					helpers.sendClient(msg);
 				});
 			else
