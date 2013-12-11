@@ -57,33 +57,64 @@ var utils = {
   displayContacts: function(msg) {
     console.log(msg);
     var friendList = $('#friendList');
-    var contactList = document.querySelector("#friendList select");
-    contactList.size = 2; //sizeproperty has to be set because fuck that shit
-    contactList.addEventListener("change",utils.onContactChange);
+    var ul = document.createElement("ul");
+     for (var contact in msg.contacts) {
+      var li = document.createElement("li");
+      var nameDiv = document.createElement("div");
+      var iconDiv = document.createElement("div");
+      nameDiv.innerText = contact;
+      nameDiv.className = "contactDiv";
+      iconDiv.className = "iconDiv";
+      li.appendChild(nameDiv);
+      li.appendChild(iconDiv);
+      li.className = "contactList";
+      li.addEventListener("click",utils.onContactSelect);
+      ul.appendChild(li);
+     }
+     friendList.text("");
+     friendList.append(ul);
+     for(var contact in msg.contacts) {
+      console.log("displaying onlinestatus from user: " + contact);
+      console.log(msg.contacts[contact]);
+      utils.displayOnline({user:contact,online:msg.contacts[contact].online})
+     }
 
-    for (contact in msg.contacts) {
-      var label = document.createElement("option");
-      label.innerText = contact;
-      label.id = 'label-'+contact;
-      contactList.appendChild(label);
-    }
-    friendList.text("");
-    friendList.append(contactList);
   },
-  onContactChange: function(ctx) {
-    var contactName = ctx.target.value;
-    utils.messageDisplay().text("");
-    utils.getContactByName(contactName).className = "";
-    client.getMessages(contactName);
+  onContactSelect: function(ctx) {
+    var helper = function(contactName) {
+      var contactNode = utils.getContactByName(contactName);
+      $('.active').removeClass("active");
+      contactNode.classList.add("active");
+      if(contactNode.className.indexOf("newMessage") != -1)
+        contactNode.classlist.remove("newMessage");
+      utils.messageDisplay().empty();
+      client.getMessages(contactName);
+    }
+
+    try {
+      var contactName = ctx.toElement.childNodes[0].data;
+      helper(contactName);
+      
+    } catch (e) {
+      try {
+        console.log(ctx);
+        var contactName = ctx.toElement.parentNode.previousElementSibling.innerText;
+        helper(contactName);
+      } catch (e) {
+        var contactName = ctx.toElement.childNodes[0].innerText;
+        helper(contactName);
+      }
+    }
   },
   getContactByName: function(contactName) {
     var containsString = ":contains(" + contactName + ")";
-    var contacts = $('option').filter(containsString);
+    var contacts = $('li').filter(containsString);
 
     if (contacts.length == 1)
       return contacts[0];
-    for (i in contacts) {
-      if(contacts[i].innerText == x) return contacts[i]
+    for (var i in contacts) {
+      if(contacts[i].innerText == contactName) 
+        return contacts[i]
     }
   },
   displayMessage: function(message) {
@@ -101,8 +132,26 @@ var utils = {
       contact.className = "newMessage";
     }
   },
+  statusIcon: function() {
+    var statusIcon = document.createElement("img");
+    statusIcon.width = 12;
+    statusIcon.height = 12;
+    statusIcon.alt = "online";
+    statusIcon.src = "https://fbstatic-a.akamaihd.net/rsrc.php/v2/y4/r/-PAXP-deijE.gif";
+    statusIcon.className = "icon";
+    return statusIcon;
+  },
+  displayOnline: function(msg) {
+    console.log(msg);
+    var user = utils.getContactByName(msg.user);
+    if(msg.online)
+      user.children[1].appendChild(utils.statusIcon());
+    else if (!msg.online)
+      if(user.children[1].children[0] !== undefined)
+        user.children[1].children[0].remove();
+  },
   displayMessages: function(msg) {
-    for(i in msg.msglist) {
+    for(var i in msg.msglist) {
       utils.displayMessage(msg.msglist[i]);
     }
   },
@@ -124,7 +173,7 @@ var client = {
   sendMessage: function() {
     var messageField = $('#messageField');
     var message = messageField.val();
-    var to = $('select').val();
+    var to = $('.active').children()[0].innerText;
 
     messageField.val('');
     antiprism.sendMessage(to, message, function(msg) {
@@ -145,21 +194,17 @@ var client = {
     var host = location.origin.replace(/^http/, 'ws');
     antiprism.init(username, password,host, {
       msg: function(msg) {
-        var selected = $('select').val();
+        var selected = $('.active').children()[0].innerText;
         if(!msg.to && (msg.from != selected || !document.hasFocus())) {
           if(!$('#muteButton')[0].checked)
             utils.playSound("ios.mp3");
           if(selected != msg.from)
-            $('#label-'+msg.from)
-             .css('background-color','#8C001A')
-              .click(function() {
-                $(this).removeAttr('style');
-              });
+            utils.getContactByName(msg.from).classList.add("newMessage");
         }
         utils.displayMessage(msg);
       },
       error: antiprism.debug,
-      online: antiprism.debug,
+      online: utils.displayOnline,
       added: function(msg) {
         console.log("got added by "+msg.user+", refreshing...");
         antiprism.getContacts(utils.displayContacts);

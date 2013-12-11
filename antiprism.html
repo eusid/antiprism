@@ -1,0 +1,44 @@
+<h1 id="antiprismsdkjs">antiprismSDK.js</h1>
+<hr />
+<h3 id="basic-facts">Basic Facts</h3>
+<ul>
+<li>100% Callback-Based</li>
+<li>WebSockets (optional TLS) behind -&gt; Realtime \o/</li>
+<li>abstracting from the Crypto-mechanisms completely (nearly)</li>
+</ul>
+<h3 id="methods">Methods</h3>
+<h4 id="initialisation">Initialisation</h4>
+<pre><code>antiprism.init(username,password,callbacks);
+</code></pre>
+<p>where <code>callbacks</code> is a dictionary, holding a few initial callback-functions:</p>
+<pre><code>callbacks = {
+    error: function(code) {},
+    /* called when server returns error.
+        "code" is an error-code, yet to be documented :D
+    */
+    msg: function(msg, from, to, timestamp) {},
+    /* on new message.
+        msg is already decoded for you
+        if this is a session-broadcast, "to" will be set,
+        otherwise it's undefined.
+    */
+    online: function(user, online) {},
+    /* on friend coming online / going offline.
+        "online" is a bool, indicating what just happened.
+    */
+    added: function(user, msg) {},
+    /* called when user is added by another user,
+        requesting authorization
+    */
+}
+</code></pre>
+<h4 id="registration">Registration</h4>
+<pre><code>antiprism.register(function(registered) {});
+</code></pre>
+<p>where <code>register</code> is a boolean indicating success or failure</p>
+<h4 id="login">Login</h4>
+<pre><code>antiprism.login(function(loggedIn, contacts) {});
+</code></pre>
+<p>where <code>loggedIn</code> is a boolean like <code>registered</code>,
+<code>contacts</code> is an array of dictionaries, each with the properties <code>user</code> and the according <code>online</code>-boolean</p>
+<h4 id="retrieving-contacts">Retrieving Contacts</h4>

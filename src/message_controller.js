@@ -76,7 +76,7 @@ var helpers = {
 					return helpers.sendClient({contacts:[]});
 				var ret = {}, users = Object.keys(contacts), usersIndex = users.length;
 				for(i in users) {
-					storage.redis.scard("sess."+users[i], function(err,reply) {
+					storage.redis.scard("sess."+users[(users.length - 1) - i], function(err,reply) {
 						usersIndex--;
 						ret[users[usersIndex]] = {key:contacts[users[usersIndex]],online:!!parseInt(reply)};
 						if(!usersIndex)
