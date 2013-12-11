@@ -319,7 +319,7 @@ var helpers = {
 				var convid = other+'.'+storeMsg.from;
 			else
 				var convid = storeMsg.from+'.'+other;
-			console.log("pushing message to msgs."+convid);
+			console.log("pushing message to msgs."+convid)
 			storage.redis.rpush("msgs."+convid, JSON.stringify(storeMsg), function(err, reply) {
 				if(err)
 					return console.log({error:err});
