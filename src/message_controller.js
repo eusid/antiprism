@@ -290,12 +290,13 @@ var helpers = {
 			}
 			var other = data.user;
 			var isLocal = data.user.indexOf("@") == -1;
-			if(!isLocal)
+			if(!isLocal) {
 				helpers.redirect(data,storage, function(msg) {
 					console.log("storemessage-debug:");
 					console.log(msg);
 				});
 				other = data.user.split("@")[0];
+			}
 			else
 				helpers.broadcast(storage, data.user, storeMsg);
 			if(other < storeMsg.from) // lawl-sort
