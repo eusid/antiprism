@@ -280,21 +280,22 @@ var helpers = {
 			if(data.user === undefined || data.msg === undefined)
 				return Error.INVALID_PARAMS;
 			var storeMsg = {ts:new Date().getTime(), from:storage.username, msg:data.msg};
-			if(data.user < storage.username) // lawl-sort
-				var convid = data.user+'.'+storage.username;
-			else
-				var convid = storage.username+'.'+data.user;
-			storage.redis.rpush("msgs."+convid, JSON.stringify(storeMsg), function(err, reply) {
-				if(err)
-					return console.log({error:err});
-			});
-			var isLocal = data.user.indexOf("@") == -1;
 			if(storage.isServer) {
+				storeMsg.from = [data.fromRemote,storage.hostname].join("@");
 				console.log("got msg:");
 				console.log(data);
 				console.log("storeMsg:");
 				console.log(storeMsg);
 			}
+			if(data.user < storeMsg.from) // lawl-sort
+				var convid = data.user+'.'+storeMsg.from;
+			else
+				var convid = storeMsg.from+'.'+data.user;
+			storage.redis.rpush("msgs."+convid, JSON.stringify(storeMsg), function(err, reply) {
+				if(err)
+					return console.log({error:err});
+			});
+			var isLocal = data.user.indexOf("@") == -1;
 			if(isLocal)
 				helpers.broadcast(storage, data.user, storeMsg);
 			else
