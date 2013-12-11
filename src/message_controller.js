@@ -220,7 +220,7 @@ var helpers = {
 				if(reply)
 					return helpers.sendClient({initiated:false,with:data.user});
 				if(storage.isServer)
-					storage.username = data.fromRemote;
+					storage.username = [data.fromRemote,storage.hostname].join("@");
 				if(data.user.indexOf("@") != -1)
 					helpers.redirect(data, storage, function(msg) {
 						msg.with = data.user;

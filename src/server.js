@@ -42,6 +42,7 @@ webSocketServer.on("connection", function(ws) {
 					connection = ip+':'+addr.port;
 				if(remoteServers[connection])
 					return console.log("i already haz "+connection);
+				session.hostname = connection;
 				remoteServers[connection] = {socket:ws, callbacks:{}};
 			}
 			messageController.handleMessage(message, session, {
