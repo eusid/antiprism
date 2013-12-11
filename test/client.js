@@ -118,7 +118,10 @@ var utils = {
   },
   displayMessage: function(message) {
     console.log(message);
-    var selectedContact = $('select').val();
+    var $active = $('.active');
+    var selectedContact = null;
+    if ($active.length)
+      var selectedContact = $active.children()[0].innerText;
     if (selectedContact == message.from || selectedContact == message.to || utils.getUsername() == message.from) {
       var messageContainer = document.createElement("p");
       var username = message.from || utils.getUsername();
@@ -172,12 +175,18 @@ var client = {
   sendMessage: function() {
     var messageField = $('#messageField');
     var message = messageField.val();
-    var to = $('.active').children()[0].innerText;
-
+    var to = null;
+    var $active = $('.active');
+    if ($active.length)
+      to = $active.children()[0].innerText;
+    console.log(to);
     messageField.val('');
-    antiprism.sendMessage(to, message, function(msg) {
-        utils.displayMessage({to:to,ts:msg.ts,msg:message});
-    });
+    if(to)
+      antiprism.sendMessage(to, message, function(msg) {
+          utils.displayMessage({to:to,ts:msg.ts,msg:message});
+      });
+    else
+      utils.displayMessage({to:null,ts:(new Date()).getTime(),msg:"Fotze du hast keinen fucking Kontakt ausgewaehlt!!"});
   },
   addFriend: function() {
     antiprism.initConversation($('#addFriendField').val(), function() {
@@ -193,7 +202,10 @@ var client = {
     var host = location.origin.replace(/^http/, 'ws');
     antiprism.init(username, password,host, {
       msg: function(msg) {
-        var selected = $('.active').children()[0].innerText;
+        var $active = $('.active');
+        var selected = null;
+        if ($active.length)
+          selected = $active.children()[0].innerText;
         if(!msg.to && (msg.from != selected || !document.hasFocus())) {
           if(!$('#muteButton')[0].checked)
             utils.playSound("ios.mp3");
