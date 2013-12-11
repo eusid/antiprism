@@ -232,7 +232,7 @@ var helpers = {
 				helpers.sendClient({initiated:true,with:data.user});
 				console.log("initConversation inserting: ");
 				console.log(data);
-				if(data.convkeys[1])
+				if(data.convkeys[1] && data.user.indexOf("@") == -1)
 					storage.redis.hmset("convs."+data.user,storage.username,data.convkeys[1], function(err,reply) {
 						if(err)
 							return console.log({error:err});
