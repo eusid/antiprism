@@ -27,15 +27,15 @@ var helpers = {
 			ws
 				.on("open",function() {
 					ws.send("SYN");
+					ws.timeout = setInterval(function() {
+						ws.send("PING");
+					}, 25000);
 					console.log("said hi to "+host);
 					console.log("working queue now");
 					while(ws.outqueue.length)
 						ws.sendObject(ws.outqueue.shift());
 				})
 				.on("message", function(msg) {
-					ws.timeout = setInterval(function() {
-						ws.send("PING");
-					}, 25000);
 					console.log("got msg from "+host);
 					console.log(msg);
 					if(msg == "ACK") {
@@ -223,10 +223,8 @@ var helpers = {
 					return console.log({error:err});
 				if(reply)
 					return helpers.sendClient({initiated:false,with:data.user});
-				if(storage.isServer) {
-					data.user = data.user.split("@")[0];
+				if(storage.isServer)
 					storage.username = data.fromRemote;
-				}
 				if(data.user.indexOf("@") != -1)
 					helpers.redirect(data, storage, function(msg) {
 						msg.with = data.user;
