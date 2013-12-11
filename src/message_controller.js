@@ -4,7 +4,7 @@ var helpers = {
 			storage.redis.smembers("sess."+user, function(err,reply) {
 				if(err)
 					return console.log({error:err});
-				for(id in reply) {
+				for(var id in reply) {
 					if(storage.sockets[reply[id]] !== undefined) // not sure if redis and node are in sync
 						storage.sockets[reply[id]].ctx(msg);
 				}
@@ -24,9 +24,6 @@ var helpers = {
 				});
 			var ws = new (require("ws"))("ws://"+host);
 			ws.outqueue = [];
-			ws.timeout = setInterval(function() {
-				ws.send("PING");
-			}, 25000);
 			ws
 				.on("open",function() {
 					ws.send("SYN");
@@ -36,6 +33,9 @@ var helpers = {
 						ws.sendObject(ws.outqueue.shift());
 				})
 				.on("message", function(msg) {
+					ws.timeout = setInterval(function() {
+						ws.send("PING");
+					}, 25000);
 					console.log("got msg from "+host);
 					console.log(msg);
 					if(msg == "ACK") {
@@ -54,7 +54,7 @@ var helpers = {
 							else
 								helpers.parseRequest(msg,storage); // TODO: react to events
 						else if(data.fromRemote)
-							for(event in RemoteAllowed)
+							for(var event in RemoteAllowed)
 								if(Object.keys(data).indexOf(RemoteAllowed[event]) !== -1) {
 									console.log("callbacks for "+data.fromRemote)
 									console.log(storage.remotes[host].callbacks[data.fromRemote]);
@@ -177,7 +177,7 @@ var helpers = {
 				if(!contacts)
 					return helpers.sendClient({contacts:[]});
 				var ret = {}, users = Object.keys(contacts), usersIndex = users.length;
-				for(i in users) {
+				for(var i in users) {
 					storage.redis.scard("sess."+users[i], function(err,reply) {
 						usersIndex--;
 						ret[users[usersIndex]] = {key:contacts[users[usersIndex]],online:!!parseInt(reply)};
@@ -223,6 +223,12 @@ var helpers = {
 					return console.log({error:err});
 				if(reply)
 					return helpers.sendClient({initiated:false,with:data.user});
+				data.user = storage.isServer ? data.user.split("@")[0] : data.user;
+				if(data.user.indexOf("@") != -1)
+					helpers.redirect(data, storage, function(msg) {
+						msg.with = data.user;
+						helpers.sendClient(msg);
+					});
 				helpers.sendClient({initiated:true,with:data.user});
 				var isLocal = data.user.indexOf("@") == -1;
 				if(!isLocal)
@@ -293,7 +299,7 @@ var helpers = {
 					return console.log({error:err});
 				storeMsg.to = data.user;
 				delete storeMsg.from;
-				for(id in reply)
+				for(var id in reply)
 					if(storage.sockets[reply[id]] !== undefined // not sure if redis and node are in sync
 						&& reply[id] != storage.id) // do not push back to sending user
 						storage.sockets[reply[id]].ctx(storeMsg);

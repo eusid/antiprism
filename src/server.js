@@ -13,7 +13,7 @@ var WebSocketServer = require("ws").Server,
 	remoteServers = {};
 
 redis.keys("sess.*", function(err,reply) { // clear sessions
-	for(id in reply)
+	for(var id in reply)
 		redis.del(reply[id], function(err,reply) {});
 });
 
