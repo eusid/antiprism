@@ -224,15 +224,14 @@ var helpers = {
 					data.user = data.user.split("@")[0];
 					storage.username = [data.fromRemote,storage.hostname].join("@");
 				}
-				if(data.user.indexOf("@") != -1)
+				var isLocal = data.user.indexOf("@") == -1;
+				if(!isLocal)
 					helpers.redirect(data, storage, function(msg) {
 						msg.with = data.user;
 						helpers.sendClient(msg);
 					});
 				helpers.sendClient({initiated:true,with:data.user});
-				console.log("initConversation inserting: ");
-				console.log(data);
-				if(data.convkeys[1] && data.user.indexOf("@") == -1)
+				if(data.convkeys[1] && isLocal)
 					storage.redis.hmset("convs."+data.user,storage.username,data.convkeys[1], function(err,reply) {
 						if(err)
 							return console.log({error:err});
@@ -289,10 +288,20 @@ var helpers = {
 				if(err)
 					return console.log({error:err});
 			});
-			if(data.user.indexOf("@") == -1)
+			var isLocal = data.user.indexOf("@") == -1;
+			if(storage.isServer) {
+				console.log("got msg:");
+				console.log(data);
+				console.log("storeMsg:");
+				console.log(storeMsg);
+			}
+			if(isLocal)
 				helpers.broadcast(storage, data.user, storeMsg);
 			else
-				helpers.redirect(storeMsg,storage);
+				helpers.redirect(data,storage, function(msg) {
+					helpers.sendClient("storemessage-debug:");
+					helpers.sendClient(msg);
+				});
 			storage.redis.smembers("sess."+storage.username, function(err,reply) {
 				if(err)
 					return console.log({error:err});
