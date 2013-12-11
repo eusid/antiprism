@@ -299,8 +299,8 @@ var helpers = {
 				helpers.broadcast(storage, data.user, storeMsg);
 			else
 				helpers.redirect(data,storage, function(msg) {
-					helpers.sendClient("storemessage-debug:");
-					helpers.sendClient(msg);
+					console.log("storemessage-debug:");
+					console.log(msg);
 				});
 			storage.redis.smembers("sess."+storage.username, function(err,reply) {
 				if(err)
