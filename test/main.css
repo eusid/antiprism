@@ -57,11 +57,6 @@ h1 {
 	height: 100%;
 }
 
-select {
-	width: 100%;
-	height: 100%;
-}
-
 #messages {
 	background: #ddd;
 	float: right;
@@ -87,4 +82,41 @@ select {
 .newMessage {
 	color: red;
 	background-color: #ffdddd;
+}
+
+.contactList {
+	float: left;
+	width: 100%;
+}
+
+.icon{
+	background-image:url(https://fbstatic-a.akamaihd.net/rsrc.php/v2/yO/r/Jsxaj6wDwuy.png);
+	background-repeat:no-repeat;
+	background-size:auto;
+	background-position:-840px -402px;
+}
+
+.contactDiv {
+	width: 90%;
+	float: right;
+}
+
+.iconDiv {
+	width: 10%;
+	float: left;
+	text-align: center;
+}
+
+.active {
+	background-color: #ddd;
+}
+
+ul {
+	list-style-type:none;
+	margin:0;
+	padding:0;
+}
+
+li {
+	border: solid 1px;
 }
