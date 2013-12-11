@@ -282,7 +282,7 @@ var helpers = {
 			var storeMsg = {ts:new Date().getTime(), from:storage.username, msg:data.msg};
 			console.log("storeMessage called! Data:");
 			console.log(data);
-			console.log("Callmode: "+storage.isServer?"Server2Server":"Standard");
+			console.log("Callmode: "+(storage.isServer?"Server2Server":"Standard"));
 			if(storage.isServer) {
 				storeMsg.from = [data.fromRemote,storage.hostname].join("@");
 				data.user = data.user.split("@")[0];
