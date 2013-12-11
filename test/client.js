@@ -1,6 +1,11 @@
 $(document).ready(function () {
   client.init();
   $('form').submit(function(e) {e.preventDefault(); });
+  require.config({
+    paths: {
+	  text: 'libs/text'
+	}
+  });
 });
 
 var utils = {
@@ -57,28 +62,21 @@ var utils = {
   displayContacts: function(msg) {
     console.log(msg);
     var friendList = $('#friendList');
-    var ul = document.createElement("ul");
-     for (var contact in msg.contacts) {
-      var li = document.createElement("li");
-      var nameDiv = document.createElement("div");
-      var iconDiv = document.createElement("div");
-      nameDiv.innerText = contact;
-      nameDiv.className = "contactDiv";
-      iconDiv.className = "iconDiv";
-      li.appendChild(nameDiv);
-      li.appendChild(iconDiv);
-      li.className = "contactList";
-      li.addEventListener("click",utils.onContactSelect);
-      ul.appendChild(li);
-     }
-     friendList.text("");
-     friendList.append(ul);
-     for(var contact in msg.contacts) {
-      console.log("displaying onlinestatus from user: " + contact);
-      console.log(msg.contacts[contact]);
-      utils.displayOnline({user:contact,online:msg.contacts[contact].online})
-     }
 
+	require(['text!html/user.html', 'libs/mustache'], function(html, Mustache) {
+		var $userList = $('<div>', {'class': 'list-group'});
+		for (var id in msg.contacts) {
+			$userList.append(Mustache.render(html, {name: id, key: msg.contacts[id].key.substr(0, 32)}));
+		}
+		friendList.empty();
+		console.log($userList);
+		friendList.append($userList);
+		for(var contact in msg.contacts) {
+			console.log("displaying onlinestatus from user: " + contact);
+			console.log(msg.contacts[contact]);
+			utils.displayOnline({user:contact,online:msg.contacts[contact].online})
+		}
+	});
   },
   onContactSelect: function(ctx) {
     var helper = function(contactName) {
