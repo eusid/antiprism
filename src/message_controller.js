@@ -288,20 +288,20 @@ var helpers = {
 				console.log("storeMsg:");
 				console.log(storeMsg);
 			}
+			var other = data.user;
 			var isLocal = data.user.indexOf("@") == -1;
-			if(!isLocal) {
+			if(!isLocal)
 				helpers.redirect(data,storage, function(msg) {
 					console.log("storemessage-debug:");
 					console.log(msg);
 				});
-				data.user = data.user.split("@")[0];
-			}
+				other = data.user.split("@")[0];
 			else
 				helpers.broadcast(storage, data.user, storeMsg);
-			if(data.user < storeMsg.from) // lawl-sort
-				var convid = data.user+'.'+storeMsg.from;
+			if(other < storeMsg.from) // lawl-sort
+				var convid = other+'.'+storeMsg.from;
 			else
-				var convid = storeMsg.from+'.'+data.user;
+				var convid = storeMsg.from+'.'+other;
 			storage.redis.rpush("msgs."+convid, JSON.stringify(storeMsg), function(err, reply) {
 				if(err)
 					return console.log({error:err});
