@@ -288,6 +288,9 @@ var helpers = {
 				console.log("storeMsg:");
 				console.log(storeMsg);
 			}
+			var isLocal = data.user.indexOf("@") == -1;
+			if(!isLocal)
+				data.user = data.user.split("@")[0];
 			if(data.user < storeMsg.from) // lawl-sort
 				var convid = data.user+'.'+storeMsg.from;
 			else
@@ -296,7 +299,6 @@ var helpers = {
 				if(err)
 					return console.log({error:err});
 			});
-			var isLocal = data.user.indexOf("@") == -1;
 			if(isLocal)
 				helpers.broadcast(storage, data.user, storeMsg);
 			else 
