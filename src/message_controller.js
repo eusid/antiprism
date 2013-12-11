@@ -296,6 +296,10 @@ var helpers = {
 			}
 			var other = data.user;
 			var isLocal = data.user.indexOf("@") == -1;
+			if(data.fromRemote) {
+				storeMsg.from = [data.fromRemote,storage.hostname].join("@");
+				helpers.broadcast(storage, data.user.split("@")[0], storeMsg);
+			}
 			if(!isLocal) {
 				helpers.redirect(data,storage, function(msg) {
 					console.log("callback called with msg:");
