@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
-	<title>JavaScript Crypto Demo, using JS-RSA and CryptoJS (AES)</title>
+	<title>#ANTiPRiSM</title>
 
 	<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
 	<link rel="stylesheet" href="css/style.css">
@@ -19,7 +19,7 @@
 		<div class="col-md-4">
 			<form id="login" role="form">
 				<div class="form-group">
-					<input type="email" class="form-control" placeholder="Username" id="username">
+					<input type="username" class="form-control" placeholder="Username" id="username">
 				</div>
 				<div class="form-group">
 					<input type="password" class="form-control" placeholder="Password" id="password">
@@ -35,10 +35,7 @@
 		</div>
 
 		<div id="chat" class="col-md-12" style="display: none;">
-			<div id="mute">
-				<input id="muteButton" type="checkbox"> Mute?
-			</div>
-			<div class="row">
+			<div class="row height-minus-controls">
 				<div id="friendList" class="col-md-3">
 					<form role="form">
 						<select class="form-control full-height">
@@ -46,6 +43,9 @@
 					</form>
 				</div>
 				<div id="messages" class="col-md-9 full-height"></div>
+			</div>
+			<div id="mute">
+				<input id="muteButton" type="checkbox"> Mute?
 			</div>
 			<div class="row controls">
 				<div class="col-md-3">
@@ -82,9 +82,7 @@
 <script src="libs/CryptJS-core-min.js"></script>
 <script src="libs/scrypt.js"></script>
 <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
-<script src="libs/require.js"></script>
 <script src="antiprismSDK.js"></script>
 <script src="client.js"></script>
 </body>
 </html>
-

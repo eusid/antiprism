@@ -1,11 +1,6 @@
 $(document).ready(function () {
   client.init();
   $('form').submit(function(e) {e.preventDefault(); });
-  require.config({
-    paths: {
-	  text: 'libs/text'
-	}
-  });
 });
 
 var utils = {
@@ -62,58 +57,61 @@ var utils = {
   displayContacts: function(msg) {
     console.log(msg);
     var friendList = $('#friendList');
+    var ul = document.createElement("ul");
+    for (var contact in msg.contacts) {
+      var li = document.createElement("li");
+      var nameDiv = document.createElement("div");
+      var iconDiv = document.createElement("div");
+      var clickDiv = document.createElement("div");
+      nameDiv.innerText = contact;
+      nameDiv.className = "contactDiv";
+      iconDiv.className = "iconDiv";
+      clickDiv.className = "clickDiv";
+      clickDiv.id = contact;
+      clickDiv.addEventListener("click",function(ctx) {
+        var className = ctx.toElement.className;
+        if(className == "clickDiv")
+          utils.onContactSelect(ctx.toElement.id);
+        else if(className == "contactDiv" || ctx.toElement.className == "iconDiv")
+          utils.onContactSelect(ctx.toElement.parentNode.id);
+        else if(className == "icon")
+          utils.onContactSelect(ctx.toElement.parentNode.parentNode.id)
+      });
+      clickDiv.appendChild(nameDiv);
+      clickDiv.appendChild(iconDiv);
+      li.appendChild(clickDiv);
+      li.className = "contactList";
+      ul.appendChild(li);
+     }
+     friendList.text("");
+     friendList.append(ul);
+     for(var contact in msg.contacts) {
+      console.log("displaying onlinestatus from user: " + contact);
+      console.log(msg.contacts[contact]);
+      utils.displayOnline({user:contact,online:msg.contacts[contact].online})
+     }
 
-	require(['text!html/user.html', 'libs/mustache'], function(html, Mustache) {
-		var $userList = $('<div>', {'class': 'list-group'});
-		for (var id in msg.contacts) {
-			$userList.append(Mustache.render(html, {name: id, key: msg.contacts[id].key.substr(0, 32)}));
-		}
-		friendList.empty();
-		console.log($userList);
-		friendList.append($userList);
-		for(var contact in msg.contacts) {
-			console.log("displaying onlinestatus from user: " + contact);
-			console.log(msg.contacts[contact]);
-			utils.displayOnline({user:contact,online:msg.contacts[contact].online})
-		}
-	});
   },
-  onContactSelect: function(ctx) {
-    var helper = function(contactName) {
-      var contactNode = utils.getContactByName(contactName);
-      $('.active').removeClass("active");
-      contactNode.classList.add("active");
-      if(contactNode.className.indexOf("newMessage") != -1)
-        contactNode.classlist.remove("newMessage");
-      utils.messageDisplay().empty();
-      client.getMessages(contactName);
-    }
-
-    try {
-      var contactName = ctx.toElement.childNodes[0].data;
-      helper(contactName);
-      
-    } catch (e) {
-      try {
-        console.log(ctx);
-        var contactName = ctx.toElement.parentNode.previousElementSibling.innerText;
-        helper(contactName);
-      } catch (e) {
-        var contactName = ctx.toElement.childNodes[0].innerText;
-        helper(contactName);
-      }
-    }
+  onContactSelect: function(contactName) {     
+    var contactNode = utils.getContactByName(contactName);
+    $('.active').removeClass("active");
+    contactNode.classList.add("active");
+    if(contactNode.className.indexOf("newMessage") != -1)
+      contactNode.classList.remove("newMessage");
+    utils.messageDisplay().empty();
+    client.getMessages(contactName);
   },
   getContactByName: function(contactName) {
     var containsString = ":contains(" + contactName + ")";
     var contacts = $('li').filter(containsString);
 
-    if (contacts.length == 1)
+    if (contacts.length == 1 && contacts[0] != undefined)
       return contacts[0];
     for (var i in contacts) {
       if(contacts[i].innerText == contactName) 
         return contacts[i]
     }
+    throw "contact " + contactName + " not found :/";
   },
   displayMessage: function(message) {
     console.log(message);
@@ -127,10 +125,11 @@ var utils = {
       var time = (new Date(message.ts)).toLocaleString().split(' ')[1];
       messageContainer.innerText = '<' + time + '> ' + username + ': ' + message.msg;
       utils.messageDisplay().append(messageContainer);
-      utils.messageDisplay().animate({ scrollTop: utils.messageDisplay().prop("scrollHeight") - utils.messageDisplay().height() }, 500);
+      utils.messageDisplay().animate({ scrollTop: utils.messageDisplay().prop("scrollHeight") - utils.messageDisplay().height() }, 300);
     } else {
-      var contact = utils.getContactByName(message.from || message.to);
-      contact.className = "newMessage";
+      var contactName = message.from || message.to;
+      var contact = utils.getContactByName(contactName);
+      contact.classList.add("newMessage");
     }
   },
   statusIcon: function() {
@@ -144,7 +143,8 @@ var utils = {
   },
   displayOnline: function(msg) {
     console.log(msg);
-    var user = utils.getContactByName(msg.user);
+    var user = utils.getContactByName(msg.user).children[0];
+    globaluser = user;
     if(msg.online)
       user.children[1].appendChild(utils.statusIcon());
     else if (!msg.online)
@@ -174,6 +174,8 @@ var client = {
   sendMessage: function() {
     var messageField = $('#messageField');
     var message = messageField.val();
+    if (!message)
+      return;
     var to = null;
     var $active = $('.active');
     if ($active.length)
@@ -188,7 +190,10 @@ var client = {
       utils.displayMessage({to:null,ts:(new Date()).getTime(),msg:"Fotze du hast keinen fucking Kontakt ausgewaehlt!!"});
   },
   addFriend: function() {
-    antiprism.initConversation($('#addFriendField').val(), function() {
+    var friend = $('#addFriendField').val();
+    if (!friend)
+      return;
+    antiprism.initConversation(friend, function() {
       antiprism.getContacts(utils.displayContacts);
     });
   },
@@ -208,8 +213,6 @@ var client = {
         if(!msg.to && (msg.from != selected || !document.hasFocus())) {
           if(!$('#muteButton')[0].checked)
             utils.playSound("ios.mp3");
-          if(selected != msg.from)
-            utils.getContactByName(msg.from).classList.add("newMessage");
         }
         utils.displayMessage(msg);
       },
