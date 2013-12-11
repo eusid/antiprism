@@ -54,7 +54,8 @@ var helpers = {
 							else {
 								console.log("got something to parse:");
 								console.log(msg);
-								helpers.parseRequest(msg,storage); // TODO: react to events
+								console.log("parsing-result:");
+								console.log(helpers.parseRequest(msg,storage)); // TODO: react to events
 							}
 						else if(data.fromRemote)
 							for(var event in RemoteAllowed)
@@ -103,6 +104,8 @@ var helpers = {
 		},
 		parseRequest: function(data, storage) {
 			var action, actionName = data.action;
+			console.log("parseRequest called with:");
+			console.log(data);
 			if (!actionName) return Error.MISSING_ACTION;
 
 			action = actions[actionName];
@@ -280,12 +283,12 @@ var helpers = {
 			return 0;
 		},
 		storeMessage: function(data, storage) {
-			if(data.user === undefined || data.msg === undefined)
-				return Error.INVALID_PARAMS;
-			var storeMsg = {ts:new Date().getTime(), from:storage.username, msg:data.msg};
 			console.log("storeMessage called! Data:");
 			console.log(data);
 			console.log("Callmode: "+(storage.isServer?"Server2Server":"Standard"));
+			if(data.user === undefined || data.msg === undefined)
+				return Error.INVALID_PARAMS;
+			var storeMsg = {ts:new Date().getTime(), from:storage.username, msg:data.msg};
 			if(storage.isServer) {
 				storeMsg.from = [data.fromRemote,storage.hostname].join("@");
 				data.user = data.user.split("@")[0];
