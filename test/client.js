@@ -1,5 +1,6 @@
 $(document).ready(function () {
   client.init();
+  $('form').submit(function(e) {e.preventDefault(); });
 });
 
 var utils = {
@@ -56,7 +57,7 @@ var utils = {
   displayContacts: function(msg) {
     console.log(msg);
     var friendList = $('#friendList');
-    var contactList = document.createElement("select");
+    var contactList = document.querySelector("#friendList select");
     contactList.size = 2; //sizeproperty has to be set because fuck that shit
     contactList.addEventListener("change",utils.onContactChange);
 
