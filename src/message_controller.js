@@ -194,6 +194,7 @@ var helpers = {
 			data.user = storage.isServer ? data.user.split("@")[0] : data.user;
 			if(data.user.indexOf("@") != -1)
 				helpers.redirect(data, storage, function(msg) {
+					msg.user = data.user;
 					helpers.sendClient(msg);
 				});
 			else
