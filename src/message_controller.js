@@ -282,6 +282,7 @@ var helpers = {
 			var storeMsg = {ts:new Date().getTime(), from:storage.username, msg:data.msg};
 			if(storage.isServer) {
 				storeMsg.from = [data.fromRemote,storage.hostname].join("@");
+				data.user = data.user.split("@")[0];
 				console.log("got msg:");
 				console.log(data);
 				console.log("storeMsg:");
@@ -298,7 +299,7 @@ var helpers = {
 			var isLocal = data.user.indexOf("@") == -1;
 			if(isLocal)
 				helpers.broadcast(storage, data.user, storeMsg);
-			else
+			else 
 				helpers.redirect(data,storage, function(msg) {
 					console.log("storemessage-debug:");
 					console.log(msg);
