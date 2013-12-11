@@ -291,7 +291,10 @@ var helpers = {
 			var other = data.user;
 			var isLocal = data.user.indexOf("@") == -1;
 			if(!isLocal) {
+				data.from = storeMsg.from;
 				helpers.redirect(data,storage, function(msg) {
+					console.log("callback called with msg:");
+					console.log(msg);
 					msg.from = data.user;
 					helpers.broadcast(storage, data.fromRemote, msg);
 				});
