@@ -219,8 +219,11 @@ var helpers = {
 					return console.log({error:err});
 				if(reply)
 					return helpers.sendClient({initiated:false,with:data.user});
-				if(storage.isServer)
+				if(storage.isServer) {
+					delete data.convkeys[0];
+					data.user = data.user.split("@")[0];
 					storage.username = [data.fromRemote,storage.hostname].join("@");
+				}
 				if(data.user.indexOf("@") != -1)
 					helpers.redirect(data, storage, function(msg) {
 						msg.with = data.user;
