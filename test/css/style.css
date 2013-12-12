@@ -136,6 +136,14 @@ ul {
 	border-bottom: none;
 }
 
+.popover{
+	width: 50%;
+}
+.popover-title {
+	width: 100%;
+	margin: 0px;
+}
+
 /*.glyphicon-ok-sign {
 	margin-right: 10px;
 }*/

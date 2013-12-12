@@ -115,6 +115,20 @@ var utils = {
     console.log(contactName);
     console.log(statusMsg);
   },
+  createStatusTooltip: function(status) {
+    var tooltipDiv = document.createElement("div");
+    var tooltipInner = document.createElement("div");
+    var tooltipArrow = document.createElement("div");
+
+    tooltipDiv.className = "tooltip";
+    tooltipInner.className = "tooltip-inner";
+    tooltipInner.innerHTML = status;
+    tooltipArrow.className = "tooltip-arrow";
+    tooltipDiv.appendChild(tooltipInner);
+    tooltipDiv.appendChild(tooltipArrow);
+
+    return tooltipDiv;
+  },
   displayContacts: function(msg) {
     console.log(msg);
     var friendList = $('#friendList');
@@ -126,8 +140,10 @@ var utils = {
       icon.className = "online";
       contactElement.href = "#";
       contactElement.className = "list-group-item";
+      //contactElement.title = msg.status;
       contactElement.appendChild(icon);
       contactElement.innerHTML += contact;
+      //contactElement.appendChild(utils.createStatusTooltip(msg.contacts[contact].status));
       contactElement.addEventListener("click",function(ctx) {
         console.log(ctx);
         if(ctx.toElement === undefined)
@@ -137,15 +153,20 @@ var utils = {
         utils.onContactSelect(contactName);
       });
       contactList.appendChild(contactElement);
-     }
-     friendList.text("");
-     friendList.append(contactList);
-     for(var contact in msg.contacts) {
-      console.log("displaying onlinestatus from user: " + contact);
-      console.log(msg.contacts[contact]);
-      utils.displayOnline({user:contact,online:msg.contacts[contact].online})
-     }
-
+    }
+    friendList.text("");
+    friendList.append(contactList);
+    for(var contact in msg.contacts) {
+      var statusMsg = msg.contacts[contact].status || "";
+      console.log("status: " + statusMsg);
+      utils.displayOnline({user:contact,online:msg.contacts[contact].online});
+      var statusTitle = contact + "'s status: ";
+      var containsString = ":contains(" + contact + ")";
+      $('a.list-group-item').filter(containsString).popover(
+        {trigger:'hover',content:statusMsg, 
+        title:statusTitle, delay: { show: 500, hide: 100 }})
+      .removeAttr("data-original-title").removeAttr("title");
+    }
   },
   onContactSelect: function(contactName) { 
     console.log(contactName);    
@@ -161,7 +182,8 @@ var utils = {
   },
   getContactByName: function(contactName) {
     var containsString = ":contains(" + contactName + ")";
-    var $contacts = $('.list-group-item').filter(containsString);
+    var $contacts = $('a.list-group-item').filter(containsString);
+    console.log($contacts);
 
     //Firefox
     if($contacts.text() == contactName)
@@ -171,7 +193,7 @@ var utils = {
     if ($contacts.length == 1 && $contacts[0] != undefined)
       return $contacts[0];
     for (var i in $contacts) {
-      if($contacts[i].innerHTML == contactName) 
+      if($contacts[i].innerText == contactName) 
         return $contacts[i]
     }
     throw "contact " + contactName + " not found :/";
