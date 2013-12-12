@@ -92,6 +92,13 @@ var helpers = {
 			});
 			return 0;
 		},
+		getStatus: function(data, storage) {
+			if(!storage.loggedIn)
+				return Error.INVALID_AUTH;
+			storage.redis.hget("users."+storage.username, "status", function(err, reply) {
+				helpers.sendClient({status:reply});
+			});
+		},
 		contacts: function(data, storage) {
 			if(!storage.loggedIn)
 				return Error.INVALID_AUTH;
@@ -99,19 +106,18 @@ var helpers = {
 			storage.redis.hgetall("convs."+storage.username, function(err,contacts) {
 				if(!contacts)
 					return helpers.sendClient({contacts:[]});
-				var ret = {}, users = Object.keys(contacts), usersIndex = users.length;
+				var ret = {}, users = Object.keys(contacts), usersIndex = 0;
 				for(var i in users) {
-					usersIndex--;
 					storage.redis.multi()
-						.scard("sess."+users[usersIndex])
-						.hget("users."+users[usersIndex],"status")
+						.scard("sess."+users[i])
+						.hget("users."+users[i],"status")
 						.exec(function(err,replies) {
-							ret[users[usersIndex]] = {
-								key:contacts[users[usersIndex]],
+							ret[users[i]] = {
+								key:contacts[users[i]],
 								online:!!parseInt(replies[0]),
 								status:replies[1]
 							};
-							if(!usersIndex)
+							if(++usersIndex == users.length)
 								helpers.sendClient({contacts:ret});
 						});
 				}
