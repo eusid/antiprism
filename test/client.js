@@ -13,6 +13,7 @@ var utils = {
     $('#chat').toggle(1000);
     $('#settings').toggle(1000);
     $('#dummy').toggle(1000);
+    $('#headline').addClass("col-md-3");
   },
   changeButton: function() {
     if($('#registration').prop('checked')) {

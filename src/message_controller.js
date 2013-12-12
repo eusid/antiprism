@@ -111,7 +111,7 @@ var helpers = {
 				var ret = {}, users = Object.keys(contacts), usersIndex = users.length;
 				for(var i in users) {
 					var username = users[(users.length - 1) - i];
-					ret[username] = {};
+					ret[username] = {online:false};
 					ret[username].key = contacts[username];
 					storage.redis.scard("sess."+username, function(err,reply) {
 						ret[username].online = !!parseInt(reply);
