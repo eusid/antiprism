@@ -160,7 +160,7 @@ var utils = {
     }
     throw "contact " + contactName + " not found :/";
   },
-  displayMessage: function(message) {
+  displayMessage: function(message, chained) {
     if(!document.hasFocus())
       $('title').text("#AP - " + contactName + " just contacted you!");
     var $active = $('.active');
@@ -190,7 +190,8 @@ var utils = {
       panelContainer.appendChild(panelHeader);
       panelContainer.appendChild(panelContent);
       utils.messageDisplay().append(panelContainer);
-      utils.messageDisplay().animate({ scrollTop: utils.messageDisplay().prop("scrollHeight") - utils.messageDisplay().height() }, 300);
+      if(!chained)
+        utils.messageDisplay().animate({ scrollTop: utils.messageDisplay().prop("scrollHeight") - utils.messageDisplay().height() }, 300);
     } else {
       var contact = utils.getContactByName(contactName);
       contact.classList.add("newMessage");
@@ -215,8 +216,9 @@ var utils = {
   },
   displayMessages: function(msg) {
     for(var i in msg.msglist) {
-      utils.displayMessage(msg.msglist[i]);
+      utils.displayMessage(msg.msglist[i], true);
     }
+    utils.messageDisplay().animate({ scrollTop: utils.messageDisplay().prop("scrollHeight") - utils.messageDisplay().height() }, 300);
   },
   playSound: function(mp3, fallback) {
     var sound = new Audio();
