@@ -124,7 +124,7 @@ var utils = {
     if (selectedContact == message.from || selectedContact == message.to || utils.getUsername() == message.from) {
       var messageContainer = document.createElement("p");
       var username = message.from || utils.getUsername();
-      var time = (new Date(message.ts)).toLocaleString().split(' ')[1];
+      var time = (new Date(message.ts)).toLocaleTimeString().split(' ');
       messageContainer.innerText = '<' + time + '> ' + username + ': ' + message.msg;
       utils.messageDisplay().append(messageContainer);
       utils.messageDisplay().animate({ scrollTop: utils.messageDisplay().prop("scrollHeight") - utils.messageDisplay().height() }, 300);
