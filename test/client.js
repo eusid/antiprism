@@ -16,9 +16,9 @@ var utils = {
   },
   changeButton: function() {
     if($('#registration').prop('checked')) {
-      $('button')[0].innerText = "Sign Up";
+      $('#signInButton').text("Sign Up");
     } else {
-      $('button')[0].innerText = "Sign In";
+      $('#signInButton').text("Sign In");
     }
   },
   muted: function() {
@@ -308,7 +308,10 @@ var client = {
         $('h1')[0].innerText = headline + " (" + utils.getUsername() + ")";
         utils.switchChatLogin();
         antiprism.getContacts(utils.displayContacts);
-      } else utils.switchLoginAbility();
+      } else {
+        utils.switchLoginAbility();
+        $('#loginAlert').fadeIn(1000,function(){setTimeout(function(){$('#loginAlert').fadeOut()},5000)})
+      }
       $('#password').val("");
     }
     if(registration)
