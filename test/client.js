@@ -156,8 +156,9 @@ var utils = {
     var $active = $('.active');
     var selectedContact = null;
     if ($active.length)
-      var selectedContact = $active.innerText;
+      var selectedContact = $active.text();
     var contactName = message.from || message.to;
+    console.log("selectedContact: " + selectedContact);
     if (selectedContact == message.from || selectedContact == message.to || utils.getUsername() == message.from) {
       var panelContainer = document.createElement("div");
       var panelHeader = document.createElement("div");
