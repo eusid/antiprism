@@ -214,7 +214,7 @@ var antiprism = (function() {
 			},
 			close: function() {
 				ws.close();
-				delete ws;
+				delete ws.storage;
 			},
 			debug: debug
 		};
