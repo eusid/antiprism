@@ -1,5 +1,6 @@
 var antiprism = (function() {
 	var ws,
+		restore = {},
 		debug = function(obj) { console.log("[DEBUG]:"); console.log(obj); },
 		utils = {
 			hex2a: function(hex) {
@@ -87,6 +88,7 @@ var antiprism = (function() {
 			*/
 			init: function(user,password,host,callbacks) {
 				ws = new WebSocket(host);
+				restore.privs = [user,password,host,callbacks];
 				actions.ws = ws; // only 4 debug!
 				ws.storage = {user:user, password:utils.buildAESKey(password), conversations:{}, outqueue:[], inqueue:[]};
 				ws.storage.pingfails = 0;
@@ -125,8 +127,13 @@ var antiprism = (function() {
 				};
 				ws.onclose = function() {
 					clearInterval(ws.storage.pingID);
-					delete ws.storage;
 					console.log("DEBUG: connection closed");
+					if(!restore.SUICIDE) {
+						actions.init.apply(this, restore.privs);
+						actions.login();
+						return;
+					}
+					delete ws.storage;
 				}
 				ws.sendObject = function(msg) {
 					if(ws.readyState != 1)
@@ -214,6 +221,7 @@ var antiprism = (function() {
 				ws.storage.events["sent"] = callback;
 			},
 			close: function() {
+				//restore.SUICIDE = true; // TODO: implement this!
 				ws.close();
 			},
 			debug: debug
