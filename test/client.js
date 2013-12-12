@@ -251,7 +251,7 @@ var client = {
           utils.displayMessage({to:to,ts:msg.ts,msg:message});
       });
     else
-      utils.displayMessage({to:null,ts:(new Date()).getTime(),msg:"Fotze du hast keinen fucking Kontakt ausgewaehlt!!"});
+      utils.displayMessage({to:null,ts:(new Date()).getTime(),msg:"You didn\'t choose a contact!"});
   },
   changePass: function() {
     if(utils.changePasswordValidated()) {
@@ -310,6 +310,7 @@ var client = {
   logout: function() {
     antiprism.close();
     $('h1')[0].innerText = headline;
+    $('#messages')[0].innerText = "";
     utils.switchChatLogin();
     utils.switchLoginAbility();
   },
