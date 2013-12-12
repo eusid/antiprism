@@ -101,16 +101,16 @@ var helpers = {
 					return helpers.sendClient({contacts:[]});
 				var ret = {}, users = Object.keys(contacts), usersIndex = users.length;
 				for(var i in users) {
-					usersIndex--;
 					storage.redis.multi()
-						.scard("sess."+users[usersIndex])
-						.hget("users."+users[usersIndex],"status")
+						.scard("sess."+users[usersIndex-i-1])
+						.hget("users."+users[usersIndex-i-1],"status")
 						.exec(function(err,replies) {
-							ret[users[usersIndex]] = {
-								key:contacts[users[usersIndex]],
+							ret[users[usersIndex-1]] = {
+								key:contacts[users[usersIndex-1]],
 								online:!!parseInt(replies[0]),
 								status:replies[1]
 							};
+							usersIndex--;
 							if(!usersIndex)
 								helpers.sendClient({contacts:ret});
 						});
