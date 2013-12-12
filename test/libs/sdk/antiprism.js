@@ -180,6 +180,10 @@ var antiprism = (function() {
 				ws.sendObject({action:"setStatus",status:status});
 				ws.storage.events["status"] = callback || debug;
 			},
+			setStatus: function(callback) {
+				ws.sendObject({action:"getStatus"});
+				ws.storage.events["status"] = callback || debug;
+			},
 			getContacts: function(callback) {
 				ws.sendObject({action:"contacts"});
 				ws.storage.events["contacts"] = function(msg) {
