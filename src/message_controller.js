@@ -106,7 +106,7 @@ var helpers = {
 			storage.redis.hgetall("convs."+storage.username, function(err,contacts) {
 				if(!contacts)
 					return helpers.sendClient({contacts:[]});
-				var ret = {}, users = Object.keys(contacts), usersIndex = 0;
+				var ret = {}, users = Object.keys(contacts), usersIndex = users.length;
 				for(var i in users) {
 					storage.redis.multi()
 						.scard("sess."+users[usersIndex-i-1])
