@@ -177,6 +177,13 @@ var utils = {
       panelHeader.className = "panel panel-heading";
       panelContent.className = "panel panel-body";
       panelContent.innerText = message.msg;
+      var urlregex = /(\b(https?):\/\/[\-A-Z0-9+&@#\/%?=~_|!:,.;]*[\-A-Z0-9+&@#\/%=~_|])/ig,
+          results = panelContent.innerText.match(urlregex);
+      for(link in results) {
+        var replaced = panelContent.innerHTML.replace(results[link],results[link].link(results[link]));
+        console.log(replaced);
+        panelContent.innerHTML = replaced.replace("<a","<a target=_blank");
+      }
       panelHeader.innerText = time;
       if(username == utils.getUsername()) {
         panelContainer.className = "panel panel-success col-md-8 pull-right";
