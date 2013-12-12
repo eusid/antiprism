@@ -180,7 +180,7 @@ var antiprism = (function() {
 				ws.sendObject({action:"setStatus",status:status});
 				ws.storage.events["status"] = callback || debug;
 			},
-			setStatus: function(callback) {
+			getStatus: function(callback) {
 				ws.sendObject({action:"getStatus"});
 				ws.storage.events["status"] = callback || debug;
 			},
@@ -206,10 +206,6 @@ var antiprism = (function() {
 			countMessages: function(user, callback) {
 				ws.sendObject({action:"countMessages", user:user});
 				ws.storage.events["msgcount"] = callback || debug;
-			},
-			setStatus: function(status, callback) {
-				ws.sendObject({action:"setStatus", status:status});
-				ws.storage.events["status"] = callback || debug;
 			},
 			removeContact: function(user, callback) {
 				ws.sendObject({action:"removeContact", user:data.user});

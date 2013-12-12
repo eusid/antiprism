@@ -4,6 +4,14 @@ $(document).ready(function () {
 });
 
 var utils = {
+  setHeadline: function(msg) {
+    var statusMsgContainer = document.createElement("blockquote");
+    var statusMsg = document.createElement("small");
+    statusMsg.innerHTML = msg.status;
+    $h1 = $('h1');
+    $h1.text(headline + " (" + utils.getUsername() + ") ");
+    $h1.append(statusMsg);
+  },
   switchChatLogin: function() {
     $('#login').toggle(1000);
     $('#chat').toggle(1000);
@@ -317,9 +325,9 @@ var client = {
 
     var callback = function(msg) {
       if(msg) {
-        $('h1').text(headline + " (" + utils.getUsername() + ")");
         utils.switchChatLogin();
         antiprism.getContacts(utils.displayContacts);
+        antiprism.getStatus(utils.setHeadline);
       } else {
         $('#loginAlert').fadeIn(1000,function(){setTimeout(function(){$('#loginAlert').fadeOut()},5000)})
       }
