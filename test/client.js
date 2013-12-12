@@ -50,10 +50,11 @@ var utils = {
     return $('#registration').prop('checked');
   },
   setOnClickEvents: function() {
-    $('#registration')[0].onclick = utils.changeButton;
-    $('#signInButton')[0].onclick = client.login;
-    $('#addFriendButton')[0].onclick = client.addFriend;
-    $('#sendButton')[0].onclick = client.sendMessage;
+    $('#registration').click(utils.changeButton);
+    $('#signInButton').click(client.login);
+    $('#addFriendButton').click(client.addFriend);
+    $('#sendButton').click(client.sendMessage);
+    $('#mute').click(function(){utils.changeMuteButton();})
   },
   addKeyEvents: function() {
     $('#login').find(".textField").keyup(function(e){
@@ -71,7 +72,6 @@ var utils = {
         client.addFriend();
       }
     });
-    $('#mute').click(function(){utils.changeMuteButton();})
   },
   displayContacts: function(msg) {
     console.log(msg);
