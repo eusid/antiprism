@@ -61,6 +61,13 @@ var utils = {
     $('#mute').click(function(){utils.changeMuteButton();});
     $('#logout').click(client.logout);
     $('#savePassButton').click(client.changePass);
+    $('#setStatusButton').click(function() {
+      bootbox.prompt("What's up?", function(result) {                
+        if (result !== null) {                                             
+          client.setStatus(result);                              
+        }
+      });
+    });
   },
   addKeyEvents: function() {
     $('#login').find(".textField").keyup(function(e){
@@ -94,6 +101,11 @@ var utils = {
       validate();
       $('#newPassField').keyup(validate);
     })
+  },
+  displayStatus: function(contactName, statusMsg) {
+    utils.getContactByName(contactName);
+    console.log(contactName);
+    console.log(statusMsg);
   },
   displayContacts: function(msg) {
     console.log(msg);
@@ -265,6 +277,9 @@ var client = {
       antiprism.changePassword($('#newPassField').val());
       utils.hideChangePasswordDialog();
     }
+  },
+  setStatus: function(statusMsg) {
+    antiprism.setStatus(statusMsg, function() {});
   },
   addFriend: function() {
     var friend = $('#addFriendField').val();
