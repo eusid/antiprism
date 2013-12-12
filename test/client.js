@@ -114,11 +114,13 @@ var utils = {
     throw "contact " + contactName + " not found :/";
   },
   displayMessage: function(message) {
-    console.log(message);
+    if(!document.hasFocus())
+      $('title').text("#AP - " + contactName + " just contacted you!");
     var $active = $('.active');
     var selectedContact = null;
     if ($active.length)
       var selectedContact = $active.children()[0].innerText;
+    var contactName = message.from || message.to;
     if (selectedContact == message.from || selectedContact == message.to || utils.getUsername() == message.from) {
       var messageContainer = document.createElement("p");
       var username = message.from || utils.getUsername();
@@ -127,10 +129,11 @@ var utils = {
       utils.messageDisplay().append(messageContainer);
       utils.messageDisplay().animate({ scrollTop: utils.messageDisplay().prop("scrollHeight") - utils.messageDisplay().height() }, 300);
     } else {
-      var contactName = message.from || message.to;
       var contact = utils.getContactByName(contactName);
       contact.classList.add("newMessage");
     }
+    if(!document.hasFocus())
+      $('title').text("#AP - " + contactName + " just contacted you!");
   },
   statusIcon: function() {
     var statusIcon = document.createElement("img");

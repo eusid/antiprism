@@ -84,5 +84,13 @@
 <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
 <script src="libs/sdk/antiprism.js"></script>
 <script src="client.js"></script>
+<script>
+	var title = "#ANTiPRiSM";
+	(function() {
+		$(window).focus(function(){
+			$('title').text(title);
+		})
+	})();
+</script>
 </body>
 </html>
