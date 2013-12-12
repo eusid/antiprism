@@ -121,7 +121,7 @@ var utils = {
           utils.onContactSelect(ctx.toElement.id);
         else if(className == "contactDiv" || ctx.toElement.className == "iconDiv")
           utils.onContactSelect(ctx.toElement.parentNode.id);
-        else if(className == "icon")
+        else if(className == "glyphicon glyphicon-ok-sign online")
           utils.onContactSelect(ctx.toElement.parentNode.parentNode.id)
       });
       clickDiv.appendChild(nameDiv);
