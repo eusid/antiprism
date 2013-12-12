@@ -80,20 +80,40 @@ var helpers = {
 			});
 			return {loggedIn:true};
 		},
+		setStatus: function(data, storage) {
+			if(!data.status)
+				return Error.INVALID_PARAMS;
+			if(!storage.loggedIn)
+				return Error.INVALID_AUTH;
+			storage.redis.hmset("users."+storage.username,"status",data.status, function(err,reply) {
+				if(err)
+					console.log({error:err});
+				helpers.sendClient({status:true});
+			});
+			return 0;
+		},
 		contacts: function(data, storage) {
 			if(!storage.loggedIn)
 				return Error.INVALID_AUTH;
+
 			storage.redis.hgetall("convs."+storage.username, function(err,contacts) {
 				if(!contacts)
 					return helpers.sendClient({contacts:[]});
 				var ret = {}, users = Object.keys(contacts), usersIndex = users.length;
 				for(var i in users) {
-					storage.redis.scard("sess."+users[(users.length - 1) - i], function(err,reply) {
-						usersIndex--;
-						ret[users[usersIndex]] = {key:contacts[users[usersIndex]],online:!!parseInt(reply)};
-						if(!usersIndex)
-							helpers.sendClient({contacts:ret});
-					});
+					usersIndex--;
+					storage.redis.multi()
+						.scard("sess."+users[usersIndex])
+						.hget("users."+users[usersIndex],"status")
+						.exec(function(err,replies) {
+							ret[users[usersIndex]] = {
+								key:contacts[users[usersIndex]],
+								online:!!parseInt(replies[0]),
+								status:replies[1]
+							};
+							if(!usersIndex)
+								helpers.sendClient({contacts:ret});
+						});
 				}
 			});
 			return 0;
