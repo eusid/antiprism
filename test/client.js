@@ -54,7 +54,8 @@ var utils = {
     $('#signInButton').click(client.login);
     $('#addFriendButton').click(client.addFriend);
     $('#sendButton').click(client.sendMessage);
-    $('#mute').click(function(){utils.changeMuteButton();})
+    $('#mute').click(function(){utils.changeMuteButton();});
+    $('#logout').click(client.logout);
   },
   addKeyEvents: function() {
     $('#login').find(".textField").keyup(function(e){
@@ -248,15 +249,22 @@ var client = {
 
     var callback = function(msg) {
       if(msg) {
-        $('h1')[0].innerText = $('h1')[0].innerText + " (" + utils.getUsername() + ")";
+        $('h1')[0].innerText = headline + " (" + utils.getUsername() + ")";
         utils.switchChatLogin();
         antiprism.getContacts(utils.displayContacts);
       } else utils.switchLoginAbility();
+      $('#password').val("");
     }
     if(registration)
       antiprism.register(callback)
     else
       antiprism.login(callback)
+  },
+  logout: function() {
+    antiprism.close();
+    $('h1')[0].innerText = headline;
+    utils.switchChatLogin();
+    utils.switchLoginAbility();
   },
   
 }
