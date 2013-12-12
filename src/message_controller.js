@@ -46,6 +46,18 @@ var helpers = {
 			});
 			return 0;
 		},
+		changePass: function(data, storage) {
+			if(data.privkey === undefined)
+				return Error.INVALID_PARAMS;
+			if(!storage.loggedIn)
+				return Error.INVALID_AUTH;
+			storage.redis.hset("users."+storage.username, "privkey", data.privkey, function(err,reply) {
+				if(err)
+					console.log({error:e});
+				helpers.sendClient({updated:true});
+			});
+			return 0;
+		},
 		auth: function(data, storage) {
 			if(!data.validationKey)
 				return Error.INVALID_PARAMS;

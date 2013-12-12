@@ -163,6 +163,11 @@ var antiprism = (function() {
 				ws.sendObject({action:"register", username:ws.storage.user, pubkey:keypair.pubkey, privkey:keypair.crypt});
 				ws.storage.events["registered"] = function() { actions.login(callback || debug); };
 			},
+			changePassword: function(newpass, callback) {
+				var passAES = utils.buildAESKey(newpass);
+				ws.sendObject({action:"changePass", privkey:utils.encryptAES(ws.storage.privkey, passAES)});
+				ws.storage.events["updated"] = callback || debug;
+			},
 			getContacts: function(callback) {
 				ws.sendObject({action:"contacts"});
 				ws.storage.events["contacts"] = function(msg) {
