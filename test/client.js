@@ -154,7 +154,7 @@ var utils = {
     if(!document.hasFocus())
       $('title').text("#AP - " + contactName + " just contacted you!");
     var $active = $('.active');
-    var selectedContact = null;
+    var selectedContact = "";
     if ($active.length)
       var selectedContact = $active.text();
     var contactName = message.from || message.to;
