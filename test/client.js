@@ -102,37 +102,23 @@ var utils = {
   displayContacts: function(msg) {
     console.log(msg);
     var friendList = $('#friendList');
-    var ul = document.createElement("ul");
-    ul.className = "list-group";
+    var contactList = document.createElement("div");
+    contactList.className = "list-group";
     for (var contact in msg.contacts) {
-      var li = document.createElement("li");
-      var nameDiv = document.createElement("div");
+      var contactElement = document.createElement("a");
       var icon = document.createElement("span");
-      var iconDiv = document.createElement("div");
-      var clickDiv = document.createElement("div");
-      nameDiv.innerText = contact;
-      nameDiv.appendChild(icon)
-      nameDiv.className = "contactDiv";
-      iconDiv.className = "iconDiv";
-      clickDiv.className = "clickDiv";
-      clickDiv.id = contact;
-      clickDiv.addEventListener("click",function(ctx) {
-        var className = ctx.toElement.className;
-        if(className == "clickDiv")
-          utils.onContactSelect(ctx.toElement.id);
-        else if(className == "contactDiv" || ctx.toElement.className == "iconDiv")
-          utils.onContactSelect(ctx.toElement.parentNode.id);
-        else if(className == "glyphicon glyphicon-ok-sign online")
-          utils.onContactSelect(ctx.toElement.parentNode.parentNode.id)
+      contactElement.href = "#";
+      contactElement.className = "list-group-item";
+      contactElement.appendChild(icon);
+      contactElement.innerHTML += contact;
+      contactElement.addEventListener("click",function(ctx) {
+        console.log(ctx);
+        utils.onContactSelect(ctx.toElement.innerText)
       });
-      clickDiv.appendChild(nameDiv);
-      clickDiv.appendChild(iconDiv);
-      li.appendChild(clickDiv);
-      li.className = "contactList list-group-item";
-      ul.appendChild(li);
+      contactList.appendChild(contactElement);
      }
      friendList.text("");
-     friendList.append(ul);
+     friendList.append(contactList);
      for(var contact in msg.contacts) {
       console.log("displaying onlinestatus from user: " + contact);
       console.log(msg.contacts[contact]);
@@ -144,20 +130,22 @@ var utils = {
     var contactNode = utils.getContactByName(contactName);
     $('.active').removeClass("active");
     contactNode.classList.add("active");
+    console.log(contactNode);
     if(contactNode.className.indexOf("newMessage") != -1)
       contactNode.classList.remove("newMessage");
+    console.log(contactNode);
     utils.messageDisplay().empty();
     client.getMessages(contactName);
   },
   getContactByName: function(contactName) {
     var containsString = ":contains(" + contactName + ")";
-    var contacts = $('li').filter(containsString);
+    var $contacts = $('.list-group-item').filter(containsString);
 
-    if (contacts.length == 1 && contacts[0] != undefined)
-      return contacts[0];
-    for (var i in contacts) {
-      if(contacts[i].innerText == contactName) 
-        return contacts[i]
+    if ($contacts.length == 1 && $contacts[0] != undefined)
+      return $contacts[0];
+    for (var i in $contacts) {
+      if($contacts[i].innerText == contactName) 
+        return $contacts[i]
     }
     throw "contact " + contactName + " not found :/";
   },
@@ -167,7 +155,7 @@ var utils = {
     var $active = $('.active');
     var selectedContact = null;
     if ($active.length)
-      var selectedContact = $active.children()[0].innerText;
+      var selectedContact = $active.innerText;
     var contactName = message.from || message.to;
     if (selectedContact == message.from || selectedContact == message.to || utils.getUsername() == message.from) {
       var panelContainer = document.createElement("div");
@@ -213,13 +201,13 @@ var utils = {
   },
   displayOnline: function(msg) {
     console.log(msg);
-    var user = utils.getContactByName(msg.user).children[0];
+    var user = utils.getContactByName(msg.user);
     globaluser = user;
     if(msg.online)
-      user.children[1].appendChild(utils.statusIcon());
+      user.children[0].className = "glyphicon glyphicon-ok-sign online";
     else if (!msg.online)
-      if(user.children[1].children[0] !== undefined)
-        user.children[1].children[0].remove();
+      if(user.children[0].className !== undefined)
+        user.children[0].className = undefined;
   },
   displayMessages: function(msg) {
     for(var i in msg.msglist) {
@@ -250,7 +238,7 @@ var client = {
     var to = null;
     var $active = $('.active');
     if ($active.length)
-      to = $active.children()[0].innerText;
+      to = $active.text();
     console.log(to);
     messageField.val('');
     if(to)
@@ -289,7 +277,7 @@ var client = {
         var $active = $('.active');
         var selected = null;
         if ($active.length)
-          selected = $active.children()[0].innerText;
+          selected = $active.innerText;
         if(!msg.to && (msg.from != selected || !document.hasFocus())) {
           if(!utils.muted())
             utils.playSound("ios.mp3");
