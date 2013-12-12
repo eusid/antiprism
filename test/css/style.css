@@ -4,6 +4,7 @@
 
 .height-minus-controls {
     height: calc(100% - 150px);
+    height: -moz-calc(100% - 150px);
 }
 
 .controls {
@@ -12,6 +13,8 @@
 
 #messages {
     overflow: auto;
+    height: 80%;
+    height: calc(100% - 5px)
 }
 
 #messages::-webkit-scrollbar-track {
@@ -39,6 +42,7 @@ body {
 	margin: 0px;
 	padding: 0px;
 	font-family: 'lucida grande',tahoma,verdana,arial,sans-serif;
+	line-height: 1;
 }
 
 .headline {
@@ -77,15 +81,9 @@ body {
 	width: 100%;
 }
 
-.icon{
-	background-image:url(https://fbstatic-a.akamaihd.net/rsrc.php/v2/yO/r/Jsxaj6wDwuy.png);
-	background-repeat:no-repeat;
-	background-size:auto;
-	background-position:-840px -402px;
-}
-
 .contactDiv {
-	width: 90%;
+	width: calc(90%-150px);
+	width: -moz-calc(90%-150px)
 	float: right;
 }
 
@@ -115,6 +113,11 @@ ul {
 	color: #66dc77;
 }
 
+.glyphicon:empty {
+	width: 20px;
+}
+
+
 .panel {
 	padding: 5px;
 	margin: 1px;
@@ -133,6 +136,6 @@ ul {
 	border-bottom: none;
 }
 
-.glyphicon-ok-sign {
+/*.glyphicon-ok-sign {
 	margin-right: 10px;
-}
+}*/

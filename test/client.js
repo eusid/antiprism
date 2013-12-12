@@ -4,10 +4,6 @@ $(document).ready(function () {
 });
 
 var utils = {
-  switchLoginAbility: function() {
-    var loginClass = $('.login');
-    loginClass.attr("disabled",!loginClass[0].disabled);
-  },
   switchChatLogin: function() {
     $('#login').toggle(1000);
     $('#chat').toggle(1000);
@@ -107,14 +103,18 @@ var utils = {
     for (var contact in msg.contacts) {
       var contactElement = document.createElement("a");
       var icon = document.createElement("span");
-      icon.className = "col-md-2";
+      icon.className = "online";
       contactElement.href = "#";
       contactElement.className = "list-group-item";
       contactElement.appendChild(icon);
       contactElement.innerHTML += contact;
       contactElement.addEventListener("click",function(ctx) {
         console.log(ctx);
-        utils.onContactSelect(ctx.toElement.innerText)
+        if(ctx.toElement === undefined)
+          var contactName = ctx.target.text;
+        else 
+          var contactName = ctx.toElement.innerText;
+        utils.onContactSelect(contactName);
       });
       contactList.appendChild(contactElement);
      }
@@ -127,11 +127,12 @@ var utils = {
      }
 
   },
-  onContactSelect: function(contactName) {     
+  onContactSelect: function(contactName) { 
+    console.log(contactName);    
     var contactNode = utils.getContactByName(contactName);
+    console.log(contactNode);
     $('.active').removeClass("active");
     contactNode.classList.add("active");
-    console.log(contactNode);
     if(contactNode.className.indexOf("newMessage") != -1)
       contactNode.classList.remove("newMessage");
     console.log(contactNode);
@@ -142,10 +143,15 @@ var utils = {
     var containsString = ":contains(" + contactName + ")";
     var $contacts = $('.list-group-item').filter(containsString);
 
+    //Firefox
+    if($contacts.text() == contactName)
+      return $contacts[0];
+
+    //Chrome
     if ($contacts.length == 1 && $contacts[0] != undefined)
       return $contacts[0];
     for (var i in $contacts) {
-      if($contacts[i].innerText == contactName) 
+      if($contacts[i].innerHTML == contactName) 
         return $contacts[i]
     }
     throw "contact " + contactName + " not found :/";
@@ -154,6 +160,7 @@ var utils = {
     if(!document.hasFocus())
       $('title').text("#AP - " + contactName + " just contacted you!");
     var $active = $('.active');
+    console.log(message);
     var selectedContact = "";
     if ($active.length)
       var selectedContact = $active.text();
@@ -167,22 +174,22 @@ var utils = {
       var time = (new Date(message.ts)).toLocaleTimeString().split(' ');
       panelHeader.className = "panel panel-heading";
       panelContent.className = "panel panel-body";
-      panelContent.innerText = message.msg;
+      panelContent.innerHTML = message.msg;
       var urlregex = /(\b(https?):\/\/[\-A-Z0-9+&@#\/%?=~_|!:,.;]*[\-A-Z0-9+&@#\/%=~_|])/ig,
-          results = panelContent.innerText.match(urlregex);
+          results = panelContent.innerHTML.match(urlregex);
       for(link in results) {
         var replaced = panelContent.innerHTML.replace(results[link],results[link].link(results[link]));
         panelContent.innerHTML = replaced.replace("<a","<a target=_blank");
       }
-      panelHeader.innerText = time;
+      panelHeader.innerHTML = time;
       if(username == utils.getUsername()) {
         panelContainer.className = "panel panel-success col-md-8 pull-right";
-        panelHeader.innerText = time + " | me";
+        panelHeader.innerHTML = time + " | me";
         panelContent.align = "right";
         panelHeader.align = "right";
       } else {
         panelContainer.className = "panel panel-info col-md-8";
-        panelHeader.innerText = username + " | " + time;
+        panelHeader.innerHTML = username + " | " + time;
       }
       panelContainer.appendChild(panelHeader);
       panelContainer.appendChild(panelContent);
@@ -208,8 +215,8 @@ var utils = {
     if(msg.online)
       user.children[0].className = "glyphicon glyphicon-ok-sign online";
     else if (!msg.online)
-      if(user.children[0].className !== undefined)
-        user.children[0].className = undefined;
+      if(user.children[0].className != "glyphicon")
+        user.children[0].className = "glyphicon";
   },
   displayMessages: function(msg) {
     for(var i in msg.msglist) {
@@ -268,7 +275,6 @@ var client = {
     });
   },
   login: function() {
-    utils.switchLoginAbility();
     var username = utils.getUsername();
     var password = utils.getPassword();
     var registration = utils.register();
@@ -279,7 +285,7 @@ var client = {
         var $active = $('.active');
         var selected = null;
         if ($active.length)
-          selected = $active.innerText;
+          selected = $active.innerHTML;
         if(!msg.to && (msg.from != selected || !document.hasFocus())) {
           if(!utils.muted())
             utils.playSound("ios.mp3");
@@ -296,11 +302,10 @@ var client = {
 
     var callback = function(msg) {
       if(msg) {
-        $('h1')[0].innerText = headline + " (" + utils.getUsername() + ")";
+        $('h1').text(headline + " (" + utils.getUsername() + ")");
         utils.switchChatLogin();
         antiprism.getContacts(utils.displayContacts);
       } else {
-        utils.switchLoginAbility();
         $('#loginAlert').fadeIn(1000,function(){setTimeout(function(){$('#loginAlert').fadeOut()},5000)})
       }
       $('#password').val("");
@@ -312,10 +317,9 @@ var client = {
   },
   logout: function() {
     antiprism.close();
-    $('h1')[0].innerText = headline;
-    $('#messages')[0].innerText = "";
+    $('h1').text(headline);
+    $('#messages').text("");
     utils.switchChatLogin();
-    utils.switchLoginAbility();
   },
   
 }
