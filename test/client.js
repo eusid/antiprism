@@ -103,6 +103,7 @@ var utils = {
     console.log(msg);
     var friendList = $('#friendList');
     var ul = document.createElement("ul");
+    ul.className = "list-group";
     for (var contact in msg.contacts) {
       var li = document.createElement("li");
       var nameDiv = document.createElement("div");
@@ -127,7 +128,7 @@ var utils = {
       clickDiv.appendChild(nameDiv);
       clickDiv.appendChild(iconDiv);
       li.appendChild(clickDiv);
-      li.className = "contactList";
+      li.className = "contactList list-group-item";
       ul.appendChild(li);
      }
      friendList.text("");
