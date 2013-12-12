@@ -108,6 +108,7 @@ var utils = {
     for (var contact in msg.contacts) {
       var contactElement = document.createElement("a");
       var icon = document.createElement("span");
+      icon.className = "col-md-2";
       contactElement.href = "#";
       contactElement.className = "list-group-item";
       contactElement.appendChild(icon);
