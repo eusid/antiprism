@@ -69,6 +69,9 @@ var utils = {
     $('#mute').click(function(){utils.changeMuteButton();});
     $('#logout').click(client.logout);
     $('#savePassButton').click(client.changePass);
+    $('#updateContactsButton').click(function() {
+      antiprism.getContacts(utils.displayContacts);
+    });
     $('#setStatusButton').click(function() {
       bootbox.prompt("What's up?", function(result) {                
         if (result !== null) {                                             
