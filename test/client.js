@@ -250,8 +250,11 @@ var client = {
       antiprism.sendMessage(to, message, function(msg) {
           utils.displayMessage({to:to,ts:msg.ts,msg:message});
       });
-    else
+    else {
       utils.displayMessage({to:null,ts:(new Date()).getTime(),msg:"You didn\'t choose a contact!"});
+      if(message == "clear()")
+        $('#messages').text("");
+    }
   },
   changePass: function() {
     if(utils.changePasswordValidated()) {
