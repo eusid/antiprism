@@ -38,7 +38,7 @@
 body {
 	margin: 0px;
 	padding: 0px;
-	font-family: monospace;
+	font-family: helvetica;
 }
 
 .headline {
@@ -114,4 +114,22 @@ ul {
 
 .online {
 	color: #66dc77;
+}
+
+.panel {
+	padding: 5px;
+	margin: 0px;
+	word-wrap: break-word;
+}
+
+.panel-info {
+	padding: 0px;
+	border-top: none;
+	border-bottom: none;
+}
+
+.panel-success {
+	padding: 0px;
+	border-top: none;
+	border-bottom: none;
 }

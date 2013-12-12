@@ -169,11 +169,27 @@ var utils = {
       var selectedContact = $active.children()[0].innerText;
     var contactName = message.from || message.to;
     if (selectedContact == message.from || selectedContact == message.to || utils.getUsername() == message.from) {
-      var messageContainer = document.createElement("p");
+      var panelContainer = document.createElement("div");
+      var panelHeader = document.createElement("div");
+      var panelContent = document.createElement("div");
       var username = message.from || utils.getUsername();
       var time = (new Date(message.ts)).toLocaleTimeString().split(' ');
-      messageContainer.innerText = '<' + time + '> ' + username + ': ' + message.msg;
-      utils.messageDisplay().append(messageContainer);
+      panelHeader.className = "panel panel-heading";
+      panelContent.className = "panel panel-body";
+      panelContent.innerText = message.msg;
+      panelHeader.innerText = time;
+      if(username == utils.getUsername()) {
+        panelContainer.className = "panel panel-success col-md-8 pull-right";
+        panelHeader.innerText = time + " | me";
+        panelContent.align = "right";
+        panelHeader.align = "right";
+      } else {
+        panelContainer.className = "panel panel-info col-md-8";
+        panelHeader.innerText = username + " | " + time;
+      }
+      panelContainer.appendChild(panelHeader);
+      panelContainer.appendChild(panelContent);
+      utils.messageDisplay().append(panelContainer);
       utils.messageDisplay().animate({ scrollTop: utils.messageDisplay().prop("scrollHeight") - utils.messageDisplay().height() }, 300);
     } else {
       var contact = utils.getContactByName(contactName);
