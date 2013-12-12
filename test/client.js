@@ -110,11 +110,6 @@ var utils = {
       $('#newPassField').keyup(validate);
     })
   },
-  displayStatus: function(contactName, statusMsg) {
-    utils.getContactByName(contactName);
-    console.log(contactName);
-    console.log(statusMsg);
-  },
   createStatusTooltip: function(status) {
     var tooltipDiv = document.createElement("div");
     var tooltipInner = document.createElement("div");
@@ -309,7 +304,9 @@ var client = {
     }
   },
   setStatus: function(statusMsg) {
-    antiprism.setStatus(statusMsg, function() {});
+    antiprism.setStatus(statusMsg, function() {
+      utils.setHeadline({status:statusMsg});
+    });
   },
   addFriend: function() {
     var friend = $('#addFriendField').val();
