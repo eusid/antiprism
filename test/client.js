@@ -181,7 +181,6 @@ var utils = {
           results = panelContent.innerText.match(urlregex);
       for(link in results) {
         var replaced = panelContent.innerHTML.replace(results[link],results[link].link(results[link]));
-        console.log(replaced);
         panelContent.innerHTML = replaced.replace("<a","<a target=_blank");
       }
       panelHeader.innerText = time;
