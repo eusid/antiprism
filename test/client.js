@@ -5,12 +5,12 @@ $(document).ready(function () {
 
 var utils = {
   setHeadline: function(msg) {
-    var statusMsgContainer = document.createElement("blockquote");
+    var $h1 = $('h1');
     var statusMsg = document.createElement("small");
-    statusMsg.innerHTML = msg.status;
-    $h1 = $('h1');
     $h1.text(headline + " (" + utils.getUsername() + ") ");
     $h1.append(statusMsg);
+    $('small').text(msg.status).html();
+
   },
   switchChatLogin: function() {
     $('#login').toggle(1000);
@@ -106,7 +106,7 @@ var utils = {
         } else {
           $div.removeClass("has-error")
           $div.addClass("has-success");
-          $('#savePassButton').prop("disabled", false)
+          $('#savePassButton').prop("disablattred", false)
         }
       }
       validate();
