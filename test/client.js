@@ -103,7 +103,7 @@ var utils = {
     for (var contact in msg.contacts) {
       var contactElement = document.createElement("a");
       var icon = document.createElement("span");
-      icon.className = "col-md-2";
+      icon.className = "online";
       contactElement.href = "#";
       contactElement.className = "list-group-item";
       contactElement.appendChild(icon);
@@ -215,8 +215,8 @@ var utils = {
     if(msg.online)
       user.children[0].className = "glyphicon glyphicon-ok-sign online";
     else if (!msg.online)
-      if(user.children[0].className !== undefined)
-        user.children[0].className = undefined;
+      if(user.children[0].className != "glyphicon")
+        user.children[0].className = "glyphicon";
   },
   displayMessages: function(msg) {
     for(var i in msg.msglist) {

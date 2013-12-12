@@ -113,6 +113,11 @@ ul {
 	color: #66dc77;
 }
 
+.glyphicon:empty {
+	width: 20px;
+}
+
+
 .panel {
 	padding: 5px;
 	margin: 1px;
@@ -131,6 +136,6 @@ ul {
 	border-bottom: none;
 }
 
-.glyphicon-ok-sign {
+/*.glyphicon-ok-sign {
 	margin-right: 10px;
-}
+}*/
