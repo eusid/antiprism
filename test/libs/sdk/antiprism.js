@@ -128,7 +128,7 @@ var antiprism = (function() {
 				ws.onclose = function() {
 					clearInterval(ws.storage.pingID);
 					console.log("DEBUG: connection closed");
-					if(!restore.SUICIDE) {
+					if(!restore.SUICIDE && restore.SUICIDE) { // widerspruch :O
 						actions.init.apply(this, restore.privs);
 						actions.login();
 						return;
@@ -199,6 +199,14 @@ var antiprism = (function() {
 				ws.sendObject({action:"countMessages", user:user});
 				ws.storage.events["msgcount"] = callback || debug;
 			},
+			setStatus: function(status, callback) {
+				ws.sendObject({action:"setStatus", status:status});
+				ws.storage.events["status"] = callback || debug;
+			},
+			removeContact: function(user, callback) {
+				ws.sendObject({action:"removeContact", user:data.user});
+				ws.storage.events["removed"] = callback || debug;
+			},
 			getMessages: function(user, start, end, callback) { // start = -10, end = -1 -> last 10 msgs!
 				ws.sendObject({action:"retrieveMessages",user:user, start:start, end:end});
 				ws.storage.events["msglist"] = function(msg) {
@@ -221,7 +229,7 @@ var antiprism = (function() {
 				ws.storage.events["sent"] = callback;
 			},
 			close: function() {
-				//restore.SUICIDE = true; // TODO: implement this!
+				restore.SUICIDE = true; // TODO: implement this!
 				ws.close();
 			},
 			debug: debug

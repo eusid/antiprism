@@ -58,6 +58,28 @@ var helpers = {
 			});
 			return 0;
 		},
+		removeContact: function(data, storage) {
+			if(data.user === undefined)
+				return Error.INVALID_PARAMS;
+			if(!storage.loggedIn)
+				return Error.INVALID_AUTH;
+			storage.redis.hdel("convs."+storage.username,data.user,function(err,reply) {
+				if(err)
+					console.log({error:err});
+				return helpers.sendClient({user:data.user,removed:!!parseInt(reply)});
+			});
+		},
+		setStatus: function(data, storage) {
+			if(data.status === undefined)
+				return Error.INVALID_PARAMS;
+			if(!storage.loggedIn) 
+				return Error.INVALID_AUTH;
+			storage.redis.hset("users."+storage.username, "status", data.status, function(err, reply) {
+				if(err)
+					return console.log({error:err});
+				helpers.sendClient({status:true});
+			});
+		},
 		auth: function(data, storage) {
 			if(!data.validationKey)
 				return Error.INVALID_PARAMS;
@@ -88,11 +110,17 @@ var helpers = {
 					return helpers.sendClient({contacts:[]});
 				var ret = {}, users = Object.keys(contacts), usersIndex = users.length;
 				for(var i in users) {
-					storage.redis.scard("sess."+users[(users.length - 1) - i], function(err,reply) {
-						usersIndex--;
-						ret[users[usersIndex]] = {key:contacts[users[usersIndex]],online:!!parseInt(reply)};
-						if(!usersIndex)
-							helpers.sendClient({contacts:ret});
+					var username = users[(users.length - 1) - i];
+					ret[username] = {};
+					ret[username].key = contacts[username];
+					storage.redis.scard("sess."+username, function(err,reply) {
+						ret[username].online = !!parseInt(reply);
+						storage.redis.hget("users."+username, "status", function(err,reply) {
+							if(reply && ret[username])
+								ret[username].status = reply;
+							if(!--usersIndex)
+								helpers.sendClient({contacts:ret});
+						});
 					});
 				}
 			});
@@ -172,22 +200,29 @@ var helpers = {
 				var convid = data.user+'.'+storage.username;
 			else
 				var convid = storage.username+'.'+data.user;
-			storage.redis.rpush("msgs."+convid, JSON.stringify(storeMsg), function(err, reply) {
-				if(err)
-					return console.log({error:err});
+			storage.redis.hexists("convs."+data.user,storage.username,function(err, reply) {
+				if(!reply)
+					return sendClient({error:Error.UNKNOWN_USER});
+				else {
+					storage.redis.rpush("msgs."+convid, JSON.stringify(storeMsg), function(err, reply) {
+						if(err)
+							return console.log({error:err});
+					});
+					helpers.broadcast(storage, data.user, storeMsg);
+					helpers.sendClient({ts:storeMsg.ts, sent:true});
+					storage.redis.smembers("sess."+storage.username, function(err,reply) {
+						if(err)
+							return console.log({error:err});
+						storeMsg.to = data.user;
+						delete storeMsg.from;
+						for(var id in reply)
+							if(storage.sockets[reply[id]] !== undefined // not sure if redis and node are in sync
+								&& reply[id] != storage.id) // do not push back to sending user
+								storage.sockets[reply[id]].ctx(storeMsg);
+					});
+				}
 			});
-			helpers.broadcast(storage, data.user, storeMsg);
-			storage.redis.smembers("sess."+storage.username, function(err,reply) {
-				if(err)
-					return console.log({error:err});
-				storeMsg.to = data.user;
-				delete storeMsg.from;
-				for(var id in reply)
-					if(storage.sockets[reply[id]] !== undefined // not sure if redis and node are in sync
-						&& reply[id] != storage.id) // do not push back to sending user
-						storage.sockets[reply[id]].ctx(storeMsg);
-			});
-			return {ts:storeMsg.ts, sent:true};
+			return 0;
 		}
 	},
 
