@@ -125,6 +125,7 @@ var antiprism = (function() {
 				};
 				ws.onclose = function() {
 					clearInterval(ws.storage.pingID);
+					delete ws.storage;
 					console.log("DEBUG: connection closed");
 				}
 				ws.sendObject = function(msg) {
@@ -214,7 +215,6 @@ var antiprism = (function() {
 			},
 			close: function() {
 				ws.close();
-				delete ws.storage;
 			},
 			debug: debug
 		};
