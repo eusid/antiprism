@@ -37,6 +37,14 @@ var utils = {
       muteIconClassList.add(off);
     }
   },
+  changePasswordValidated: function() {
+    return $('#newPassField').val() == $('#newPassFieldCheck').val();
+  },
+  hideChangePasswordDialog: function() {
+    $('#newPassField').val("");
+    $('#newPassFieldCheck').val("");
+    $('#changePass').modal('hide');
+  },
   getUsername: function() {
     return $('#username').val();
   },
@@ -64,16 +72,32 @@ var utils = {
           client.login();
       }
     });
-    $('#messageField').keyup(function(e){
+    $('#messageField').keyup(function(e) {
       if(e.keyCode == 13) {
           client.sendMessage();
       }
     });
-    $('#addFriendField').keyup(function(e){
+    $('#addFriendField').keyup(function(e) {
       if(e.keyCode == 13) {
         client.addFriend();
       }
     });
+    $('#newPassFieldCheck').keyup(function(e) {
+      function validate() {
+        var $div = $('#changePassContainer');
+        if(!utils.changePasswordValidated()) {
+          $div.addClass("has-error");
+          $div.removeClass("has-success");
+          $('#savePassButton').prop("disabled", true);
+        } else {
+          $div.removeClass("has-error")
+          $div.addClass("has-success");
+          $('#savePassButton').prop("disabled", false)
+        }
+      }
+      validate();
+      $('#newPassField').keyup(validate);
+    })
   },
   displayContacts: function(msg) {
     console.log(msg);
@@ -82,9 +106,11 @@ var utils = {
     for (var contact in msg.contacts) {
       var li = document.createElement("li");
       var nameDiv = document.createElement("div");
+      var icon = document.createElement("span");
       var iconDiv = document.createElement("div");
       var clickDiv = document.createElement("div");
       nameDiv.innerText = contact;
+      nameDiv.appendChild(icon)
       nameDiv.className = "contactDiv";
       iconDiv.className = "iconDiv";
       clickDiv.className = "clickDiv";
@@ -157,12 +183,8 @@ var utils = {
       $('title').text("#AP - " + contactName + " just contacted you!");
   },
   statusIcon: function() {
-    var statusIcon = document.createElement("img");
-    statusIcon.width = 12;
-    statusIcon.height = 12;
-    statusIcon.alt = "online";
-    statusIcon.src = "https://fbstatic-a.akamaihd.net/rsrc.php/v2/y4/r/-PAXP-deijE.gif";
-    statusIcon.className = "icon";
+    var statusIcon = document.createElement("span");
+    statusIcon.className = "glyphicon glyphicon-ok-sign online";
     return statusIcon;
   },
   displayOnline: function(msg) {
@@ -214,11 +236,9 @@ var client = {
       utils.displayMessage({to:null,ts:(new Date()).getTime(),msg:"Fotze du hast keinen fucking Kontakt ausgewaehlt!!"});
   },
   changePass: function() {
-    if($('#newPassField').val() == $('#newPassFieldCheck').val()) {
+    if(utils.changePasswordValidated()) {
       antiprism.changePassword($('#newPassField').val());
-      $('#newPassField').val("");
-      $('#newPassFieldCheck').val("")
-      $('#changePass').modal('hide');
+      utils.hideChangePasswordDialog();
     }
   },
   addFriend: function() {
@@ -277,4 +297,3 @@ var client = {
   },
   
 }
-
