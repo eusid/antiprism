@@ -14,7 +14,7 @@
 
 	<div class="row col-md-12 headline">
 		<div class="col-md-9">
-			<h1>AntiPrism</h1>
+			<h1 align="center">AntiPrism</h1>
 		</div>
 		<div id="settings" class="btn-group btn-group-sm row col-md-3" style="display: none;">
 			<div class="btn-group">
@@ -34,21 +34,25 @@
 	</div>
 
 	<div class="row">
-		<div class="col-md-4">
-			<form id="login" role="form">
+		<div class="col-md-4 col-md-offset-3">
+			<form id="login" role="form" class="">
 				<div class="form-group">
 					<input type="username" class="form-control" placeholder="Username" id="username" autofocus>
 				</div>
 				<div class="form-group">
 					<input type="password" class="form-control" placeholder="Password" id="password">
 				</div>
-				<div class="checkbox">
+				<div id="loginAlert" class="alert alert-danger alert-dismissable" style='display:none;'>
+					<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+					Wrong <strong>username</strong> or <strong>password</strong>. Please try again.
+				</div>
+				<div class="checkbox col-md-6 col-md-offset-1">
 					<label>
 						<input class="login" type="checkbox" id="registration"></span> Registration
 					</label>
 				</div>
 
-				<button type="submit" class="btn btn-default login" id="signInButton">Sign In</button>
+				<button type="submit" class="btn btn-default login pull-right" id="signInButton">Sign In</button>
 			</form>
 		</div>
 
