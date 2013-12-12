@@ -59,6 +59,10 @@ body {
 	padding: 1%;
 }
 
+#mute {
+	height: 34px;
+}
+
 #settings {
 	height: 50px;
 	float: right;
