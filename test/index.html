@@ -11,8 +11,23 @@
 
 <div class="container">
 
-	<div class="row col-md-12">
-		<h1>Antiprism Chat</h1>
+	<div class="row col-md-12 headline">
+		<div class="col-md-9">
+			<h1>Antiprism Chat</h1>
+		</div>
+		<div id="settings" class="btn-group row col-md-3" style="display: none;">
+			<div class="btn-group">
+				<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+					Settings <span class="caret"></span>
+				</button>
+				<ul class="dropdown-menu" role="menu">
+					<li><a href="#">Settings</a></li>
+					<li class="divider"></li>
+					<li><a href="#">Logout</a></li>
+				</ul>
+			</div>
+			<button type="button" class="btn btn-default" id="mute"><span class="glyphicon glyphicon-volume-up" id="muteIcon"></span></button>
+		</div>
 	</div>
 
 	<div class="row">
@@ -43,9 +58,6 @@
 					</form>
 				</div>
 				<div id="messages" class="col-md-9 full-height"></div>
-			</div>
-			<div id="mute">
-				<input id="muteButton" type="checkbox"> Mute?
 			</div>
 			<div class="row controls">
 				<div class="col-md-3">

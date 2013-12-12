@@ -11,12 +11,30 @@ var utils = {
   switchChatLogin: function() {
     $('#login').toggle(1000);
     $('#chat').toggle(1000);
+    $('#settings').toggle(1000);
+    $('#dummy').toggle(1000);
   },
   changeButton: function() {
     if($('#registration').prop('checked')) {
       $('button')[0].innerText = "Sign Up";
     } else {
       $('button')[0].innerText = "Sign In";
+    }
+  },
+  muted: function() {
+    return $('#muteIcon')[0].classList[1] == "glyphicon-volume-off";
+  },
+  changeMuteButton: function() {
+    var muteIconClassList = $('#muteIcon')[0].classList;
+    console.log(muteIconClassList);
+    var on = "glyphicon-volume-up";
+    var off = "glyphicon-volume-off";
+    if(utils.muted()) {
+      muteIconClassList.remove(off);
+      muteIconClassList.add(on);
+    } else {
+      muteIconClassList.remove(on);
+      muteIconClassList.add(off);
     }
   },
   getUsername: function() {
@@ -37,7 +55,7 @@ var utils = {
     $('#addFriendButton')[0].onclick = client.addFriend;
     $('#sendButton')[0].onclick = client.sendMessage;
   },
-  enterKeyEvents: function() {
+  addKeyEvents: function() {
     $('#login').find(".textField").keyup(function(e){
       if(e.keyCode == 13) {
           client.login();
@@ -52,7 +70,8 @@ var utils = {
       if(e.keyCode == 13) {
         client.addFriend();
       }
-    })
+    });
+    $('#mute').click(function(){utils.changeMuteButton();})
   },
   displayContacts: function(msg) {
     console.log(msg);
@@ -168,7 +187,7 @@ var utils = {
 
 var client = {
   init: function() {
-    utils.enterKeyEvents();
+    utils.addKeyEvents();
     utils.setOnClickEvents();
   },
   getMessages: function(contactName) {
@@ -214,7 +233,7 @@ var client = {
         if ($active.length)
           selected = $active.children()[0].innerText;
         if(!msg.to && (msg.from != selected || !document.hasFocus())) {
-          if(!$('#muteButton')[0].checked)
+          if(!utils.muted())
             utils.playSound("ios.mp3");
         }
         utils.displayMessage(msg);
