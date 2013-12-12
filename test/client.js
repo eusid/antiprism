@@ -56,6 +56,7 @@ var utils = {
     $('#sendButton').click(client.sendMessage);
     $('#mute').click(function(){utils.changeMuteButton();});
     $('#logout').click(client.logout);
+    $('#savePassButton').click(client.changePass);
   },
   addKeyEvents: function() {
     $('#login').find(".textField").keyup(function(e){
@@ -211,6 +212,14 @@ var client = {
       });
     else
       utils.displayMessage({to:null,ts:(new Date()).getTime(),msg:"Fotze du hast keinen fucking Kontakt ausgewaehlt!!"});
+  },
+  changePass: function() {
+    if($('#newPassField').val() == $('#newPassFieldCheck').val()) {
+      antiprism.changePassword($('#newPassField').val());
+      $('#newPassField').val("");
+      $('#newPassFieldCheck').val("")
+      $('#changePass').modal('hide');
+    }
   },
   addFriend: function() {
     var friend = $('#addFriendField').val();
