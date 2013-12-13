@@ -1,3 +1,10 @@
+/**
+ * message_controller.js
+ *
+ * message controller for the node-server from Project Antiprism
+ * -------------------------------------------------------------
+ */
+
 var helpers = {
 		sendClient: undefined, // gets set on startup
 		broadcast: function(storage, user, msg, callback) {

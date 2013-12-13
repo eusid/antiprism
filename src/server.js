@@ -1,3 +1,9 @@
+/**
+ * server.js
+ * 
+ * Server for Project Antiprism
+ */
+
 var http = require('http'),
 	file = new(require('node-static').Server)('./test'),
 	webserver = http.createServer(function (req, res) {

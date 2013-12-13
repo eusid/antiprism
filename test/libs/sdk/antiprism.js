@@ -1,3 +1,10 @@
+/**
+ * antiprism.js
+ *
+ * SDK for Project Antiprism
+ * -------------------------
+ */
+
 var antiprism = (function() {
 	var ws,
 		restore = {},
@@ -208,7 +215,7 @@ var antiprism = (function() {
 				ws.storage.events["msgcount"] = callback || debug;
 			},
 			removeContact: function(user, callback) {
-				ws.sendObject({action:"removeContact", user:data.user});
+				ws.sendObject({action:"removeContact", user:user});
 				ws.storage.events["removed"] = callback || debug;
 			},
 			getMessages: function(user, start, end, callback) { // start = -10, end = -1 -> last 10 msgs!

@@ -1,3 +1,17 @@
+/**
+ * client.js
+ *
+ * Chatclient for Project Antiprism using the antiprismSDK
+ * -------------------------------------------------------
+ * 
+ * ideas for functionalitys:
+ *    - "Guide" for new users with popovers 
+ *      (something like "Hey, add some friends" or "set your status")
+ *    - Groupchat
+ *    - remove contact: *bootbox prompt autocompletion
+ *    -                 *confirmation ("are you sure you want to delete X?")
+ */
+
 $(document).ready(function () {
   client.init();
   $('form').submit(function(e) {e.preventDefault(); });
@@ -9,6 +23,8 @@ var utils = {
     var statusMsg = document.createElement("small");
     $h1.text(headline + " (" + utils.getUsername() + ") ");
     $h1.append(statusMsg);
+    if(msg.status === null)
+      msg.status = "Set your status now! (Click on Settings->set status)";
     $('small').text(msg.status).html();
 
   },
@@ -28,6 +44,13 @@ var utils = {
   muted: function() {
     return $('#muteIcon')[0].classList[1] == "glyphicon-volume-off";
   },
+  setMuteTooltip: function() {
+    if(utils.muted())
+      var msg = "Sounds are off";
+    else
+      var msg = "Sounds are on";
+    $('#mute').tooltip().attr("title", msg);
+  },
   changeMuteButton: function() {
     var muteIconClassList = $('#muteIcon')[0].classList;
     console.log(muteIconClassList);
@@ -40,6 +63,7 @@ var utils = {
       muteIconClassList.remove(on);
       muteIconClassList.add(off);
     }
+    utils.setMuteTooltip();
   },
   changePasswordValidated: function() {
     return $('#newPassField').val() == $('#newPassFieldCheck').val();
@@ -72,6 +96,7 @@ var utils = {
     $('#updateContactsButton').click(function() {
       antiprism.getContacts(utils.displayContacts);
     });
+    $('#removeContactButton').click(utils.removeContactPrompt);
     $('#setStatusButton').click(function() {
       bootbox.prompt("What's up?", function(result) {                
         if (result !== null) {                                             
@@ -126,6 +151,14 @@ var utils = {
     tooltipDiv.appendChild(tooltipArrow);
 
     return tooltipDiv;
+  },
+  removeContactPrompt: function() {
+    bootbox.prompt("What Contact do you want to remove?", function(result) {
+      if(result !== null)
+        antiprism.removeContact(result, function() {
+          console.log("Succesfully removed contact: " + result);
+        })
+    });
   },
   displayContacts: function(msg) {
     console.log(msg);
@@ -275,6 +308,7 @@ var client = {
   init: function() {
     utils.addKeyEvents();
     utils.setOnClickEvents();
+    utils.setMuteTooltip();
   },
   getMessages: function(contactName) {
     antiprism.getMessages(contactName, -10, -1, utils.displayMessages);
