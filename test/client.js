@@ -5,11 +5,26 @@
  * -------------------------------------------------------
  * 
  * ideas for functionalitys:
- *    - "Guide" for new users with popovers 
- *      (something like "Hey, add some friends" or "set your status")
- *    - Groupchat
- *    - remove contact: *bootbox prompt autocompletion
- *    -                 *confirmation ("are you sure you want to delete X?")
+ * -------------------------
+ *
+ *    - !"Guide" for new users with popovers 
+ *        (something like "Hey, add some friends" or "set your status")
+ *
+ *    - !!Groupchat (wait for server implementation)
+ *
+ *    - remove contact: * bootbox prompt autocompletion
+ *                      * confirmation ("are you sure you want to delete X?")
+ *
+ *    - !!show more messages: * button which get more messages?
+ *                            * number of messages to retrieve: $('#messages').children().length
+ *                            * easy way: just empty messagefield and load the messages again + around 20
+ *                            * better way: load only older messages and display them in front of the others
+ *
+ *    - !!display error messages: * error message sliding down next to the headline?
+ *                                * 
+ *
+ *    - !!!remove status popover and think about another good way to display the statusmessage
+ *                      
  */
 
 $(document).ready(function () {
