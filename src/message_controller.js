@@ -136,7 +136,13 @@ var helpers = {
 			if(data.user === undefined)
 				return Error.INVALID_PARAMS;
 			storage.redis.hmget("users."+data.user, "pubkeyN", "pubkeyE", function(err,reply) {
-				helpers.sendClient({user:data.user,pubkey:{n:reply[0],e:reply[1]}});
+				console.log(reply);
+				if(reply[0] && reply[1])
+					helpers.sendClient({user:data.user,pubkey:{n:reply[0],e:reply[1]}});
+				else {
+					helpers.sendClient({initiated:false,with:data.user});
+					return Error.UNKNOWN_PUBKEY;
+				}
 			});
 			return 0;
 		},
@@ -233,6 +239,7 @@ var helpers = {
 		"INVALID_PARAMS": 4,
 		"UNKNOWN_USER": 5,
 		"INVALID_AUTH": 6,
+		"UNKNOWN_PUBKEY": 7,
 	},
 
 	parseRequest = function(data, storage) {
@@ -256,7 +263,8 @@ exports.handleMessage = function(message, storage, callbacks) {
 		result = Error.JSON;
 	}
 
-	if (result !== Error.JSON) result = parseRequest(data, storage);
+	if (result !== Error.JSON) 
+		result = parseRequest(data, storage);
 
 	if (!isNaN(result)) {
 		var error;
@@ -278,6 +286,9 @@ exports.handleMessage = function(message, storage, callbacks) {
 				break;
 			case Error.UNKNOWN_USER:
 				error = "Tried to access unknown user.";
+				break;
+			case Error.UNKNOWN_PUBKEY:
+				error = "Requested pubkey does not exist.";
 				break;
 		}
 		if(error)

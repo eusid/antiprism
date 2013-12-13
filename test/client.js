@@ -364,8 +364,10 @@ var client = {
     var friend = $('#addFriendField').val();
     if (!friend)
       return;
-    antiprism.initConversation(friend, function() {
-      antiprism.getContacts(utils.displayContacts);
+    antiprism.initConversation(friend, function(msg) {
+      if (msg.initiated)
+        antiprism.getContacts(utils.displayContacts);
+      console.log("Did not added contact " + friend);
     });
   },
   login: function() {
