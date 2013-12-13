@@ -2,6 +2,9 @@
  * server.js
  * 
  * Server for Project Antiprism
+ * ----------------------------
+ *
+ * checkout PROTOCOL.md for server-communication
  */
 
 var http = require('http'),

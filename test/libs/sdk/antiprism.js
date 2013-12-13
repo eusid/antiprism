@@ -3,6 +3,8 @@
  *
  * SDK for Project Antiprism
  * -------------------------
+ *
+ * check antiprismSDK.md for more infos
  */
 
 var antiprism = (function() {
