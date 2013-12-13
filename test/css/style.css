@@ -144,6 +144,15 @@ ul {
 	margin: 0px;
 }
 
+a {
+	font-size: 15px;
+}
+
+small {
+	font-size: 75%;
+	margin-left: 15px;
+}
+
 /*.glyphicon-ok-sign {
 	margin-right: 10px;
 }*/

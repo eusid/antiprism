@@ -10,7 +10,7 @@
  *    - !"Guide" for new users with popovers 
  *        (something like "Hey, add some friends" or "set your status")
  *
- *    - !!Groupchat (wait for server implementation)
+ *    - Groupchat (wait for server implementation)
  *
  *    - remove contact: * bootbox prompt autocompletion
  *                      * confirmation ("are you sure you want to delete X?")
@@ -21,9 +21,6 @@
  *                            * better way: load only older messages and display them in front of the others
  *
  *    - !!display error messages: * error message sliding down next to the headline?
- *                                * 
- *
- *    - !!!remove status popover and think about another good way to display the statusmessage
  *                      
  */
 
@@ -36,11 +33,12 @@ var utils = {
   setHeadline: function(msg) {
     var $h1 = $('h1');
     var statusMsg = document.createElement("small");
+    statusMsg.id = "statusMsg";
     $h1.text(headline + " (" + utils.getUsername() + ") ");
     $h1.append(statusMsg);
     if(msg.status === null)
       msg.status = "Set your status now! (Click on Settings->set status)";
-    $('small').text(msg.status).html();
+    $('#statusMsg').text(msg.status).html();
 
   },
   switchChatLogin: function() {
@@ -113,12 +111,18 @@ var utils = {
     });
     $('#removeContactButton').click(utils.removeContactPrompt);
     $('#setStatusButton').click(function() {
-      bootbox.prompt("What's up?", function(result) {                
-        if (result !== null) {                                             
-          client.setStatus(result);                              
-        }
-      });
+      bootbox.prompt("What's up?", utils.statusPromptCallback);
     });
+  },
+  statusPromptCallback: function(result) {
+    if(result.length > 75) {
+      bootbox.prompt("Unfortunately your status was too long. :(\n" +
+        "Allowed are 75, you entered " + result.length + ". " +
+        "Anyway, what's on your mind?", utils.statusPromptCallback);
+    }
+    else if (result !== null) {                                             
+      client.setStatus(result);                              
+    }
   },
   addKeyEvents: function() {
     $('#login').find(".textField").keyup(function(e){
@@ -153,20 +157,6 @@ var utils = {
       $('#newPassField').keyup(validate);
     })
   },
-  createStatusTooltip: function(status) {
-    var tooltipDiv = document.createElement("div");
-    var tooltipInner = document.createElement("div");
-    var tooltipArrow = document.createElement("div");
-
-    tooltipDiv.className = "tooltip";
-    tooltipInner.className = "tooltip-inner";
-    tooltipInner.innerHTML = status;
-    tooltipArrow.className = "tooltip-arrow";
-    tooltipDiv.appendChild(tooltipInner);
-    tooltipDiv.appendChild(tooltipArrow);
-
-    return tooltipDiv;
-  },
   removeContactPrompt: function() {
     bootbox.prompt("What Contact do you want to remove?", function(result) {
       if(result !== null)
@@ -183,77 +173,43 @@ var utils = {
     for (var contact in msg.contacts) {
       var contactElement = document.createElement("a");
       var icon = document.createElement("span");
+      var status = document.createElement("small");
       icon.className = "online";
       contactElement.href = "#";
       contactElement.className = "list-group-item";
-      //contactElement.title = msg.status;
       contactElement.appendChild(icon);
       contactElement.innerHTML += contact;
-      //contactElement.appendChild(utils.createStatusTooltip(msg.contacts[contact].status));
+      contactElement.id = contact;
       contactElement.addEventListener("click",function(ctx) {
-        console.log(ctx);
-        if(ctx.toElement === undefined)
-          var contactName = ctx.target.text;
-        else 
-          var contactName = ctx.toElement.innerText;
+        var contactName = ctx.target.id || ctx.target.parentNode.id;
         utils.onContactSelect(contactName);
       });
+      status.innerHTML = msg.contacts[contact].status;
+      contactElement.appendChild(status);
       contactList.appendChild(contactElement);
     }
     friendList.text("");
     friendList.append(contactList);
     for(var contact in msg.contacts) {
-      var statusMsg = msg.contacts[contact].status || "";
-      console.log("status: " + statusMsg);
       utils.displayOnline({user:contact,online:msg.contacts[contact].online});
-      var statusTitle = contact + "'s status: ";
-      var containsString = ":contains(" + contact + ")";
-      $('a.list-group-item').filter(containsString).popover(
-        {trigger:'hover',content:statusMsg, 
-        title:statusTitle, delay: { show: 500, hide: 100 }})
-      .removeAttr("data-original-title").removeAttr("title");
     }
   },
   onContactSelect: function(contactName) { 
-    console.log(contactName);    
-    var contactNode = utils.getContactByName(contactName);
-    console.log(contactNode);
-    $('.active').removeClass("active");
-    contactNode.classList.add("active");
-    if(contactNode.className.indexOf("newMessage") != -1)
-      contactNode.classList.remove("newMessage");
-    console.log(contactNode);
+    $('.active').removeClass("active");  
+    var $contactNode = $('#'+contactName);
+    $contactNode .addClass("active");
+    $contactNode.removeClass("newMessage");
     utils.messageDisplay().empty();
     client.getMessages(contactName);
   },
-  getContactByName: function(contactName) {
-    var containsString = ":contains(" + contactName + ")";
-    var $contacts = $('a.list-group-item').filter(containsString);
-    console.log($contacts);
-
-    //Firefox
-    if($contacts.text() == contactName)
-      return $contacts[0];
-
-    //Chrome
-    if ($contacts.length == 1 && $contacts[0] != undefined)
-      return $contacts[0];
-    for (var i in $contacts) {
-      if($contacts[i].innerText == contactName) 
-        return $contacts[i]
-    }
-    throw "contact " + contactName + " not found :/";
-  },
   displayMessage: function(message, chained) {
+    var contactName = message.from || message.to;
+    var $active = $('.active');
+    var selectedContact = "";
     if(!document.hasFocus())
       $('title').text("#AP - " + contactName + " just contacted you!");
-    var $active = $('.active');
-    console.log(message);
-    var selectedContact = "";
     if ($active.length)
-      var selectedContact = $active.text();
-    var contactName = message.from || message.to;
-    console.log("selectedContact: " + selectedContact);
+      var selectedContact = $active[0].id;
     if (selectedContact == message.from || selectedContact == message.to || utils.getUsername() == message.from) {
       var panelContainer = document.createElement("div");
       var panelHeader = document.createElement("div");
@@ -285,8 +241,7 @@ var utils = {
       if(!chained)
         utils.messageDisplay().animate({ scrollTop: utils.messageDisplay().prop("scrollHeight") - utils.messageDisplay().height() }, 300);
     } else {
-      var contact = utils.getContactByName(contactName);
-      contact.classList.add("newMessage");
+      $('#'+contactName).addClass("newMessage");
     }
     if(!document.hasFocus())
       $('title').text("#AP - " + contactName + " just contacted you!");
@@ -297,14 +252,12 @@ var utils = {
     return statusIcon;
   },
   displayOnline: function(msg) {
-    console.log(msg);
-    var user = utils.getContactByName(msg.user);
-    globaluser = user;
+    var $user = $('#'+msg.user);
     if(msg.online)
-      user.children[0].className = "glyphicon glyphicon-ok-sign online";
+      $user.children()[0].className = "glyphicon glyphicon-ok-sign online";
     else if (!msg.online)
-      if(user.children[0].className != "glyphicon")
-        user.children[0].className = "glyphicon";
+      if($user.children()[0].className != "glyphicon")
+        $user.children()[0].className = "glyphicon";
   },
   displayMessages: function(msg) {
     for(var i in msg.msglist) {
@@ -336,8 +289,7 @@ var client = {
     var to = null;
     var $active = $('.active');
     if ($active.length)
-      to = $active.text();
-    console.log(to);
+      to = $active[0].id;
     messageField.val('');
     if(to)
       antiprism.sendMessage(to, message, function(msg) {
