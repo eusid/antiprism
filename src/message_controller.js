@@ -26,8 +26,12 @@ var helpers = {
 					helpers.sendClient({'registered':false});
 				else {
 					helpers.sendClient({'registered':true});
-					storage.redis.hmset("users."+data.username,
-						{pubkeyN: data.pubkey.n, pubkeyE: data.pubkey.e, privkey: data.privkey},
+					storage.redis.hmset("users."+data.username, {
+							pubkeyN: data.pubkey.n,
+							pubkeyE: data.pubkey.e,
+							privkey: data.privkey,
+							lastseen: new Date().getTime()
+						},
 						function(err,res) {
 							if(err) console.log(err);
 						});
@@ -106,6 +110,15 @@ var helpers = {
 				helpers.sendClient({status:reply});
 			});
 		},
+		removeContact: function(data, storage) {
+			if(!data.user)
+				return Error.INVALID_PARAMS;
+			if(!storage.loggedIn)
+				return Error.INVALID_AUTH;
+			storage.redis.hdel("convs."+storage.username, data.user, function(err, reply) {
+				helpers.sendClient({removed:!!parseInt(reply)});
+			});
+		},
 		contacts: function(data, storage) {
 			if(!storage.loggedIn)
 				return Error.INVALID_AUTH;
@@ -117,12 +130,13 @@ var helpers = {
 				for(var i in users) {
 					storage.redis.multi()
 						.scard("sess."+users[usersIndex-i-1])
-						.hget("users."+users[usersIndex-i-1],"status")
+						.hmget("users."+users[usersIndex-i-1],"status","lastseen")
 						.exec(function(err,replies) {
 							ret[users[usersIndex-1]] = {
 								key:contacts[users[usersIndex-1]],
 								online:!!parseInt(replies[0]),
-								status:replies[1]
+								status:replies[1][0],
+								lastseen:replies[1][1]
 							};
 							usersIndex--;
 							if(!usersIndex)

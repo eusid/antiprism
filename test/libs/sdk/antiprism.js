@@ -196,8 +196,10 @@ var antiprism = (function() {
 			getContacts: function(callback) {
 				ws.sendObject({action:"contacts"});
 				ws.storage.events["contacts"] = function(msg) {
-					for(var user in msg.contacts)
+					for(var user in msg.contacts) {
 						ws.storage.conversations[user] = utils.decryptRSA(msg.contacts[user].key,ws.storage.pubkey,ws.storage.privkey);
+						delete msg.contacts[user].key;
+					}
 					callback(msg);
 				};
 			},
