@@ -21,6 +21,12 @@
  *                            * better way: load only older messages and display them in front of the others
  *
  *    - !!display error messages: * error message sliding down next to the headline?
+ *
+ *    - !give a headline to the friendlist (?)
+ *
+ *    - !Work with the localstorage (e.g. save mute-setting)
+ *
+ *    - !!update contact list: evtl. zuvor ausgewählter kontakt soll wieder ausgewählt sein
  *                      
  */
 
@@ -162,6 +168,7 @@ var utils = {
       if(result !== null)
         antiprism.removeContact(result, function() {
           console.log("Succesfully removed contact: " + result);
+          antiprism.getContacts(utils.displayContacts);
         })
     });
   },
@@ -188,11 +195,15 @@ var utils = {
       contactElement.appendChild(status);
       contactList.appendChild(contactElement);
     }
+    if($('.active').length)
+      var formerSelectedContact = $('.active')[0].id;
     friendList.text("");
     friendList.append(contactList);
     for(var contact in msg.contacts) {
       utils.displayOnline({user:contact,online:msg.contacts[contact].online});
     }
+    if(formerSelectedContact)
+      $('#'+formerSelectedContact).addClass("active");
   },
   onContactSelect: function(contactName) { 
     $('.active').removeClass("active");  
