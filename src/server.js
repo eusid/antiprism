@@ -52,18 +52,19 @@ webSocketServer.on("connection", function(ws) {
 			clearTimeout(timeouts[session.id]);
 			if(session.username)
 				session.redis.srem("sess."+session.username, session.id, function(err,reply) {
-					session.redis.hset("users."+session.username, "lastseen", new Date().getTime(), function(err,reply) {
-						if(err)
-							return console.log({error:err});
-					});
 					session.redis.scard("sess."+session.username, function(err, reply) {
 						if(err)
 							return console.log({error:err});
-						if(!parseInt(reply))
+						if(!parseInt(reply)) {
+							session.redis.hset("users."+session.username, "lastseen", new Date().getTime(), function(err,reply) {
+								if(err)
+									return console.log({error:err});
+							});
 							session.redis.hgetall("convs."+session.username, function(err, contacts) {
 								for (var user in contacts)
 									messageController.helpers.broadcast(session, user, {online:false, user:session.username});
 							});
+						}
 					});
 				});
 			delete webSockets[session.id];
