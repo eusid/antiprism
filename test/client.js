@@ -25,8 +25,6 @@
  *    - !give a headline to the friendlist (?)
  *
  *    - !Work with the localstorage (e.g. save mute-setting)
- *
- *    - !!update contact list: evtl. zuvor ausgewählter kontakt soll wieder ausgewählt sein
  *                      
  */
 
