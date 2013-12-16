@@ -163,6 +163,8 @@ var helpers = {
 		conversationKey: function(data, storage) {
 			if(data.user === undefined)
 				return Error.INVALID_PARAMS;
+			if(!storage.loggedIn)
+				return Error.INVALID_AUTH;
 			storage.redis.hget("convs."+storage.username,data.user, function(err,reply) {
 				helpers.sendClient({user:data.user,convkey:reply});
 			});
@@ -171,6 +173,8 @@ var helpers = {
 		initConversation: function(data, storage) {
 			if(data.user === undefined || !data.convkeys)
 				return Error.INVALID_PARAMS;
+			if(!storage.loggedIn)
+				return Error.INVALID_AUTH;
 			storage.redis.hexists("convs."+storage.username, data.user, function(err,reply) {
 				if(err)
 					return console.log({error:err});
@@ -190,6 +194,10 @@ var helpers = {
 			return 0;
 		},
 		countMessages: function(data, storage) {
+			if(data.user === undefined)
+				return Error.INVALID_PARAMS;
+			if(!storage.loggedIn)
+				return Error.INVALID_AUTH;
 			if(data.user < storage.username) // lawl-sort
 				var convid = data.user+'.'+storage.username;
 			else
@@ -221,6 +229,8 @@ var helpers = {
 		storeMessage: function(data, storage) {
 			if(data.user === undefined || data.msg === undefined)
 				return Error.INVALID_PARAMS;
+			if(!storage.loggedIn)
+				return Error.INVALID_AUTH;
 			var storeMsg = {ts:new Date().getTime(), from:storage.username, msg:data.msg};
 			if(data.user < storage.username) // lawl-sort
 				var convid = data.user+'.'+storage.username;
