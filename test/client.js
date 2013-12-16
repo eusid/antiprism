@@ -7,9 +7,6 @@
  * ideas for functionalitys:
  * -------------------------
  *
- *    - !"Guide" for new users with popovers 
- *        (something like "Hey, add some friends" or "set your status")
- *
  *    - Groupchat (wait for server implementation)
  *
  *    - remove contact: * bootbox prompt autocompletion
@@ -32,6 +29,7 @@ $(document).ready(function () {
 });
 
 var utils = {
+  firstLogin: false,
   setHeadline: function(msg) {
     var $h1 = $('h1');
     var statusMsg = document.createElement("small");
@@ -180,6 +178,7 @@ var utils = {
     headlineStr.innerHTML = "Contactlist";
     contactsHeadline.appendChild(headlineStr);
     contactList.appendChild(contactsHeadline);
+
     for (var contact in msg.contacts) {
       var contactElement = document.createElement("a");
       var icon = document.createElement("span");
@@ -207,6 +206,20 @@ var utils = {
     }
     if(formerSelectedContact)
       $('#'+formerSelectedContact).addClass("active");
+    utils.addFriendsPopover(Object.keys(msg.contacts).length);
+  },
+  addFriendsPopover: function(contactLength) {
+    if(!contactLength && contactLength !== undefined) {
+      $addFriendField = $('#addFriendField');
+      $addFriendField.popover({content:"Add some friends now!", trigger:"manual", placement:"top"});  
+      $addFriendField.popover("show");
+      $addFriendField.focus(function() {$addFriendField.popover("hide")});
+      $addFriendField.focusout(function() {$addFriendField.popover("show")});
+      utils.firstLogin = true;
+    }
+    else if(utils.firstLogin) {
+      $('#addFriendField').unbind("focus").unbind("focusout");
+    }
   },
   onContactSelect: function(contactName) { 
     $('.active').removeClass("active");  
@@ -333,7 +346,8 @@ var client = {
     antiprism.initConversation(friend, function(msg) {
       if (msg.initiated)
         antiprism.getContacts(utils.displayContacts);
-      console.log("Did not added contact " + friend);
+      else
+        console.log("Did not added contact " + friend);
     });
   },
   login: function() {
