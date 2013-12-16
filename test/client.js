@@ -22,8 +22,6 @@
  *
  *    - !!display error messages: * error message sliding down next to the headline?
  *
- *    - !give a headline to the friendlist (?)
- *
  *    - !Work with the localstorage (e.g. save mute-setting)
  *                      
  */
@@ -174,7 +172,14 @@ var utils = {
     console.log(msg);
     var friendList = $('#friendList');
     var contactList = document.createElement("div");
+    var contactsHeadline = document.createElement("a");
+    var headlineStr = document.createElement("strong");
     contactList.className = "list-group";
+    contactsHeadline.className = "list-group-item";
+    contactsHeadline.id = "contactsHeadline";
+    headlineStr.innerHTML = "Contactlist";
+    contactsHeadline.appendChild(headlineStr);
+    contactList.appendChild(contactsHeadline);
     for (var contact in msg.contacts) {
       var contactElement = document.createElement("a");
       var icon = document.createElement("span");
