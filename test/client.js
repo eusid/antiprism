@@ -247,7 +247,7 @@ var utils = {
       var time = (new Date(message.ts)).toLocaleTimeString().split(' ');
       panelHeader.className = "panel panel-heading";
       panelContent.className = "panel panel-body";
-      panelContent.innerHTML = message.msg;
+      panelContent.innerText = message.msg;
       var urlregex = /(\b(https?):\/\/[\-A-Z0-9+&@#\/%?=~_|!:,.;]*[\-A-Z0-9+&@#\/%=~_|])/ig,
           results = panelContent.innerHTML.match(urlregex);
       for(link in results) {
