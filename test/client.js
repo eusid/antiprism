@@ -116,7 +116,7 @@ var utils = {
       bootbox.prompt("What's up?", utils.statusPromptCallback);
     });
     $('#reconnectButton').click(function() {
-      $(document).reload();
+      antiprism.reconnect();
     });
   },
   statusPromptCallback: function(result) {
