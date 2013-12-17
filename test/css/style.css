@@ -165,7 +165,7 @@ small {
 	color: #111;
 }
 
-.friendList {
+#friendList {
 	height: 95%;
 	overflow: auto;
 }
