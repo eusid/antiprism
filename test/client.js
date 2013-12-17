@@ -117,13 +117,14 @@ var utils = {
     });
   },
   statusPromptCallback: function(result) {
-    if(result.length > 75) {
-      bootbox.prompt("Unfortunately your status was too long. :(\n" +
-        "Allowed are 75, you entered " + result.length + ". " +
-        "Anyway, what's on your mind?", utils.statusPromptCallback);
-    }
-    else if (result !== null) {                                             
-      client.setStatus(result);                              
+    if (result !== null) {
+      if(result.length > 75) {
+        bootbox.prompt("Unfortunately your status was too long. :(\n" +
+          "Allowed are 75, you entered " + result.length + ". " +
+          "Anyway, what's on your mind?", utils.statusPromptCallback);
+      } else {                                             
+        client.setStatus(result);                              
+      }
     }
   },
   addKeyEvents: function() {
