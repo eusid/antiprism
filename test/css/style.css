@@ -164,3 +164,8 @@ small {
 	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#dbdce2', endColorstr='#dddfe3',GradientType=0 ); /* IE6-9 */
 	color: #111;
 }
+
+.friendList {
+	height: 95%;
+	overflow: auto;
+}
