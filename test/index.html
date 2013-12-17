@@ -19,7 +19,7 @@
 
 <div class="container">
 
-	<div class="row col-md-12 headline">
+	<div class="row headline">
 		<div id="headline" class="col-md-9">
 			<h1>AntiPrism</h1>
 		</div>
@@ -124,6 +124,25 @@
 		</div>
 	</div>
 </div>
+
+<!-- Modal -->
+<div class="modal fade" id="serverLost" tabindex="-1" role="dialog" aria-labelledby="serverLostLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title" id="serverLostLabel">Server Connection Lost</h4>
+      </div>
+      <div class="modal-body">
+        The connection to the server is lost. Reconnect?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">abort</button>
+        <button type="button" class="btn btn-primary" id="reconnectButton">reconnect</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
 
 <script src="libs/jquery.js"></script>
 <script src="libs/sdk/crypto/jsbn.js"></script>

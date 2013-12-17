@@ -115,6 +115,9 @@ var utils = {
     $('#setStatusButton').click(function() {
       bootbox.prompt("What's up?", utils.statusPromptCallback);
     });
+    $('#reconnectButton').click(function() {
+      $(document).reload();
+    });
   },
   statusPromptCallback: function(result) {
     if (result !== null) {
@@ -308,6 +311,10 @@ var client = {
     utils.setOnClickEvents();
     utils.setMuteTooltip();
   },
+  lostConnection:function(reconnected) {
+    if(!reconnected)
+      $('#serverLost').modal();
+  },
   getMessages: function(contactName) {
     antiprism.getMessages(contactName, -10, -1, utils.displayMessages);
   },
@@ -371,6 +378,7 @@ var client = {
         }
         utils.displayMessage(msg);
       },
+      closed: client.lostConnection,
       error: antiprism.debug,
       online: utils.displayOnline,
       added: function(msg) {

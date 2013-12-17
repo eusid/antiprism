@@ -102,7 +102,7 @@ var antiprism = (function() {
 				ws.storage = {user:user, password:utils.buildAESKey(password), conversations:{}, outqueue:[], inqueue:[]};
 				ws.storage.pingfails = 0;
 				ws.storage.events = callbacks;
-				var origHandlers = {msg:callbacks.msg, added:callbacks.added},
+				var origHandlers = {msg:callbacks.msg, added:callbacks.added, closed:callbacks.closed},
 					timeoutms = 25000; // say hi every 25 seconds
 				ws.storage.events.msg = function(msg) {
 					var keyUser = msg.to || msg.from;
@@ -122,6 +122,7 @@ var antiprism = (function() {
 					delete msg.convkey;
 					origHandlers.added(msg);
 				};
+				ws.storage.events.closed = callbacks.closed;
 				ws.onmessage = function(msg) {
 					if(msg.data == "PONG")
 						return --ws.storage.pingfails;
@@ -135,14 +136,17 @@ var antiprism = (function() {
 						ws.sendObject(ws.storage.outqueue.shift());
 				};
 				ws.onclose = function() {
+					var reconnect = false;
 					clearInterval(ws.storage.pingID);
 					console.log("DEBUG: connection closed");
 					if(!restore.SUICIDE && restore.SUICIDE) { // widerspruch :O
 						actions.init.apply(this, restore.privs);
 						actions.login();
-						return;
-					}
-					delete ws.storage;
+						reconnect = true;
+					} 
+					else
+						delete ws.storage;
+					origHandlers.closed(reconnect);
 				}
 				ws.sendObject = function(msg) {
 					if(ws.readyState != 1)
