@@ -20,8 +20,6 @@
  *    - !!!display error messages: * error message sliding down next to the headline?
  *
  *    - !Work with the localstorage (e.g. save mute-setting)
- *
- *    - !!!onConncetionClose: show a windows that says smthg like "server disconnected - reload?"
  *                      
  */
 
