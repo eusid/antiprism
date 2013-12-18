@@ -169,3 +169,11 @@ small {
 	height: 95%;
 	overflow: auto;
 }
+
+.alert {
+	position: absolute;
+	left: 50%;
+	z-index: 1;
+
+	width: 75%;
+}

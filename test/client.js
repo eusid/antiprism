@@ -170,6 +170,20 @@ var utils = {
         })
     });
   },
+  displayError: function(error) {
+    var errorContainer = document.createElement("div");
+    var closeButton = document.createElement("button");
+    closeButton.type = "button";
+    closeButton.className = "close";
+    closeButton.setAttribute("data-dismiss", "alert");
+    closeButton.setAttribute("aria-hidden", true);
+    closeButton.innerHTML = "x";
+    errorContainer.appendChild(closeButton);
+    errorContainer.className = "alert alert-danger fade in";
+    errorContainer.innerHTML += "<h4>Error</h4><p>" + error.error + "</p>";
+    $('#headline').append(errorContainer);
+    $('.alert').hide().slideDown(200).delay(2000).fadeOut(1000,function(){$('.alert').remove()});
+  },
   displayContacts: function(msg) {
     console.log(msg);
     var friendList = $('#friendList');
@@ -355,7 +369,7 @@ var client = {
       if (msg.initiated)
         antiprism.getContacts(utils.displayContacts);
       else
-        console.log("Did not added contact " + friend);
+        utils.displayError({error:"Did not initiate conversation with <b>" + friend + "</b>. He may not exist."});
     });
   },
   login: function() {
@@ -377,7 +391,7 @@ var client = {
         utils.displayMessage(msg);
       },
       closed: client.lostConnection,
-      error: antiprism.debug,
+      error: utils.displayError,
       online: utils.displayOnline,
       added: function(msg) {
         console.log("got added by "+msg.user+", refreshing...");
