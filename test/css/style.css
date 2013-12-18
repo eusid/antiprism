@@ -4,7 +4,6 @@
 
 .height-minus-controls {
     height: calc(100% - 150px);
-    height: -moz-calc(100% - 150px);
 }
 
 .controls {
@@ -13,22 +12,20 @@
 
 #messages {
     overflow: auto;
-    height: 80%;
-    height: calc(100% - 5px)
 }
 
-.scrollbar::-webkit-scrollbar-track {
+#messages::-webkit-scrollbar-track {
 	-webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
 	border-radius: 10px;
 	background-color: #F5F5F5;
 }
 
-.scrollbar::-webkit-scrollbar {
+#messages::-webkit-scrollbar {
 	width: 12px;
 	background-color: #F5F5F5;
 }
 
-.scrollbar::-webkit-scrollbar-thumb {
+#messages::-webkit-scrollbar-thumb {
 	border-radius: 10px;
 	-webkit-box-shadow: inset 0 0 6px rgba(0,0,0,.3);
 	background-color: #555;
@@ -39,29 +36,40 @@
 }
 
 body {
+	background: url("abstract.png");
+	background-size: 100% auto;
+	color: white;
 	margin: 0px;
 	padding: 0px;
-	font-family: 'lucida grande',tahoma,verdana,arial,sans-serif;
-	line-height: 1;
 }
 
-.headline {
-	background: rgb(219,220,226); /* Old browsers */
-	background: -moz-linear-gradient(top,  rgba(219,220,226,1) 0%, rgba(221,223,227,1) 100%); /* FF3.6+ */
-	background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(219,220,226,1)), color-stop(100%,rgba(221,223,227,1))); /* Chrome,Safari4+ */
-	background: -webkit-linear-gradient(top,  rgba(219,220,226,1) 0%,rgba(221,223,227,1) 100%); /* Chrome10+,Safari5.1+ */
-	background: -o-linear-gradient(top,  rgba(219,220,226,1) 0%,rgba(221,223,227,1) 100%); /* Opera 11.10+ */
-	background: -ms-linear-gradient(top,  rgba(219,220,226,1) 0%,rgba(221,223,227,1) 100%); /* IE10+ */
-	background: linear-gradient(to bottom,  rgba(219,220,226,1) 0%,rgba(221,223,227,1) 100%); /* W3C */
-	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#dbdce2', endColorstr='#dddfe3',GradientType=0 ); /* IE6-9 */
-	text-align: left;
-	padding: 0px;
-	margin: 0px;
-	position: relative;
-}
 
 #login {
 	padding: 1%;
+}
+
+#LoginDiv{
+	position: absolute;
+	top: 10%;
+	left: 40%;
+	width: 300px;
+	font-family: 'CodeProLightDemoRegular',tahoma,verdana,arial,sans-serif;
+}
+
+#Name{
+	position: absolute;
+	left: 33%;
+	bottom: 6%;
+	text-align: center;
+	font-size: 8em;
+}
+
+#headline{
+	position: absolute;
+	top: 60%;
+	left: 100px;
+	height: 100px;
+	width:500px;
 }
 
 #mute {
@@ -82,9 +90,15 @@ body {
 	width: 100%;
 }
 
+.icon{
+	background-image:url(https://fbstatic-a.akamaihd.net/rsrc.php/v2/yO/r/Jsxaj6wDwuy.png);
+	background-repeat:no-repeat;
+	background-size:auto;
+	background-position:-840px -402px;
+}
+
 .contactDiv {
-	width: calc(90%-150px);
-	width: -moz-calc(90%-150px)
+	width: 90%;
 	float: right;
 }
 
@@ -114,11 +128,6 @@ ul {
 	color: #66dc77;
 }
 
-.glyphicon:empty {
-	width: 20px;
-}
-
-
 .panel {
 	padding: 5px;
 	margin: 1px;
@@ -137,44 +146,19 @@ ul {
 	border-bottom: none;
 }
 
-.popover{
-	width: 50%;
-}
-.popover-title {
-	width: 100%;
-	margin: 0px;
+.glyphicon-ok-sign {
+	margin-right: 10px;
 }
 
-a {
-	font-size: 15px;
+@font-face {
+    font-family: 'CodeProLightDemoRegular';
+    src: url('Code_Pro_Light_Demo-webfont.eot');
+    src: url('Code_Pro_Light_Demo-webfont.eot?#iefix') format('embedded-opentype'),
+         url('Code_Pro_Light_Demo-webfont.woff') format('woff'),
+         url('Code_Pro_Light_Demo-webfont.ttf') format('truetype'),
+         url('Code_Pro_Light_Demo-webfont.svg#CodeProLightDemoRegular') format('svg');
+    font-weight: normal;
+    font-style: normal;
+
 }
 
-small {
-	font-size: 75%;
-	margin-left: 15px;
-}
-
-#contactsHeadline {
-	background: rgb(219,220,226); /* Old browsers */
-	background: -moz-linear-gradient(top,  rgba(219,220,226,1) 0%, rgba(221,223,227,1) 100%); /* FF3.6+ */
-	background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(219,220,226,1)), color-stop(100%,rgba(221,223,227,1))); /* Chrome,Safari4+ */
-	background: -webkit-linear-gradient(top,  rgba(219,220,226,1) 0%,rgba(221,223,227,1) 100%); /* Chrome10+,Safari5.1+ */
-	background: -o-linear-gradient(top,  rgba(219,220,226,1) 0%,rgba(221,223,227,1) 100%); /* Opera 11.10+ */
-	background: -ms-linear-gradient(top,  rgba(219,220,226,1) 0%,rgba(221,223,227,1) 100%); /* IE10+ */
-	background: linear-gradient(to bottom,  rgba(219,220,226,1) 0%,rgba(221,223,227,1) 100%); /* W3C */
-	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#dbdce2', endColorstr='#dddfe3',GradientType=0 ); /* IE6-9 */
-	color: #111;
-}
-
-#friendList {
-	height: 95%;
-	overflow: auto;
-}
-
-#alertError {
-	position: absolute;
-	left: 50%;
-	z-index: 1;
-
-	width: 75%;
-}
