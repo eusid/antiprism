@@ -153,10 +153,8 @@ var antiprism = (function() {
 				ws.storage.pingID = setInterval(function() {
 					if(++ws.storage.pingfails < 2)
 						ws.send("PING");
-					else {
-						ws.storage.events.error({error:"server doesn't answer, suicide now :("});
+					else
 						actions.close();
-					}
 				}, timeoutms);
 			},
 			login: function(callback) {
