@@ -10,14 +10,11 @@
  *    - Groupchat (wait for server implementation)
  *
  *    - !!remove contact: * bootbox prompt autocompletion
- *                        * confirmation ("are you sure you want to delete X?")
  *
  *    - !!show more messages: * button which get more messages?
  *                            * number of messages to retrieve: $('#messages').children().length
  *                            * easy way: just empty messagefield and load the messages again + around 20
  *                            * better way: load only older messages and display them in front of the others
- *
- *    - !!!display error messages: * error message sliding down next to the headline?
  *
  *    - !Work with the localstorage (e.g. save mute-setting)
  *                      
@@ -167,11 +164,17 @@ var utils = {
   },
   removeContactPrompt: function() {
     bootbox.prompt("What Contact do you want to remove?", function(result) {
-      if(result !== null)
-        antiprism.removeContact(result, function() {
-          console.log("Succesfully removed contact: " + result);
-          antiprism.getContacts(utils.displayContacts);
-        })
+      if(result !== null) {
+        var firstResult = result;
+        bootbox.confirm("Are you sure that you want to remove " + result + "?", function(result) {
+          if(result) {
+            antiprism.removeContact(firstResult, function() {
+              console.log("Succesfully removed contact: " + result);
+              antiprism.getContacts(utils.displayContacts);
+            });
+          }
+        });
+      }
     });
   },
   getErrorByCode: function(errorCode) {
