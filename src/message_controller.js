@@ -153,10 +153,8 @@ var helpers = {
 				console.log(reply);
 				if(reply[0] && reply[1])
 					helpers.sendClient({user:data.user,pubkey:{n:reply[0],e:reply[1]}});
-				else {
-					helpers.sendClient({initiated:false,with:data.user});
-					return Error.UNKNOWN_PUBKEY;
-				}
+				else
+					helpers.sendClient({error:Error.UNKNOWN_USER});
 			});
 			return 0;
 		},
@@ -179,7 +177,7 @@ var helpers = {
 				if(err)
 					return console.log({error:err});
 				if(reply)
-					return helpers.sendClient({initiated:false,with:data.user});
+					return helpers.sendClient({error:Error.UNKNOWN_USER});
 				helpers.sendClient({initiated:true,with:data.user});
 				storage.redis.hmset("convs."+storage.username,data.user,data.convkeys[0], function(err,reply) {
 					if(err)
@@ -291,32 +289,9 @@ exports.handleMessage = function(message, storage, callbacks) {
 		result = parseRequest(data, storage);
 
 	if (!isNaN(result)) {
-		var error;
-		switch (result) {
-			case Error.MISSING_ACTION:
-				error = "Missing action parameter.";
-				break;
-			case Error.INVALID_ACTION:
-				error = "Action does not exist.";
-				break;
-			case Error.INVALID_PARAMS:
-				error = "Invalid action parameters.";
-				break;
-			case Error.JSON:
-				error = "JSON parse error.";
-				break;
-			case Error.INVALID_AUTH:
-				error = "Invalid authentication-key";
-				break;
-			case Error.UNKNOWN_USER:
-				error = "Tried to access unknown user.";
-				break;
-			case Error.UNKNOWN_PUBKEY:
-				error = "Requested pubkey does not exist.";
-				break;
-		}
+		var error = result;
 		if(error)
-			result = {"error": error, code: result};
+			result = {"error": error};
 	}
 	if(result)
 		helpers.sendClient(result);

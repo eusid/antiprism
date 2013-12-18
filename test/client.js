@@ -86,6 +86,9 @@ var utils = {
     $('#newPassFieldCheck').val("");
     $('#changePass').modal('hide');
   },
+  htmlEncode: function (value){
+    return $('<div/>').text(value).html();
+  },
   getUsername: function() {
     return $('#username').val();
   },
@@ -171,7 +174,52 @@ var utils = {
         })
     });
   },
-  displayError: function(error) {
+  getErrorByCode: function(errorCode) {
+    console.log(errorCode);
+    var error;
+
+    Error = {
+      "JSON": -1,
+      "MISSING_ACTION": 1,
+      "INVALID_NAME": 2,
+      "INVALID_ACTION": 3,
+      "INVALID_PARAMS": 4,
+      "UNKNOWN_USER": 5,
+      "INVALID_AUTH": 6,
+      "UNKNOWN_PUBKEY": 7,
+    };
+
+    switch (errorCode.error) {
+      case Error.MISSING_ACTION:
+        error = "Missing action parameter.";
+        break;
+      case Error.INVALID_ACTION:
+        error = "Action does not exist.";
+        break;
+      case Error.INVALID_PARAMS:
+        error = "Invalid action parameters.";
+        break;
+      case Error.JSON:
+        error = "JSON parse error.";
+        break;
+      case Error.INVALID_AUTH:
+        error = "Invalid authentication-key";
+        break;
+      case Error.UNKNOWN_USER:
+        error = "Tried to access unknown user.";
+        break;
+      case Error.UNKNOWN_PUBKEY:
+        error = "Requested pubkey does not exist.";
+        break;
+      default:
+        error = "Unknown Error.";
+        break;
+    }
+    console.log(error);
+
+    return error;
+  },
+  displayError: function(errorCode) {
     var errorContainer = document.createElement("div");
     var closeButton = document.createElement("button");
     closeButton.type = "button";
@@ -181,9 +229,10 @@ var utils = {
     closeButton.innerHTML = "x";
     errorContainer.appendChild(closeButton);
     errorContainer.className = "alert alert-danger fade in";
-    errorContainer.innerHTML += "<h4>Error</h4><p>" + error.error + "</p>";
+    errorContainer.innerHTML += "<h4>Error</h4><p>" + utils.getErrorByCode(errorCode) + "</p>";
+    errorContainer.id = "alertError";
     $('#headline').append(errorContainer);
-    $('.alert').hide().slideDown(200).delay(2000).fadeOut(1000,function(){$('.alert').remove()});
+    $('#alertError').hide().slideDown(200).delay(2000).fadeOut(1000,function(){$('#alertError').remove()});
   },
   displayContacts: function(msg) {
     console.log(msg);
@@ -370,7 +419,7 @@ var client = {
       if (msg.initiated)
         antiprism.getContacts(utils.displayContacts);
       else
-        utils.displayError({error:"Did not initiate conversation with <b>" + friend + "</b>. He may not exist."});
+        utils.displayError({error:"Did not initiate conversation with <b>" + utils.htmlEncode(friend) + "</b>. You may already added him or he may not exist."});
     });
   },
   login: function() {
