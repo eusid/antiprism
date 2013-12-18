@@ -131,21 +131,18 @@ var antiprism = (function() {
 							ws.storage.events[field](response);
 				};
 				ws.onopen = function() {
+					restore.retries = 3;
 					while(ws.storage.outqueue.length)
 						ws.sendObject(ws.storage.outqueue.shift());
 				};
 				ws.onclose = function() {
-					var reconnect = false;
 					clearInterval(ws.storage.pingID);
 					console.log("DEBUG: connection closed");
-					if(!restore.SUICIDE && restore.SUICIDE) { // widerspruch :O
-						actions.init.apply(this, restore.privs);
-						actions.login();
-						reconnect = true;
-					} 
+					if(restore.retries--)
+						actions.reconnect();
 					else
 						delete ws.storage;
-					origHandlers.closed(reconnect);
+					origHandlers.closed(!!restore.retries);
 				}
 				ws.sendObject = function(msg) {
 					if(ws.readyState != 1)
@@ -247,8 +244,13 @@ var antiprism = (function() {
 				ws.storage.events["sent"] = callback;
 			},
 			close: function() {
-				restore.SUICIDE = true; // TODO: implement this!
+				restore.retries = 0;
 				ws.close();
+			},
+			reconnect: function(callback) {
+				actions.init.apply(this,restore.privs);
+				actions.login();
+				console.log("reconnecting...");
 			},
 			debug: debug
 		};
