@@ -18,23 +18,23 @@
 <body>
 <div id="Name"><p style="font-family: CodeProLightDemoRegular">ANTiPRiSM</p></div>
 <div class="container">
-	<div class="row col-md-12 headline">
-		<div id="settings" class="btn-group btn-group-sm row col-md-3" style="display: none;">
-			<div class="btn-group">
-				<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
-					Settings <span class="caret"></span>
-				</button>
-				<ul class="dropdown-menu" role="menu">
-					<li><a href="#" id="dummyButton">Hier könnte ihr Button stehen!</a></li>
-					<li class="divider"></li>
-					<li><a href="#" id="changePassButton" data-toggle="modal" data-target="#changePass">Change Password</a></li>
-					<li class="divider"></li>
-					<li><a href="#" id="logout">Logout</a></li>
-				</ul>
-			</div>
-			<button type="button" class="btn btn-default" id="mute"><span class="glyphicon glyphicon-volume-up" id="muteIcon"></span></button>
-		</div>
-	</div>
+<div id="settings" class="btn-group btn-group-sm row col-md-3" style="display: none;">
+    <div class="btn-group">
+        <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                                        Settings <span class="caret"></span>
+        </button>
+        <ul class="dropdown-menu" role="menu">
+            <li><a href="#" id="setStatusButton">Set Status</a></li>
+            <li><a href="#" id="updateContactsButton">Update Contact List</a></li>
+            <li><a href="#" id="changePassButton" data-toggle="modal" data-target="#changePass">Change Password</a></li>
+            <li><a href="#" id="removeContactButton">Remove Contact</a></li>
+            <li class="divider"></li>
+            <li><a href="#" id="logout">Logout</a></li>
+        </ul>
+    </div>
+        <button type="button" class="btn btn-default" id="mute"><span class="glyphicon glyphicon-volume-up" id="muteIcon"></span></button>
+</div>
+</div>
 
 	<div class="row">
 		<div id="LoginDiv">
@@ -118,25 +118,6 @@
 	</div>
 </div>
 
-<!-- Modal -->
-<div class="modal fade" id="serverLost" tabindex="-1" role="dialog" aria-labelledby="serverLostLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-        <h4 class="modal-title" id="serverLostLabel">Server Connection Lost</h4>
-      </div>
-      <div class="modal-body">
-        The connection to the server is lost. Reconnect?
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal">abort</button>
-        <button type="button" class="btn btn-primary" id="reconnectButton">reconnect</button>
-      </div>
-    </div><!-- /.modal-content -->
-  </div><!-- /.modal-dialog -->
-</div><!-- /.modal -->
-
 <script src="libs/jquery.js"></script>
 <script src="libs/sdk/crypto/jsbn.js"></script>
 <script src="libs/sdk/crypto/jsbn2.js"></script>
@@ -147,8 +128,7 @@
 <script src="libs/sdk/crypto/aes.js"></script>
 <script src="libs/sdk/crypto/CryptoJS.js"></script>
 <script src="libs/sdk/crypto/scrypt.js"></script>
-<script src="libs/bootstrap.min.js"></script>
-<script src="libs/bootbox.min.js"></script>
+<script src="bootstrap-3.0.3/dist/js/bootstrap.min.js"></script>
 <script src="libs/sdk/antiprism.js"></script>
 <script src="client.js"></script>
 <script>
