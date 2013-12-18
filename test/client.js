@@ -261,7 +261,7 @@ var utils = {
         var contactName = ctx.target.id || ctx.target.parentNode.id;
         utils.onContactSelect(contactName);
       });
-      status.innerHTML = utils.htmlEncode(msg.contacts[contact].status);
+      msg.contacts[contact].status !== null? status.innerHTML = utils.htmlEncode(msg.contacts[contact].status) : status.innerHTML = "";
       contactElement.appendChild(status);
       contactList.appendChild(contactElement);
     }
