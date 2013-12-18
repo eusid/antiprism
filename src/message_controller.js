@@ -149,10 +149,8 @@ var helpers = {
 			storage.redis.hmget("users."+data.user, "pubkeyN", "pubkeyE", function(err,reply) {
 				if(reply[0] && reply[1])
 					helpers.sendClient({user:data.user,pubkey:{n:reply[0],e:reply[1]}});
-				else {
-					helpers.sendClient({initiated:false,with:data.user});
-					return Error.UNKNOWN_PUBKEY;
-				}
+				else
+					helpers.sendClient({error:Error.UNKNOWN_USER});
 			});
 		},
 		conversationKey: function(data, storage) {
@@ -173,7 +171,7 @@ var helpers = {
 				if(err)
 					return dbg("redis-Error: "+err);
 				if(reply)
-					return helpers.sendClient({initiated:false,with:data.user});
+					return helpers.sendClient({error:Error.UNKNOWN_USER});
 				helpers.sendClient({initiated:true,with:data.user});
 				storage.redis.hmset("convs."+storage.username,data.user,data.convkeys[0], function(err,reply) {
 					if(err)

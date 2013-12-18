@@ -138,6 +138,7 @@ var antiprism = (function() {
 				ws.onclose = function() {
 					clearInterval(ws.storage.pingID);
 					console.log("DEBUG: connection closed");
+					ws.storage.events.error({error:"connection closed. I try to reconnect"});
 					if(restore.retries--)
 						actions.reconnect();
 					else
@@ -154,7 +155,7 @@ var antiprism = (function() {
 					if(++ws.storage.pingfails < 2)
 						ws.send("PING");
 					else {
-						console.log("server doesn't answer, suicide now :(");
+						ws.storage.events.error({error:"server doesn't answer, suicide now :("});
 						actions.close();
 					}
 				}, timeoutms);
