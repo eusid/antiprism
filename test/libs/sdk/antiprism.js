@@ -122,7 +122,6 @@ var antiprism = (function() {
 					delete msg.convkey;
 					origHandlers.added(msg);
 				};
-				ws.storage.events.closed = callbacks.closed;
 				ws.onmessage = function(msg) {
 					if(msg.data == "PONG")
 						return --ws.storage.pingfails;
