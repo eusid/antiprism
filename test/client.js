@@ -115,6 +115,7 @@ var utils = {
     });
     $('#reconnectButton').click(function() {
       antiprism.reconnect();
+      $('#serverLost').modal('hide');
     });
   },
   statusPromptCallback: function(result) {
