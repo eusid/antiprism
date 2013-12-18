@@ -10,7 +10,7 @@ var helpers = {
 		broadcast: function(storage, user, msg, callback) {
 			storage.redis.smembers("sess."+user, function(err,reply) {
 				if(err)
-					return console.log({error:err});
+					return dbg("redis-Error: "+err);
 				for(var id in reply) {
 					if(storage.sockets[reply[id]] !== undefined) // not sure if redis and node are in sync
 						storage.sockets[reply[id]].ctx(msg);
@@ -33,11 +33,11 @@ var helpers = {
 							lastseen: new Date().getTime()
 						},
 						function(err,res) {
-							if(err) console.log(err);
+							if(err)
+								dbg("redis-Error: "+err);
 						});
 				}
 			})
-			return 0;
 		},
 		login: function(data, storage) {
 			if(data.username === undefined)
@@ -55,7 +55,6 @@ var helpers = {
 					{validationKey: rsa.encrypt(randomString), pubkey: {n:reply.pubkeyN, e:reply.pubkeyE}, privkey: reply.privkey}
 				);
 			});
-			return 0;
 		},
 		changePass: function(data, storage) {
 			if(data.privkey === undefined)
@@ -64,10 +63,9 @@ var helpers = {
 				return Error.INVALID_AUTH;
 			storage.redis.hset("users."+storage.username, "privkey", data.privkey, function(err,reply) {
 				if(err)
-					console.log({error:e});
+					return dbg("redis-Error: "+err);
 				helpers.sendClient({updated:true});
 			});
-			return 0;
 		},
 		auth: function(data, storage) {
 			if(!data.validationKey)
@@ -78,10 +76,10 @@ var helpers = {
 			storage.loggedIn = true;
 			storage.redis.sadd("sess."+storage.username, storage.id, function(err, reply) {
 				if(err)
-					console.log({error:err});
+					return dbg("redis-Error: "+err);
 				storage.redis.scard("sess."+storage.username, function(err, reply) {
 					if(err)
-						return console.log({error:err});
+						return dbg("redis-Error: "+err);
 					if(parseInt(reply) == 1)
 						storage.redis.hgetall("convs."+storage.username, function(err, contacts) {
 							for (var user in contacts)
@@ -89,6 +87,7 @@ var helpers = {
 						});
 				});
 			});
+			delete storage.validationKey;
 			return {loggedIn:true};
 		},
 		setStatus: function(data, storage) {
@@ -98,10 +97,9 @@ var helpers = {
 				return Error.INVALID_AUTH;
 			storage.redis.hmset("users."+storage.username,"status",data.status, function(err,reply) {
 				if(err)
-					console.log({error:err});
+					dbg("redis-Error: "+err);
 				helpers.sendClient({status:true});
 			});
-			return 0;
 		},
 		getStatus: function(data, storage) {
 			if(!storage.loggedIn)
@@ -144,13 +142,11 @@ var helpers = {
 						});
 				}
 			});
-			return 0;
 		},
 		pubkey: function(data, storage) {
 			if(data.user === undefined)
 				return Error.INVALID_PARAMS;
 			storage.redis.hmget("users."+data.user, "pubkeyN", "pubkeyE", function(err,reply) {
-				console.log(reply);
 				if(reply[0] && reply[1])
 					helpers.sendClient({user:data.user,pubkey:{n:reply[0],e:reply[1]}});
 				else {
@@ -158,7 +154,6 @@ var helpers = {
 					return Error.UNKNOWN_PUBKEY;
 				}
 			});
-			return 0;
 		},
 		conversationKey: function(data, storage) {
 			if(data.user === undefined)
@@ -168,7 +163,6 @@ var helpers = {
 			storage.redis.hget("convs."+storage.username,data.user, function(err,reply) {
 				helpers.sendClient({user:data.user,convkey:reply});
 			});
-			return 0;
 		},
 		initConversation: function(data, storage) {
 			if(data.user === undefined || !data.convkeys)
@@ -177,21 +171,20 @@ var helpers = {
 				return Error.INVALID_AUTH;
 			storage.redis.hexists("convs."+storage.username, data.user, function(err,reply) {
 				if(err)
-					return console.log({error:err});
+					return dbg("redis-Error: "+err);
 				if(reply)
 					return helpers.sendClient({initiated:false,with:data.user});
 				helpers.sendClient({initiated:true,with:data.user});
 				storage.redis.hmset("convs."+storage.username,data.user,data.convkeys[0], function(err,reply) {
 					if(err)
-						return console.log({error:err});
+						return dbg("redis-Error: "+err);
 				});
 				storage.redis.hmset("convs."+data.user,storage.username,data.convkeys[1], function(err,reply) {
 					if(err)
-						return console.log({error:err});
+						return dbg("redis-Error: "+err);
 					helpers.broadcast(storage,data.user,{user:storage.username,convkey:data.convkeys[1],added:true});
 				});
 			});
-			return 0;
 		},
 		countMessages: function(data, storage) {
 			if(data.user === undefined)
@@ -204,10 +197,9 @@ var helpers = {
 				var convid = storage.username+'.'+data.user;
 			storage.redis.llen("msgs."+convid, function(err, reply) {
 				if(err)
-					return console.log({error:err});
+					return dbg("redis-Error: "+err);
 				helpers.sendClient({msgcount:reply, user:data.user});
 			});
-			return 0;
 		},
 		retrieveMessages: function(data, storage) {
 			if(data.user === undefined)
@@ -224,7 +216,6 @@ var helpers = {
 			storage.redis.lrange("msgs."+convid, start, end, function(err, reply) {
 				helpers.sendClient({msglist:reply.map(JSON.parse)});
 			});
-			return 0;
 		},
 		storeMessage: function(data, storage) {
 			if(data.user === undefined || data.msg === undefined)
@@ -238,12 +229,12 @@ var helpers = {
 				var convid = storage.username+'.'+data.user;
 			storage.redis.rpush("msgs."+convid, JSON.stringify(storeMsg), function(err, reply) {
 				if(err)
-					return console.log({error:err});
+					return dbg("redis-Error: "+err);
 			});
 			helpers.broadcast(storage, data.user, storeMsg);
 			storage.redis.smembers("sess."+storage.username, function(err,reply) {
 				if(err)
-					return console.log({error:err});
+					return dbg("redis-Error: "+err);
 				storeMsg.to = data.user;
 				delete storeMsg.from;
 				for(var id in reply)
@@ -286,38 +277,10 @@ exports.handleMessage = function(message, storage, callbacks) {
 	} catch (e) {
 		result = Error.JSON;
 	}
-
 	if (result !== Error.JSON) 
 		result = parseRequest(data, storage);
-
-	if (!isNaN(result)) {
-		var error;
-		switch (result) {
-			case Error.MISSING_ACTION:
-				error = "Missing action parameter.";
-				break;
-			case Error.INVALID_ACTION:
-				error = "Action does not exist.";
-				break;
-			case Error.INVALID_PARAMS:
-				error = "Invalid action parameters.";
-				break;
-			case Error.JSON:
-				error = "JSON parse error.";
-				break;
-			case Error.INVALID_AUTH:
-				error = "Invalid authentication-key";
-				break;
-			case Error.UNKNOWN_USER:
-				error = "Tried to access unknown user.";
-				break;
-			case Error.UNKNOWN_PUBKEY:
-				error = "Requested pubkey does not exist.";
-				break;
-		}
-		if(error)
-			result = {"error": error, code: result};
-	}
+	if(!isNaN(result))
+		result = {error:result};
 	if(result)
 		helpers.sendClient(result);
 }

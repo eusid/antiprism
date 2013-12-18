@@ -6,7 +6,11 @@
  *
  * checkout PROTOCOL.md for server-communication
  */
-
+var DEBUG = true, // change to your needs!
+	dbg = function(text) {
+		if(DEBUG)
+			console.log("#ANTiPRiSM @ "+(new Date()).toISOString()+" / "+text);
+	};
 var http = require('http'),
 	file = new(require('node-static').Server)('./test'),
 	webserver = http.createServer(function (req, res) {
@@ -20,6 +24,8 @@ var WebSocketServer = require("ws").Server,
 	timeouts = {}, timeoutms = 35000, // 35s for safety
 	redis = require("redis").createClient();
 
+dbg("Listening on port "+(process.env.PORT||9000)+"...");
+
 redis.keys("sess.*", function(err,reply) { // clear sessions
 	for(var id in reply)
 		redis.del(reply[id], function(err,reply) {});
@@ -31,9 +37,14 @@ webSocketServer.on("connection", function(ws) {
 	}};
 	var session = webSockets[wscount++],
 		killSocket = function() { ws.close(); };
+		addr = ws._socket.address(),
+		ip = ws.upgradeReq.headers['x-forwarded-for'] || addr.address,
+		connection = ip+':'+addr.port;
+	dbg("Got connection from "+ip);
 	timeouts[session.id] = setTimeout(killSocket, timeoutms);
 	session.sockets = webSockets;
 	session.redis = redis;
+	session.dbg = dbg;
 	ws
 		.on("message", function(message) {
 			if(message == "PING") {
@@ -46,7 +57,7 @@ webSocketServer.on("connection", function(ws) {
 			});
 		})
 		.on("error", function() {
-			console.log("e", arguments);
+			dbg("ws-Error: "+arguments);
 		})
 		.on("close", function() {
 			clearTimeout(timeouts[session.id]);
@@ -54,11 +65,11 @@ webSocketServer.on("connection", function(ws) {
 				session.redis.srem("sess."+session.username, session.id, function(err,reply) {
 					session.redis.scard("sess."+session.username, function(err, reply) {
 						if(err)
-							return console.log({error:err});
+							return dbg("redis-Error: "+err);
 						if(!parseInt(reply)) {
 							session.redis.hset("users."+session.username, "lastseen", new Date().getTime(), function(err,reply) {
 								if(err)
-									return console.log({error:err});
+									return dbg("redis-Error: "+err);
 							});
 							session.redis.hgetall("convs."+session.username, function(err, contacts) {
 								for (var user in contacts)
@@ -67,6 +78,7 @@ webSocketServer.on("connection", function(ws) {
 						}
 					});
 				});
+			dbg("Say bye to "+(session.username||"#"+session.id));
 			delete webSockets[session.id];
 		});
 });
