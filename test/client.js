@@ -162,7 +162,35 @@ var utils = {
       $('#newPassField').keyup(validate);
     })
   },
+  getContactList: function() {
+    var contactlist = $('a[class="list-group-item"]').splice(1);
+    var contactNames = [];
+    for (var contact in contactlist) {
+      var name = contactlist[contact].id;
+      contactNames.push(name);
+    }
+    return contactNames;
+  },
   removeContactPrompt: function() {
+    $('.bootbox-input').keyup(function(e) {
+      var contactNamesList = utils.getContactList();
+      var dropdownList = document.createElement("ul");
+      var input = $('.bootbox-input').val();
+      dropdownList.className = "dropdown-menu";
+      dropdownList.role = "menu";
+      for(var contact in contactNamesList) {
+        if(contactNamesList[contact].indexOf(input) != -1) {
+          var listItem = document.createElement("li");
+          listItem.role = "presentation";
+          listItem.innerHTML = contactNamesList[contact];
+        }
+      }
+      dropdownList.appendChild(listItem);
+      $('.bootbox-input').append(dropdownList);
+      $('.bootbox-input').dropdown();
+    
+
+    });
     bootbox.prompt("What Contact do you want to remove?", function(result) {
       if(result !== null) {
         var firstResult = result;
