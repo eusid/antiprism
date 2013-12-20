@@ -15,6 +15,9 @@
  *                            * better way: load only older messages and display them in front of the others
  *
  *    - !Work with the localstorage (e.g. save mute-setting)
+ *
+ *    - Friendrequests: * confirm-button if not friends and not requested
+ *                      * if not friends but requested: little message: "waiting for confirmation"
  *                      
  */
 
@@ -292,7 +295,7 @@ var utils = {
     friendList.text("");
     friendList.append(contactList);
     for(var contact in msg.contacts) {
-      utils.displayOnline({user:contact,online:msg.contacts[contact].online});
+      utils.displayOnline({user:contact, online:msg.contacts[contact].online, friends:msg.contacts[contact].friends});
     }
     if(formerSelectedContact)
       $('#'+formerSelectedContact).addClass("active");
@@ -370,11 +373,13 @@ var utils = {
   },
   displayOnline: function(msg) {
     var $user = $('#'+msg.user);
-    if(msg.online)
-      $user.children()[0].className = "glyphicon glyphicon-ok-sign online";
-    else if (!msg.online)
-      if($user.children()[0].className != "glyphicon")
-        $user.children()[0].className = "glyphicon";
+    if(msg.friends) {
+      if(msg.online)
+        $user.children()[0].className = "glyphicon glyphicon-user online";
+      else if (!msg.online && $user.children()[0].className != "glyphicon glyphicon-user")
+          $user.children()[0].className = "glyphicon glyphicon-user";
+    } else
+      $user.children()[0].className = "glyphicon glyphicon-question-sign";
   },
   displayMessages: function(msg) {
     for(var i in msg.msglist) {
