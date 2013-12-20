@@ -130,7 +130,7 @@ var helpers = {
 					for(var reply in replies)
 						for(var x in replies[reply])
 							temp[x] = replies[reply[x]];
-					var ret = {}, users = Object.keys(temp), usersIndex = temp.length;
+					var ret = {}, users = Object.keys(temp), usersIndex = users.length;
 					for(var i in users) {
 						storage.redis.multi()
 							.scard("sess."+users[usersIndex-i-1])
