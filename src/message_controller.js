@@ -124,11 +124,13 @@ var helpers = {
 				.hgetall("convs."+storage.username)
 				.hgetall("reqs."+storage.username)
 				.exec(function(err,replies) {
-					var contacts = replies[0],
-						pending = replies[1];
 					if(!contacts)
 						return helpers.sendClient({contacts:[]});
-					var ret = {}, users = Object.keys(contacts), usersIndex = users.length;
+					var temp = {};
+					for(var reply in replies)
+						for(var x in replies[reply])
+							temp[x] = replies[reply[x]];
+					var ret = {}, users = Object.keys(temp), usersIndex = temp.length;
 					for(var i in users) {
 						storage.redis.multi()
 							.scard("sess."+users[usersIndex-i-1])
@@ -137,15 +139,15 @@ var helpers = {
 							.exec(function(err,replies) {
 								var isAllowed = !!replies[2];
 								ret[users[usersIndex-1]] = {
-									key: contacts[users[usersIndex-1]],
+									key: temp[users[usersIndex-1]],
 									online: replies[0]&&isAllowed,
-									status: isAllowed ? replies[1][0] : null,
-									lastseen: replies[1][1],
+									status: replies[1][0], // maybe priv8?
+									lastseen: isAllowed ? replies[1][1] : 0,
 									ack: isAllowed
 								};
 								usersIndex--;
 								if(!usersIndex)
-									helpers.sendClient({contacts:ret,pending:pending});
+									helpers.sendClient({contacts:ret});
 							});
 					}
 				});
