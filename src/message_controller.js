@@ -130,11 +130,13 @@ var helpers = {
 						.hmget("users."+users[usersIndex-i-1],"status","lastseen")
 						.hexists("convs."+users[usersIndex-i-1],storage.username)
 						.exec(function(err,replies) {
+							var isAllowed = !!replies[2];
 							ret[users[usersIndex-1]] = {
-								key:contacts[users[usersIndex-1]],
-								online:replies[0]&&replies[2],
-								status:replies[1][0],
-								lastseen:replies[1][1]
+								key: contacts[users[usersIndex-1]],
+								online: replies[0]&&isAllowed,
+								status: isAllowed ? replies[1][0] : null,
+								lastseen: replies[1][1],
+								ack: isAllowed
 							};
 							usersIndex--;
 							if(!usersIndex)
@@ -204,18 +206,6 @@ var helpers = {
 						helpers.sendClient({ack:true});
 					});
 				});
-		},
-		requests: function(data, storage) {
-			if(data.user === undefined)
-				return Error.INVALID_PARAMS;
-			if(!storage.loggedIn)
-				return Error.INVALID_AUTH;
-			storage.redis.hmget("reqs."+storage.username, function(err,reply) {
-				if(err)
-					return dbg("redis-Error: "+err);
-				var ret = reply || {};
-				helpers.sendClient({requests:Object.keys(ret)});
-			});
 		},
 		countMessages: function(data, storage) {
 			if(data.user === undefined)
