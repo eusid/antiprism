@@ -120,30 +120,35 @@ var helpers = {
 			if(!storage.loggedIn)
 				return Error.INVALID_AUTH;
 
-			storage.redis.hgetall("convs."+storage.username, function(err,contacts) {
-				if(!contacts)
-					return helpers.sendClient({contacts:[]});
-				var ret = {}, users = Object.keys(contacts), usersIndex = users.length;
-				for(var i in users) {
-					storage.redis.multi()
-						.scard("sess."+users[usersIndex-i-1])
-						.hmget("users."+users[usersIndex-i-1],"status","lastseen")
-						.hexists("convs."+users[usersIndex-i-1],storage.username)
-						.exec(function(err,replies) {
-							var isAllowed = !!replies[2];
-							ret[users[usersIndex-1]] = {
-								key: contacts[users[usersIndex-1]],
-								online: replies[0]&&isAllowed,
-								status: isAllowed ? replies[1][0] : null,
-								lastseen: replies[1][1],
-								ack: isAllowed
-							};
-							usersIndex--;
-							if(!usersIndex)
-								helpers.sendClient({contacts:ret});
-						});
-				}
-			});
+			storage.redis.multi()
+				.hgetall("convs."+storage.username)
+				.hgetall("reqs."+storage.username)
+				.exec(function(err,replies) {
+					var contacts = replies[0],
+						pending = replies[1];
+					if(!contacts)
+						return helpers.sendClient({contacts:[]});
+					var ret = {}, users = Object.keys(contacts), usersIndex = users.length;
+					for(var i in users) {
+						storage.redis.multi()
+							.scard("sess."+users[usersIndex-i-1])
+							.hmget("users."+users[usersIndex-i-1],"status","lastseen")
+							.hexists("convs."+users[usersIndex-i-1],storage.username)
+							.exec(function(err,replies) {
+								var isAllowed = !!replies[2];
+								ret[users[usersIndex-1]] = {
+									key: contacts[users[usersIndex-1]],
+									online: replies[0]&&isAllowed,
+									status: isAllowed ? replies[1][0] : null,
+									lastseen: replies[1][1],
+									ack: isAllowed
+								};
+								usersIndex--;
+								if(!usersIndex)
+									helpers.sendClient({contacts:ret,pending:pending});
+							});
+					}
+				});
 		},
 		pubkey: function(data, storage) {
 			if(data.user === undefined)
