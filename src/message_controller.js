@@ -4,7 +4,6 @@
  * message controller for the node-server from Project Antiprism
  * -------------------------------------------------------------
  */
-
 var helpers = {
 		sendClient: undefined, // gets set on startup
 		broadcast: function(storage, user, msg, callback) {
@@ -114,7 +113,7 @@ var helpers = {
 			if(!storage.loggedIn)
 				return Error.INVALID_AUTH;
 			storage.redis.hdel("convs."+storage.username, data.user, function(err, reply) {
-				helpers.sendClient({removed:!!parseInt(reply)});
+				helpers.sendClient({removed:!!reply});
 			});
 		},
 		contacts: function(data, storage) {
@@ -129,10 +128,11 @@ var helpers = {
 					storage.redis.multi()
 						.scard("sess."+users[usersIndex-i-1])
 						.hmget("users."+users[usersIndex-i-1],"status","lastseen")
+						.hexists("convs."+users[usersIndex-i-1],storage.username)
 						.exec(function(err,replies) {
 							ret[users[usersIndex-1]] = {
 								key:contacts[users[usersIndex-1]],
-								online:!!parseInt(replies[0]),
+								online:replies[0]&&replies[2],
 								status:replies[1][0],
 								lastseen:replies[1][1]
 							};
@@ -167,21 +167,54 @@ var helpers = {
 				return Error.INVALID_PARAMS;
 			if(!storage.loggedIn)
 				return Error.INVALID_AUTH;
-			storage.redis.hexists("convs."+storage.username, data.user, function(err,reply) {
+			storage.redis.multi()
+				.hsetnx("convs."+storage.username,data.user,data.convkeys[0])
+				.hexists("reqs."+storage.username, data.user)
+				.exec(function(err,replies) {
+					if(err)
+						return dbg("redis-Error: "+err);
+					if(!replies[0]||replies[1])
+						return helpers.sendClient({initiated:false,with:data.user});
+					storage.redis.hsetnx("reqs."+data.user,storage.username,data.convkeys[1],function(err,reply) {
+						if(err)
+							return dbg("redis-Error: "+err);
+						if(!reply)
+							return helpers.sendClient({initiated:false,with:data.user});
+						helpers.sendClient({initiated:true,with:data.user});
+						helpers.broadcast(storage,data.user,{user:storage.username,convkey:data.convkeys[1],added:true});
+					});
+				});
+		},
+		confirm: function(data, storage) {
+			if(data.user === undefined)
+				return Error.INVALID_PARAMS;
+			if(!storage.loggedIn)
+				return Error.INVALID_AUTH;
+			storage.redis.multi()
+				.hexists("convs."+storage.username,data.user)
+				.hget("reqs."+storage.username, data.user)
+				.hdel("reqs."+storage.username, data.user)
+				.exec(function(err,replies) {
+					if(err)
+						return dbg("redis-Error: "+err);
+					if(replies[0] || !replies[1])
+						return helpers.sendClient({ack:false});
+					storage.redis.hset("convs."+storage.username, data.user, replies[1], function(err,reply) {
+						helpers.broadcast(storage, data.user, {online:true, user:storage.username});
+						helpers.sendClient({ack:true});
+					});
+				});
+		},
+		requests: function(data, storage) {
+			if(data.user === undefined)
+				return Error.INVALID_PARAMS;
+			if(!storage.loggedIn)
+				return Error.INVALID_AUTH;
+			storage.redis.hmget("reqs."+storage.username, function(err,reply) {
 				if(err)
 					return dbg("redis-Error: "+err);
-				if(reply)
-					return helpers.sendClient({error:Error.UNKNOWN_USER});
-				helpers.sendClient({initiated:true,with:data.user});
-				storage.redis.hmset("convs."+storage.username,data.user,data.convkeys[0], function(err,reply) {
-					if(err)
-						return dbg("redis-Error: "+err);
-				});
-				storage.redis.hmset("convs."+data.user,storage.username,data.convkeys[1], function(err,reply) {
-					if(err)
-						return dbg("redis-Error: "+err);
-					helpers.broadcast(storage,data.user,{user:storage.username,convkey:data.convkeys[1],added:true});
-				});
+				var ret = reply || {};
+				helpers.sendClient({requests:Object.keys(ret)});
 			});
 		},
 		countMessages: function(data, storage) {
@@ -253,6 +286,7 @@ var helpers = {
 		"UNKNOWN_USER": 5,
 		"INVALID_AUTH": 6,
 		"UNKNOWN_PUBKEY": 7,
+		"NOT_ALLOWED": 8
 	},
 
 	parseRequest = function(data, storage) {

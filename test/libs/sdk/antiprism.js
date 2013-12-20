@@ -212,6 +212,20 @@ var antiprism = (function() {
 				}
 				ws.storage.events["initiated"] = callback || debug;
 			},
+			confirm: function(user, callback) {
+				ws.sendObject({action:"confirm",user:user});
+				ws.storage.events["ack"] = function(msg) {
+					if(callback)
+						callback(msg.ack); // bool
+				};
+			},
+			getRequests: function(user, callback) {
+				ws.sendObject({action:"requests", user:user});
+				ws.storage.events["requests"] = function(msg) {
+					if(callback)
+						callback(msg.requests);
+				};
+			},
 			countMessages: function(user, callback) {
 				ws.sendObject({action:"countMessages", user:user});
 				ws.storage.events["msgcount"] = callback || debug;
