@@ -9,8 +9,6 @@
  *
  *    - Groupchat (wait for server implementation)
  *
- *    - !!remove contact: * bootbox prompt autocompletion
- *
  *    - !!show more messages: * button which get more messages?
  *                            * number of messages to retrieve: $('#messages').children().length
  *                            * easy way: just empty messagefield and load the messages again + around 20
@@ -172,26 +170,10 @@ var utils = {
     return contactNames;
   },
   removeContactPrompt: function() {
-    $('.bootbox-input').keyup(function(e) {
-      var contactNamesList = utils.getContactList();
-      var dropdownList = document.createElement("ul");
-      var input = $('.bootbox-input').val();
-      dropdownList.className = "dropdown-menu";
-      dropdownList.role = "menu";
-      for(var contact in contactNamesList) {
-        if(contactNamesList[contact].indexOf(input) != -1) {
-          var listItem = document.createElement("li");
-          listItem.role = "presentation";
-          listItem.innerHTML = contactNamesList[contact];
-        }
-      }
-      dropdownList.appendChild(listItem);
-      $('.bootbox-input').append(dropdownList);
-      $('.bootbox-input').dropdown();
     
-
-    });
     bootbox.prompt("What Contact do you want to remove?", function(result) {
+      console.log("DEBUG: result");
+      console.log(result);
       if(result !== null) {
         var firstResult = result;
         bootbox.confirm("Are you sure that you want to remove " + result + "?", function(result) {
@@ -204,6 +186,15 @@ var utils = {
         });
       }
     });
+    $('.bootbox-input').addClass("typeahead").attr("placeholder", "Friend to remove");
+    var dataSource = utils.getContactList();
+
+    $('.typeahead').typeahead({
+      local: dataSource,
+      items:4,
+      minLength:1,
+    });
+    $('.tt-hint').remove();
   },
   getErrorByCode: function(errorCode) {
     console.log(errorCode);
