@@ -128,22 +128,24 @@ var helpers = {
 						return helpers.sendClient({contacts:[]});
 					var temp = {};
 					for(var reply in replies)
-						for(var x in replies[reply])
-							temp[x] = replies[reply[x]];
+						for(var user in replies[reply])
+							temp[user] = replies[reply][user];
 					var ret = {}, users = Object.keys(temp), usersIndex = users.length;
 					for(var i in users) {
 						storage.redis.multi()
-							.scard("sess."+users[usersIndex-i-1])
-							.hmget("users."+users[usersIndex-i-1],"status","lastseen")
-							.hexists("convs."+users[usersIndex-i-1],storage.username)
+							.scard("sess."+users[i])
+							.hmget("users."+users[i],"status","lastseen")
+							.hexists("convs."+users[i],storage.username)
+							.hexists("convs."+storage.username,users[i])
 							.exec(function(err,replies) {
-								var isAllowed = !!replies[2];
-								ret[users[usersIndex-1]] = {
-									key: temp[users[usersIndex-1]],
-									online: replies[0]&&isAllowed,
+								var friends = !!(replies[2]&&replies[3]);
+								ret[users[i-usersIndex+1]] = {
+									key: temp[users[i-usersIndex+1]],
+									online: !!(replies[0]&&friends),
 									status: replies[1][0], // maybe priv8?
-									lastseen: isAllowed ? replies[1][1] : 0,
-									ack: isAllowed
+									lastseen: friends ? replies[1][1] : 0,
+									friends: friends,
+									requested: friends ? undefined : !!(replies[3] && !replies[2])
 								};
 								usersIndex--;
 								if(!usersIndex)
