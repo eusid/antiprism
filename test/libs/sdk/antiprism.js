@@ -219,13 +219,6 @@ var antiprism = (function() {
 						callback(msg.ack); // bool
 				};
 			},
-			getRequests: function(user, callback) {
-				ws.sendObject({action:"requests", user:user});
-				ws.storage.events["requests"] = function(msg) {
-					if(callback)
-						callback(msg.requests);
-				};
-			},
 			countMessages: function(user, callback) {
 				ws.sendObject({action:"countMessages", user:user});
 				ws.storage.events["msgcount"] = callback || debug;
