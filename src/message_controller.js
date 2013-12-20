@@ -124,7 +124,7 @@ var helpers = {
 				.hgetall("convs."+storage.username)
 				.hgetall("reqs."+storage.username)
 				.exec(function(err,replies) {
-					if(!contacts)
+					if(!replies[0] && !replies[1])
 						return helpers.sendClient({contacts:[]});
 					var temp = {};
 					for(var reply in replies)
