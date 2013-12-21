@@ -126,11 +126,9 @@ var helpers = {
 				.exec(function(err,replies) {
 					if(!replies[0] && !replies[1])
 						return helpers.sendClient({contacts:[]});
-					var temp = {};
-					for(var reply in replies)
-						for(var user in replies[reply])
-							temp[user] = replies[reply][user];
-					var ret = {}, users = Object.keys(temp), usersIndex = users.length;
+					var contacts = replies[0],
+						requests = replies[1];
+					var ret = {}, users = Object.keys(contacts), usersIndex = users.length;
 					for(var i in users) {
 						storage.redis.multi()
 							.scard("sess."+users[i])
@@ -140,16 +138,15 @@ var helpers = {
 							.exec(function(err,replies) {
 								var friends = !!(replies[2]&&replies[3]);
 								ret[users[i-usersIndex+1]] = {
-									key: temp[users[i-usersIndex+1]],
+									key: contacts[users[i-usersIndex+1]],
 									online: !!(replies[0]&&friends),
 									status: replies[1][0], // maybe priv8?
 									lastseen: friends ? replies[1][1] : 0,
-									friends: friends,
-									requested: friends ? undefined : !!(replies[3] && !replies[2])
+									confirmed: friends ? undefined : false 
 								};
 								usersIndex--;
 								if(!usersIndex)
-									helpers.sendClient({contacts:ret});
+									helpers.sendClient({contacts:ret,requests:requests});
 							});
 					}
 				});
