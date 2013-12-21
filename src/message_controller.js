@@ -126,8 +126,8 @@ var helpers = {
 				.exec(function(err,replies) {
 					if(!replies[0] && !replies[1])
 						return helpers.sendClient({contacts:[]});
-					var contacts = replies[0],
-						requests = replies[1];
+					var contacts = replies[0]||{},
+						requests = replies[1]||{};
 					var ret = {}, users = Object.keys(contacts), usersIndex = users.length;
 					for(var i in users) {
 						storage.redis.multi()
