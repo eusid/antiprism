@@ -198,6 +198,10 @@ var antiprism = (function() {
 						ws.storage.conversations[user] = utils.decryptRSA(msg.contacts[user].key,ws.storage.pubkey,ws.storage.privkey);
 						delete msg.contacts[user].key;
 					}
+					for(var user in msg.requests) {
+						ws.storage.conversations[user] = utils.decryptRSA(msg.requests[user], ws.storage.pubkey,ws.storage.privkey):
+						delete msg.requests[user];
+					}
 					callback(msg);
 				};
 			},

@@ -126,8 +126,10 @@ var helpers = {
 				.exec(function(err,replies) {
 					if(!replies[0] && !replies[1])
 						return helpers.sendClient({contacts:[]});
-					var contacts = replies[0]||{},
-						requests = replies[1]||{};
+					var contacts = replies[0],
+						requests = replies[1];
+					if(!contacts)
+						return sendClient({contacts:{}, requests:requests||{}});
 					var ret = {}, users = Object.keys(contacts), usersIndex = users.length;
 					for(var i in users) {
 						storage.redis.multi()
@@ -146,7 +148,7 @@ var helpers = {
 								};
 								usersIndex--;
 								if(!usersIndex)
-									helpers.sendClient({contacts:ret,requests:requests});
+									helpers.sendClient({contacts:ret,requests:requests||{}});
 							});
 					}
 				});
