@@ -259,6 +259,27 @@ var utils = {
     $('#headline').append(errorContainer);
     $('#alertError').hide().slideDown(200).delay(2000).fadeOut(1000,function(){$('#alertError').remove()});
   },
+  createContactElement: function(contact, msg) {
+    var contactElement = document.createElement("a");
+    var icon = document.createElement("span");
+    var status = document.createElement("small");
+    icon.className = "online";
+    contactElement.href = "#";
+    contactElement.className = "list-group-item";
+    contactElement.appendChild(icon);
+    contactElement.innerHTML += utils.htmlEncode(contact);
+    contactElement.id = contact;
+    contactElement.addEventListener("click",function(ctx) {
+      var contactName = ctx.target.id || ctx.target.parentNode.id;
+      utils.onContactSelect(contactName);
+    });
+    if(msg.contacts[contact])
+      msg.contacts[contact].status !== null? status.innerHTML = utils.htmlEncode(msg.contacts[contact].status) : status.innerHTML = "";
+    else
+      status.innerHTML = "";
+    contactElement.appendChild(status);
+    return contactElement;
+  },
   displayContacts: function(msg) {
     console.log(msg);
     var friendList = $('#friendList');
@@ -273,21 +294,11 @@ var utils = {
     contactList.appendChild(contactsHeadline);
 
     for (var contact in msg.contacts) {
-      var contactElement = document.createElement("a");
-      var icon = document.createElement("span");
-      var status = document.createElement("small");
-      icon.className = "online";
-      contactElement.href = "#";
-      contactElement.className = "list-group-item";
-      contactElement.appendChild(icon);
-      contactElement.innerHTML += contact;
-      contactElement.id = contact;
-      contactElement.addEventListener("click",function(ctx) {
-        var contactName = ctx.target.id || ctx.target.parentNode.id;
-        utils.onContactSelect(contactName);
-      });
-      msg.contacts[contact].status !== null? status.innerHTML = utils.htmlEncode(msg.contacts[contact].status) : status.innerHTML = "";
-      contactElement.appendChild(status);
+      var contactElement = utils.createContactElement(contact, msg);
+      contactList.appendChild(contactElement);
+    }
+    for (var i in msg.requests) {
+      var contactElement = utils.createContactElement(msg.requests[i], msg);
       contactList.appendChild(contactElement);
     }
     if($('.active').length)
@@ -295,7 +306,10 @@ var utils = {
     friendList.text("");
     friendList.append(contactList);
     for(var contact in msg.contacts) {
-      utils.displayOnline({user:contact, online:msg.contacts[contact].online, friends:msg.contacts[contact].friends});
+      utils.displayOnline({user:contact, online:msg.contacts[contact].online, confirmed:msg.contacts[contact].confirmed});
+    }
+    for(var i in msg.requests) {
+      utils.displayOnline({user:msg.requests[i], online:false, request:true});
     }
     if(formerSelectedContact)
       $('#'+formerSelectedContact).addClass("active");
@@ -320,9 +334,17 @@ var utils = {
     $contactNode .addClass("active");
     $contactNode.removeClass("newMessage");
     utils.messageDisplay().empty();
-    client.getMessages(contactName);
+    var iconClass = $contactNode.children()[0].className;
+    console.log(iconClass);
+    if(iconClass.indexOf("glyphicon-user") != -1)
+      client.getMessages(contactName);
+    else if (iconClass.indexOf("glyphicon-time")) {
+      utils.displayMessage({from:contactName,msg:"Waiting for confirmation by user.",ts:(new Date()).getTime()}, false);
+      console.log("Waiting for confirmation");
+    }
   },
   displayMessage: function(message, chained) {
+    console.log(message);
     var contactName = message.from || message.to;
     var $active = $('.active');
     var selectedContact = "";
@@ -363,8 +385,6 @@ var utils = {
     } else {
       $('#'+contactName).addClass("newMessage");
     }
-    if(!document.hasFocus())
-      $('title').text("#AP - " + contactName + " just contacted you!");
   },
   statusIcon: function() {
     var statusIcon = document.createElement("span");
@@ -373,15 +393,18 @@ var utils = {
   },
   displayOnline: function(msg) {
     var $user = $('#'+msg.user);
-    if(msg.friends) {
+    if(msg.confirmed === undefined) {
       if(msg.online)
         $user.children()[0].className = "glyphicon glyphicon-user online";
-      else if (!msg.online && $user.children()[0].className != "glyphicon glyphicon-user")
+      else if (!msg.online && $user.children()[0].className != "glyphicon glyphicon-user" && !msg.request)
           $user.children()[0].className = "glyphicon glyphicon-user";
+        else if(msg.request)
+          $user.children()[0].className = "glyphicon glyphicon-question-sign";
     } else
-      $user.children()[0].className = "glyphicon glyphicon-question-sign";
+      $user.children()[0].className = "glyphicon glyphicon-time";
   },
   displayMessages: function(msg) {
+    console.log(msg);
     for(var i in msg.msglist) {
       utils.displayMessage(msg.msglist[i], true);
     }
