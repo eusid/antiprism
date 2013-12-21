@@ -129,7 +129,7 @@ var helpers = {
 					var contacts = replies[0],
 						requests = replies[1];
 					if(!contacts)
-						return sendClient({contacts:{}, requests:requests||{}});
+						return helpers.sendClient({contacts:{}, requests:requests||{}});
 					var ret = {}, users = Object.keys(contacts), usersIndex = users.length;
 					for(var i in users) {
 						storage.redis.multi()
