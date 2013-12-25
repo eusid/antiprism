@@ -151,6 +151,8 @@ var antiprism = (function() {
 					ws.send(JSON.stringify(msg));
 				};
 				ws.storage.pingID = setInterval(function() {
+					if(ws.storage === undefined)
+						actions.close();
 					if(++ws.storage.pingfails < 2)
 						ws.send("PING");
 					else
