@@ -213,33 +213,35 @@ var utils = {
       "INVALID_AUTH": 6,
       "UNKNOWN_PUBKEY": 7,
     };
-
-    switch (errorCode.error) {
-      case Error.MISSING_ACTION:
-        error = "Missing action parameter.";
-        break;
-      case Error.INVALID_ACTION:
-        error = "Action does not exist.";
-        break;
-      case Error.INVALID_PARAMS:
-        error = "Invalid action parameters.";
-        break;
-      case Error.JSON:
-        error = "JSON parse error.";
-        break;
-      case Error.INVALID_AUTH:
-        error = "Invalid authentication-key";
-        break;
-      case Error.UNKNOWN_USER:
-        error = "Tried to access unknown user.";
-        break;
-      case Error.UNKNOWN_PUBKEY:
-        error = "Requested pubkey does not exist.";
-        break;
-      default:
-        error = "Unknown Error.";
-        break;
-    }
+    if(!isNaN(errorCode.error))
+      switch (errorCode.error) {
+        case Error.MISSING_ACTION:
+          error = "Missing action parameter.";
+          break;
+        case Error.INVALID_ACTION:
+          error = "Action does not exist.";
+          break;
+        case Error.INVALID_PARAMS:
+          error = "Invalid action parameters.";
+          break;
+        case Error.JSON:
+          error = "JSON parse error.";
+          break;
+        case Error.INVALID_AUTH:
+          error = "Invalid authentication-key";
+          break;
+        case Error.UNKNOWN_USER:
+          error = "Tried to access unknown user.";
+          break;
+        case Error.UNKNOWN_PUBKEY:
+          error = "Requested pubkey does not exist.";
+          break;
+        default:
+          error = "Unknown Error.";
+          break;
+      }
+    else
+      error = errorCode.error;
     console.log(error);
 
     return error;
@@ -313,7 +315,9 @@ var utils = {
     }
     if(formerSelectedContact)
       $('#'+formerSelectedContact).addClass("active");
-    utils.addFriendsPopover(Object.keys(msg.contacts).length);
+    if (msg.requests === undefined)
+      msg.requests = [];
+    utils.addFriendsPopover(Object.keys(msg.contacts).length + msg.requests.length);
   },
   addFriendsPopover: function(contactLength) {
     if(!contactLength && contactLength !== undefined) {
@@ -338,10 +342,20 @@ var utils = {
     console.log(iconClass);
     if(iconClass.indexOf("glyphicon-user") != -1)
       client.getMessages(contactName);
-    else if (iconClass.indexOf("glyphicon-time")) {
+    else if (iconClass.indexOf("glyphicon-time") != -1) {
       utils.displayMessage({from:contactName,msg:"Waiting for confirmation by user.",ts:(new Date()).getTime()}, false);
       console.log("Waiting for confirmation");
+    } else if (iconClass.indexOf("glyphicon-question-sign") != -1)
+      utils.displayMessage({from:contactName,msg:"This user sent you a friendrequest. To confirm please click the button below.",ts:(new Date()).getTime(),request:true}, false);
+  },
+  urlToLink: function(message) {
+    var urlregex = /(\b(https?):\/\/[\-A-Z0-9+&@#\/%?=~_|!:,.;]*[\-A-Z0-9+&@#\/%=~_|])/ig,
+        results = message.match(urlregex);
+    for(link in results) {
+      var replaced = message.replace(results[link],results[link].link(results[link]));
+      message = replaced.replace("<a","<a target=_blank");
     }
+    return message;
   },
   displayMessage: function(message, chained) {
     console.log(message);
@@ -360,13 +374,7 @@ var utils = {
       var time = (new Date(message.ts)).toLocaleTimeString().split(' ');
       panelHeader.className = "panel panel-heading";
       panelContent.className = "panel panel-body";
-      panelContent.textContent = message.msg;
-      var urlregex = /(\b(https?):\/\/[\-A-Z0-9+&@#\/%?=~_|!:,.;]*[\-A-Z0-9+&@#\/%=~_|])/ig,
-          results = panelContent.innerHTML.match(urlregex);
-      for(link in results) {
-        var replaced = panelContent.innerHTML.replace(results[link],results[link].link(results[link]));
-        panelContent.innerHTML = replaced.replace("<a","<a target=_blank");
-      }
+      panelContent.textContent = utils.urlToLink(message.msg);
       panelHeader.innerHTML = time;
       if(username == utils.getUsername()) {
         panelContainer.className = "panel panel-success col-md-8 pull-right";
@@ -380,6 +388,25 @@ var utils = {
       panelContainer.appendChild(panelHeader);
       panelContainer.appendChild(panelContent);
       utils.messageDisplay().append(panelContainer);
+      if(message.request) {
+        var buttonDiv = document.createElement("div");
+        var confirmButton = document.createElement("button");
+        confirmButton.innerHTML = "Confirm " + utils.htmlEncode(message.from);
+        confirmButton.className = "btn btn-success";
+        confirmButton.onclick = function() {
+          console.log("Confirming " + message.from + "...");
+          antiprism.confirm(message.from, function(ack) {
+            console.log("confirmprocess sent back " + ack);
+            if(ack)
+              utils.messageDisplay().empty();
+            antiprism.getContacts(utils.displayContacts);
+          });
+        }
+        buttonDiv.className = "col-md-12";
+        buttonDiv.appendChild(document.createElement("br"));
+        buttonDiv.appendChild(confirmButton);
+        panelContent.appendChild(buttonDiv);
+      }
       if(!chained)
         utils.messageDisplay().animate({ scrollTop: utils.messageDisplay().prop("scrollHeight") - utils.messageDisplay().height() }, 300);
     } else {
