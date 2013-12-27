@@ -10,7 +10,7 @@
  *    - Groupchat (wait for server implementation)
  *
  *    - !!show more messages: * button which get more messages?
- *                            * number of messages to retrieve: $('#messages').children().length
+ *                            * number of messages: $('#messages').children().length (-1?)
  *                            * easy way: just empty messagefield and load the messages again + around 20
  *                            * better way: load only older messages and display them in front of the others
  *
@@ -27,7 +27,7 @@ var utils = {
   firstLogin: false,
   setHeadline: function(msg) {
     var $h1 = $('h1');
-    var statusMsg = document.createElement("small");
+    var statusMsg = helper.small();
     statusMsg.id = "statusMsg";
     $h1.text(headline + " (" + utils.getUsername() + ") ");
     $h1.append(statusMsg);
@@ -172,8 +172,6 @@ var utils = {
   removeContactPrompt: function() {
     
     bootbox.prompt("What Contact do you want to remove?", function(result) {
-      console.log("DEBUG: result");
-      console.log(result);
       if(result !== null) {
         var firstResult = result;
         bootbox.confirm("Are you sure that you want to remove " + result + "?", function(result) {
@@ -243,26 +241,20 @@ var utils = {
     return error;
   },
   displayError: function(errorCode) {
-    var errorContainer = document.createElement("div");
-    var closeButton = document.createElement("button");
-    closeButton.type = "button";
-    closeButton.className = "close";
+    var errorContainer = helper.div("alert alert-danger fade in");
+    var closeButton = helper.button("x","close");
     closeButton.setAttribute("data-dismiss", "alert");
     closeButton.setAttribute("aria-hidden", true);
-    closeButton.innerHTML = "x";
     errorContainer.appendChild(closeButton);
-    errorContainer.className = "alert alert-danger fade in";
     errorContainer.innerHTML += "<h4>Error</h4><p>" + utils.getErrorByCode(errorCode) + "</p>";
     errorContainer.id = "alertError";
     $('#headline').append(errorContainer);
     $('#alertError').hide().slideDown(200).delay(2000).fadeOut(1000,function(){$('#alertError').remove()});
   },
   createContactElement: function(contact, msg) {
-    var contactElement = document.createElement("a");
-    var icon = document.createElement("span");
-    var status = document.createElement("small");
-    icon.className = "online";
-    contactElement.href = "#";
+    var contactElement = helper.a("","#");
+    var icon = helper.span("online");
+    var status = helper.small();
     contactElement.className = "list-group-item";
     contactElement.appendChild(icon);
     contactElement.innerHTML += utils.htmlEncode(contact);
@@ -281,14 +273,10 @@ var utils = {
   displayContacts: function(msg) {
     console.log(msg);
     var friendList = $('#friendList');
-    var contactList = document.createElement("div");
-    var contactsHeadline = document.createElement("a");
-    var headlineStr = document.createElement("strong");
-    contactList.className = "list-group";
+    var contactList = helper.div("list-group");
+    var contactsHeadline = helper.a("<strong>Contactlist</strong>","");
     contactsHeadline.className = "list-group-item";
     contactsHeadline.id = "contactsHeadline";
-    headlineStr.innerHTML = "Contactlist";
-    contactsHeadline.appendChild(headlineStr);
     contactList.appendChild(contactsHeadline);
 
     for (var contact in msg.contacts) {
@@ -363,13 +351,11 @@ var utils = {
     if ($active.length)
       var selectedContact = $active[0].id;
     if (selectedContact == message.from || selectedContact == message.to || utils.getUsername() == message.from) {
-      var panelContainer = document.createElement("div");
-      var panelHeader = document.createElement("div");
-      var panelContent = document.createElement("div");
+      var panelContainer = helper.div();
+      var panelHeader = helper.div("panel panel-heading");
+      var panelContent = helper.div("panel panel-body");
       var username = message.from || utils.getUsername();
       var time = (new Date(message.ts)).toLocaleTimeString().split(' ');
-      panelHeader.className = "panel panel-heading";
-      panelContent.className = "panel panel-body";
       panelContent.textContent = utils.urlToLink(message.msg);
       panelHeader.innerHTML = time;
       if(username == utils.getUsername()) {
@@ -385,21 +371,15 @@ var utils = {
       panelContainer.appendChild(panelContent);
       utils.messageDisplay().append(panelContainer);
       if(message.request) {
-        var buttonDiv = document.createElement("div");
-        var confirmButton = document.createElement("button");
-        confirmButton.innerHTML = "Confirm " + utils.htmlEncode(message.from);
-        confirmButton.className = "btn btn-success";
-        confirmButton.onclick = function() {
-          console.log("Confirming " + message.from + "...");
+        var buttonDiv = helper.div("col-md-12");
+        var confirmButton = helper.button("Confirm " + utils.htmlEncode(message.from), "btn btn-success", function() {
           antiprism.confirm(message.from, function(ack) {
-            console.log("confirmprocess sent back " + ack);
             if(ack)
               utils.messageDisplay().empty();
             antiprism.getContacts(utils.displayContacts);
           });
-        }
-        buttonDiv.className = "col-md-12";
-        buttonDiv.appendChild(document.createElement("br"));
+        });
+        buttonDiv.appendChild(helper.lineBreak());
         buttonDiv.appendChild(confirmButton);
         panelContent.appendChild(buttonDiv);
       }
@@ -410,9 +390,7 @@ var utils = {
     }
   },
   statusIcon: function() {
-    var statusIcon = document.createElement("span");
-    statusIcon.className = "glyphicon glyphicon-ok-sign online";
-    return statusIcon;
+    return helper.span("glyphicon glyphicon-ok-sign online");
   },
   displayOnline: function(msg) {
     var $user = $('#'+msg.user);
@@ -545,3 +523,144 @@ var client = {
   },
   
 }
+
+var helper = {
+  lineBreak: function() {
+    return document.createElement("br");
+  },
+  div: function(className) {
+    var div = document.createElement("div");
+    if(className === undefined)
+      className = "";
+    div.className = className;
+    return div;
+  },
+  span: function(className, value) {
+    if(value === undefined)
+      value = "";
+    var span = document.createElement("span");
+    span.className = className;
+    span.innerHTML = value;
+    return span;
+  },
+  input: function(type, name) {
+    var input = document.createElement("input");
+    input.type = type;
+    input.className = "form-control";
+    input.id = name;
+    input.placeholder = name;
+    return input;
+  },
+  a: function(linkName, location) {
+    var a = document.createElement("a");
+    a.innerHTML = linkName;
+    a.href = location;
+    return a;
+  },
+  small: function(innerHTML) {
+    var small = document.createElement("small");
+    if(innerHTML === undefined)
+      innerHTML = "";
+    small.innerHTML = innerHTML;
+    return small;
+  },
+  button: function(value, className, clickEvent) {
+    var button = document.createElement("button");
+    button.className = className;
+    button.innerHTML = value;
+    button.type = "button";
+    if(clickEvent)
+      button.onclick = clickEvent;
+    return button;
+  },
+  dropdownButton: function(value, btnType) {
+    if(btnType === undefined)
+      btnType = "default";
+
+    var dropdownButton = helper.button(value, "btn btn-" + btnType + " dropdown-toggle");
+    dropdownButton.setAttribute("data-toggle","dropdown");
+    dropdownButton.appendChild(helper.span("caret"));
+    return dropdownButton;
+  },
+  ul: function(className) {
+    var ul = document.createElement("ul");
+    ul.className = className;
+    return ul;
+  },
+  ulMenu: function() {
+    var ulMenu = helper.ul("dropdown-menu");
+    ulMenu.role = "menu";
+    return ulMenu;
+  },
+  dropdownListElement: function(text) {
+    var li = document.createElement("li"),
+      a = helper.a(text, "#");
+    li.appendChild(a);
+    return li;
+  },
+  dropdownList: function(buttonText, linkArray) {
+    var dropdownListContainer = helper.div("btn-group"),
+      button = helper.dropdownButton(buttonText)
+      ulMenu = helper.ulMenu();
+    dropdownListContainer.appendChild(button);
+    for(var i in linkArray) {
+      var listElement = helper.dropdownListElement(linkArray[i]);
+      listElement.onclick = function(ctx) {console.log(ctx);};
+      ulMenu.appendChild(listElement);
+    }
+    dropdownListContainer.appendChild(ulMenu);
+    return dropdownListContainer;
+  },
+  option: function(optionName) {
+    var option = document.createElement("option");
+    option.value = optionName;
+    option.innerHTML = optionName;
+    return option;
+  },
+  select: function(optionsArray) {
+    var select = document.createElement("select");
+    select.className = "form-control";
+    for(var i in optionsArray) {
+      var option = helper.option(optionsArray[i]);
+      select.appendChild(option);
+    }
+    return select;
+  },
+  form: function(className) {
+    var form = document.createElement("form");
+    form.role = "form";
+    form.className = className;
+    return form;
+  },
+  jsLink: function(linkName, clickEvent) {
+    var jsLink = helper.a(linkName, "#");
+    jsLink.onclick = clickEvent;
+    jsLink.className = "jsLink";
+    return jsLink;
+  },
+  glyphicon: function(name) {
+    return helper.div("glyphicon glyphicon-" + name);
+  },
+  createObjectFromArrays: function(keyArray, valueArray) {
+    var objStr = "{";
+    for (var i = 0; i < keyArray.length; i++) {
+      objStr += "\"" + keyArray[i] + "\":\"" + valueArray[i] + "\",";
+    };
+    objStr = objStr.substr(0,objStr.length-1);
+    objStr += "}";
+    try {
+      return JSON.parse(objStr);
+    }
+    catch (e) {
+      return -1;
+    }
+  },
+  getValuesFromArray: function(selectArray) {
+    var result = [];
+    for(var i = 0; i < selectArray.length; i++) {
+      result.push(selectArray[i].value);
+    }
+    return result;
+  },
+
+};
