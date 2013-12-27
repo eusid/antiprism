@@ -1,0 +1,27 @@
+{
+  "name": "BYOC",
+  "version": "0.0.0",
+  "homepage": "https://github.com/p0rnfl4k3s/antiprism",
+  "authors": [
+    "Gregor Weber <gregorwbr+byoc@gmail.com>"
+  ],
+  "description": "Build your own chat",
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "src/libs",
+    "test",
+    "tests",
+    "marionette"
+  ],
+  "dependencies": {
+    "marionette": "~1.4.1",
+    "requirejs": "~2.1.9",
+    "jQuery": "~2.0.3",
+    "foundation": "~5.0.2",
+    "requirejs-text": "~2.0.10",
+    "jquery.transit": "~0.9.9",
+    "ionicons": "~1.4.0"
+  }
+}
