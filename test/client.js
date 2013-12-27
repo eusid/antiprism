@@ -15,9 +15,6 @@
  *                            * better way: load only older messages and display them in front of the others
  *
  *    - !Work with the localstorage (e.g. save mute-setting)
- *
- *    - Friendrequests: * confirm-button if not friends and not requested
- *                      * if not friends but requested: little message: "waiting for confirmation"
  *                      
  */
 
@@ -242,7 +239,6 @@ var utils = {
       }
     else
       error = errorCode.error;
-    console.log(error);
 
     return error;
   },
