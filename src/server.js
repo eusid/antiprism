@@ -12,7 +12,7 @@ var DEBUG = true, // change to your needs!
 			console.log("#ANTiPRiSM @ "+(new Date()).toISOString()+" / "+text);
 	};
 var http = require('http'),
-	file = new(require('node-static').Server)('./test'),
+	file = new(require('node-static').Server)('./client'),
 	webserver = http.createServer(function (req, res) {
 		file.serve(req,res);
 	}).listen(process.env.PORT||9000);

@@ -468,7 +468,7 @@ var client = {
       to = $active[0].id;
     messageField.val('');
     if(to)
-      antiprism.sendMessage(to, message, function(msg) {
+      	antiprism.sendMessage(to, message, function(msg) {
           utils.displayMessage({to:to,ts:msg.ts,msg:message});
       });
     else {

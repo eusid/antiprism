@@ -2,3 +2,5 @@ node_modules
 .idea
 jsrsa
 .DS_STORE
+*.iml
+dump.rdb

@@ -67,7 +67,7 @@ function register() {
 
   keypair = generateKeypair();
   keypair.crypt = encryptAES(keypair.privkey, ws.user.password);
-  ws.sendObject({action:"register", username:ws.user.name, pubkey:keypair.pubkey, privkey:keypair.crypt});
+  ws.sendObject({action:"is-new?", username:ws.user.name, pubkey:keypair.pubkey, privkey:keypair.crypt});
   console.log("Registrationprocess completed.");
 }
 

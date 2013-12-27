@@ -1,0 +1,28 @@
+@import "settings";
+@import "../libs/foundation/scss/foundation";
+@import "../libs/ionicons/css/ionicons.min.css";
+
+#main-content {
+  margin-top: 30px;
+}
+
+.contact {
+  @include panel;
+  height: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 1rem;
+
+  i.online {
+    color: #2ecc71;
+  }
+
+  i.offline {
+    color: #c0392b;
+  }
+}
+
+.history {
+  @include grid-row();
+  height: 80vh;
+}
