@@ -90,7 +90,7 @@ var helpers = {
 			return {loggedIn:true};
 		},
 		setStatus: function(data, storage) {
-			if(!data.status)
+			if(!data.status && data.status !== "")
 				return Error.INVALID_PARAMS;
 			if(!storage.loggedIn)
 				return Error.INVALID_AUTH;
