@@ -7,8 +7,9 @@
  * check antiprismSDK.md for more infos
  */
 
-var Antiprism = function(host,retries) {
-	console.log("constructor called!");
+var Antiprism = function(host,debugFlag,retries) {
+	if(host === undefined)
+		return -1;
 	var ws = new WebSocket(host),
 		session = {pass:{}, conversations:{}, outqueue:[], inqueue:[]},
 		pingfails = 3,
@@ -23,14 +24,16 @@ var Antiprism = function(host,retries) {
 				actions.close();
 		}, timeoutms),
 		debug = function(msg, isError, error) {
+			if(!debugFlag && !isError)
+				return;
 			console.group(isError ? "ERROR" : "DEBUG");
 			if(isError)
 				console.log(error);
-			console.log(msg);
+			if(msg)
+				console.log(msg);
 			console.groupEnd();
 		};
 	debug("created new websocket");
-	debug(ws);
 	events.msg = function(msg) {
 		var keyUser = msg.to || msg.from;
 		if(session.conversations[keyUser]) {
@@ -59,6 +62,7 @@ var Antiprism = function(host,retries) {
 			debug(msg,true,e);
 		}
 	};
+	events.online = function(msg) { clientEvents.online(msg); };
 	ws.onmessage = function(msg) {
 		if(msg.data == "PONG")
 			return pingfails = 3;
@@ -300,7 +304,7 @@ var Antiprism = function(host,retries) {
 				if(!retries)
 					return debug("meowbai \\o/");
 				debug("reconnecting");
-				this.constructor(host,retries--);
+				this.constructor(host,debugFlag,retries--);
 				for(event in copy)
 					this.addEventListener(event,copy[event]);
 				debug(copy);

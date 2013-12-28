@@ -23,7 +23,8 @@ $(document).ready(function () {
   $('form').submit(function(e) {e.preventDefault(); });
 });
 
-var utils = {
+var antiprism,
+    utils = {
     firstLogin: false,
     setHeadline: function (msg) {
         var $h1 = $('h1');
@@ -499,8 +500,6 @@ var client = {
             registration = utils.register(),
 
             host = location.origin.replace(/^http/, 'ws'),
-
-            antiprism = new Antiprism(host),
             callback = function (msg) {
                 if (msg) {
                     utils.switchChatLogin();
@@ -515,6 +514,7 @@ var client = {
                 }
                 $('#password').val("");
             };
+        antiprism = new Antiprism(host,true); // params: host,[debugFlag]
         if (registration)
             antiprism.register(username, password, callback);
         else
