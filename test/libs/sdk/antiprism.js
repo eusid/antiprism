@@ -7,11 +7,91 @@
  * check antiprismSDK.md for more infos
  */
 
-var antiprism = (function() {
-	var ws,
-		restore = {},
-		debug = function(obj) { console.log("[DEBUG]:"); console.log(obj); },
-		utils = {
+var Antiprism = function(host,retries) {
+	console.log("constructor called!");
+	var ws = new WebSocket(host),
+		session = {pass:{}, conversations:{}, outqueue:[], inqueue:[]},
+		pingfails = 3,
+		retries = retries !== undefined ? retries : 3;
+		timeoutms = 25000, // say hi every 25 seconds
+		clientEvents = {},
+		events = {},
+		pingID = setInterval(function() {
+			if(--pingfails)
+				ws.send("PING");
+			else
+				actions.close();
+		}, timeoutms),
+		debug = function(msg, isError, error) {
+			console.group(isError ? "ERROR" : "DEBUG");
+			if(isError)
+				console.log(error);
+			console.log(msg);
+			console.groupEnd();
+		};
+	debug("created new websocket");
+	debug(ws);
+	events.msg = function(msg) {
+		var keyUser = msg.to || msg.from;
+		if(session.conversations[keyUser]) {
+			msg.msg = utils.decryptAES(msg.msg, session.conversations[keyUser]);
+			try {
+				clientEvents.msg(msg);
+				debug(msg);
+			} catch(e) {
+				debug(msg,true,e);
+			}
+		} else {
+			session.inqueue.push(msg);
+			getKey(keyUser, function (resp) {
+				while(session.inqueue.length)
+					events.msg(session.inqueue.shift());
+			});
+		}
+	};
+	events.added = function(msg) {
+		session.conversations[msg.user] = msg.convkey;
+		delete msg.convkey;
+		try {
+			clientEvents.added(msg);
+			debug(msg);
+		} catch(e) {
+			debug(msg,true,e);
+		}
+	};
+	ws.onmessage = function(msg) {
+		if(msg.data == "PONG")
+			return pingfails = 3;
+		var response = JSON.parse(msg.data);
+		for(var field in response)
+			if(Object.keys(events).indexOf(field) != -1)
+				events[field](response);
+	};
+	ws.onopen = function() {
+		retries = 3;
+		while(session.outqueue.length)
+			ws.sendObject(session.outqueue.shift());
+	};
+	ws.onclose = function() {
+		clearInterval(pingID);
+		debug("Connection closed");
+		if(retries === 0 || session.suicide)
+			return;
+		try {
+			actions.reconnect();
+			if(clientEvents.closed)
+				clientEvents.closed(true);
+		} catch(e) {
+			debug(null,true,e);
+		}
+	};
+	ws.sendObject = function(msg) {
+		if(ws.readyState != 1)
+			return session.outqueue.push(msg)
+		//console.log("quering server:");console.log(msg);
+		ws.send(JSON.stringify(msg));
+	};
+	var utils = {
 			hex2a: function(hex) {
 				var str = '';
 				for (var i = 0; i < hex.length; i += 2)
@@ -73,12 +153,12 @@ var antiprism = (function() {
 		},
 		helpers = {
 			getKey: function(user, callback) {
-				if(ws.storage.conversations[user])
+				if(session.conversations[user])
 					callback()
 				ws.sendObject({action:"conversationKey",user:user});
-				ws.storage.events["convkey"] = function(msg) {
+				events["convkey"] = function(msg) {
 					if(msg.convkey)
-						ws.storage.conversations[msg.user] = utils.decryptRSA(msg.convkey,ws.storage.pubkey,ws.storage.privkey);
+						session.conversations[msg.user] = utils.decryptRSA(msg.convkey,session.pubkey,session.privkey);
 					else
 						return actions.initConversation(user,function(resp) {
 							debug(resp);
@@ -91,179 +171,143 @@ var antiprism = (function() {
 			}
 		},
 		actions = {
-			// default-usage: antiprism.init(user,password,ws_link,callbacks);
 			/* initial callbacks:
 				[on]: error, msg, online, added
 			*/
-			init: function(user,password,host,callbacks) {
-				ws = new WebSocket(host);
-				restore.privs = [user,password,host,callbacks];
-				actions.ws = ws; // only 4 debug!
-				ws.storage = {user:user, password:utils.buildAESKey(password), conversations:{}, outqueue:[], inqueue:[]};
-				ws.storage.pingfails = 0;
-				ws.storage.events = callbacks;
-				var origHandlers = {msg:callbacks.msg, added:callbacks.added, closed:callbacks.closed},
-					timeoutms = 25000; // say hi every 25 seconds
-				ws.storage.events.msg = function(msg) {
-					var keyUser = msg.to || msg.from;
-					if(ws.storage.conversations[keyUser]) {
-						msg.msg = utils.decryptAES(msg.msg, ws.storage.conversations[keyUser]);
-						origHandlers.msg(msg);
-					} else {
-						ws.storage.inqueue.push(msg);
-						helpers.getKey(keyUser, function (resp) {
-							while(ws.storage.inqueue.length)
-								ws.storage.events.msg(ws.storage.inqueue.shift());
-						});
-					}
-				};
-				ws.storage.events.added = function(msg) {
-					ws.storage.conversations[msg.user] = msg.convkey;
-					delete msg.convkey;
-					origHandlers.added(msg);
-				};
-				ws.onmessage = function(msg) {
-					if(msg.data == "PONG")
-						return --ws.storage.pingfails;
-					var response = JSON.parse(msg.data);
-					for(var field in response)
-						if(Object.keys(ws.storage.events).indexOf(field) != -1)
-							ws.storage.events[field](response);
-				};
-				ws.onopen = function() {
-					restore.retries = 3;
-					while(ws.storage.outqueue.length)
-						ws.sendObject(ws.storage.outqueue.shift());
-				};
-				ws.onclose = function() {
-					clearInterval(ws.storage.pingID);
-					console.log("DEBUG: connection closed");
-					if(restore.retries--)
-						actions.reconnect();
-					else
-						delete ws.storage;
-					origHandlers.closed(!!restore.retries);
-				}
-				ws.sendObject = function(msg) {
-					if(ws.readyState != 1)
-						return ws.storage.outqueue.push(msg)
-					//console.log("quering server:");console.log(msg);
-					ws.send(JSON.stringify(msg));
-				};
-				ws.storage.pingID = setInterval(function() {
-					if(ws.storage === undefined)
-						actions.close();
-					if(++ws.storage.pingfails < 2)
-						ws.send("PING");
-					else
-						actions.close();
-				}, timeoutms);
+			addEventListener: function(event,callback) {
+				if(Object.keys(events).indexOf(event) === -1)
+					return "unknown event";
+				clientEvents[event] = callback;
 			},
-			login: function(callback) {
-				ws.sendObject({action:"login",username:ws.storage.user});
-				ws.storage.events["validationKey"] = function(response) {
-					ws.storage.pubkey = response.pubkey;
+			login: function(user,password,callback) {
+				if(session.user === undefined) {
+					session.user = user;
+					session.pass.plain = password;
+					session.pass.enc = utils.buildAESKey(password);
+				}
+				ws.sendObject({action:"login",username:session.user});
+				events["validationKey"] = function(response) {
+					session.pubkey = response.pubkey;
 	      			try {
-						var privkey = utils.decryptAES(response.privkey,ws.storage.password);
-						ws.storage.privkey = privkey;
+						var privkey = utils.decryptAES(response.privkey,session.pass.enc);
+						session.privkey = privkey;
 						var validationKey = utils.decryptRSA(response.validationKey, response.pubkey, privkey);
 						ws.sendObject({action:"auth","validationKey":utils.utf8_b64enc(validationKey)}); 
 					} catch (e) {
-						callback(0);
+						debug("wrong password", true, e);
 					}
 				};
-				ws.storage.events["loggedIn"] = callback || debug;
+				events["loggedIn"] = callback || debug;
 			},
-			register: function(callback) {
+			register: function(user,password,callback) {
+				if(session.user === undefined) {
+					session.user = user;
+					session.pass.plain = password;
+					session.pass.enc = utils.buildAESKey(password);
+				}
 				var keypair = utils.generateKeypair();
-				keypair.crypt = utils.encryptAES(keypair.privkey, ws.storage.password);
-				ws.sendObject({action:"register", username:ws.storage.user, pubkey:keypair.pubkey, privkey:keypair.crypt});
-				ws.storage.events["registered"] = function() { actions.login(callback || debug); };
+				keypair.crypt = utils.encryptAES(keypair.privkey, session.pass.enc);
+				ws.sendObject({action:"register", username:session.user, pubkey:keypair.pubkey, privkey:keypair.crypt});
+				events["registered"] = callback || debug;
 			},
 			changePassword: function(newpass, callback) {
 				var passAES = utils.buildAESKey(newpass);
-				ws.sendObject({action:"changePass", privkey:utils.encryptAES(ws.storage.privkey, passAES)});
-				ws.storage.events["updated"] = callback || debug;
+				ws.sendObject({action:"changePass", privkey:utils.encryptAES(session.privkey, passAES)});
+				events["updated"] = callback || debug;
 			},
 			setStatus: function(status, callback) {
 				ws.sendObject({action:"setStatus",status:status});
-				ws.storage.events["status"] = callback || debug;
+				events["status"] = callback || debug;
 			},
 			getStatus: function(callback) {
 				ws.sendObject({action:"getStatus"});
-				ws.storage.events["status"] = callback || debug;
+				events["status"] = callback || debug;
 			},
 			getContacts: function(callback) {
 				ws.sendObject({action:"contacts"});
-				ws.storage.events["contacts"] = function(msg) {
+				events["contacts"] = function(msg) {
 					for(var user in msg.contacts) {
-						ws.storage.conversations[user] = utils.decryptRSA(msg.contacts[user].key,ws.storage.pubkey,ws.storage.privkey);
+						session.conversations[user] = utils.decryptRSA(msg.contacts[user].key,session.pubkey,session.privkey);
 						delete msg.contacts[user].key;
 					}
 					for(var user in msg.requests)
-						ws.storage.conversations[user] = utils.decryptRSA(msg.requests[user], ws.storage.pubkey,ws.storage.privkey);
+						session.conversations[user] = utils.decryptRSA(msg.requests[user], session.pubkey, session.privkey);
 					if(msg.requests)
 						msg.requests = Object.keys(msg.requests);
-					callback(msg);
+					(callback||debug)(msg);
 				};
 			},
 			initConversation: function(user,callback) {
 				ws.sendObject({action:"pubkey",user:user}); // request pubkey first
-				ws.storage.events["pubkey"] = function(msg) {
+				events["pubkey"] = function(msg) {
 					var convkey = rng_get_string(32), keys = [];
-					ws.storage.conversations[user] = convkey;
-					keys.push(utils.encryptRSA(convkey, ws.storage.pubkey));
+					session.conversations[user] = convkey;
+					keys.push(utils.encryptRSA(convkey, session.pubkey));
 					keys.push(utils.encryptRSA(convkey, msg.pubkey));
 					ws.sendObject({action:"initConversation", user:user, convkeys:keys});
 				}
-				ws.storage.events["initiated"] = callback || debug;
+				events["initiated"] = callback || debug;
 			},
 			confirm: function(user, callback) {
 				ws.sendObject({action:"confirm",user:user});
-				ws.storage.events["ack"] = function(msg) {
+				events["ack"] = function(msg) {
 					if(callback)
 						callback(msg.ack); // bool
 				};
 			},
 			countMessages: function(user, callback) {
 				ws.sendObject({action:"countMessages", user:user});
-				ws.storage.events["msgcount"] = callback || debug;
+				events["msgcount"] = callback || debug;
 			},
 			removeContact: function(user, callback) {
 				ws.sendObject({action:"removeContact", user:user});
-				ws.storage.events["removed"] = callback || debug;
+				events["removed"] = callback || debug;
 			},
 			getMessages: function(user, start, end, callback) { // start = -10, end = -1 -> last 10 msgs!
 				ws.sendObject({action:"retrieveMessages",user:user, start:start, end:end});
-				ws.storage.events["msglist"] = function(msg) {
-					if(!ws.storage.conversations[user])
+				events["msglist"] = function(msg) {
+					if(!session.conversations[user])
 						return helpers.getKey(user, function() {
 							for(var x in msg.msglist)
-								msg.msglist[x].msg = utils.decryptAES(msg.msglist[x].msg, ws.storage.conversations[user]);
+								msg.msglist[x].msg = utils.decryptAES(msg.msglist[x].msg, session.conversations[user]);
 							callback(msg);
 						});
 					for(var x in msg.msglist)
-						msg.msglist[x].msg = utils.decryptAES(msg.msglist[x].msg, ws.storage.conversations[user]);
+						msg.msglist[x].msg = utils.decryptAES(msg.msglist[x].msg, session.conversations[user]);
 					callback(msg);
 				}
 			},
 			sendMessage: function(user, message, callback) {
-				if(!ws.storage.conversations[user])
+				if(!session.conversations[user])
 					return helpers.getKey(user, function() { actions.sendMessage(user,message,callback); });
-				var encrypted = utils.encryptAES(message, ws.storage.conversations[user]);
+				var encrypted = utils.encryptAES(message, session.conversations[user]);
 				ws.sendObject({action:"storeMessage",user:user,msg:encrypted});
-				ws.storage.events["sent"] = callback;
+				events["sent"] = callback || debug;
 			},
 			close: function() {
-				restore.retries = 0;
+				session.suicide = true;
 				ws.close();
 			},
 			reconnect: function(callback) {
-				actions.init.apply(this,restore.privs);
-				actions.login();
-				console.log("reconnecting...");
+				var user = session.user,
+					pass = session.pass.plain,
+					copy = {};
+				for(event in clientEvents)
+					copy[event] = clientEvents[event];
+				if(ws.readyState != 1)
+					ws.close();
+				debug(retries);
+				if(!retries)
+					return debug("meowbai \\o/");
+				debug("reconnecting");
+				this.constructor(host,retries--);
+				for(event in copy)
+					this.addEventListener(event,copy[event]);
+				debug(copy);
+				this.login(user,pass); // todo: still not cool :S
 			},
 			debug: debug
 		};
-	return actions;
-})();
+	for(action in actions)
+		this.constructor.prototype[action] = actions[action]; // todo: add chaining!
+};
