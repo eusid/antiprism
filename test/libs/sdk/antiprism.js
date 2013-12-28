@@ -15,7 +15,6 @@ var Antiprism = function(host,debugFlag,retries) {
 		pingfails = 3,
 		retries = retries !== undefined ? retries : 3;
 		timeoutms = 25000, // say hi every 25 seconds
-		clientEvents = {},
 		events = {},
 		pingID = setInterval(function() {
 			if(--pingfails)
@@ -32,7 +31,8 @@ var Antiprism = function(host,debugFlag,retries) {
 			if(msg)
 				console.log(msg);
 			console.groupEnd();
-		};
+		},
+		clientEvents = {online:debug,msg:debug,error:debug,added:debug};
 	debug("created new websocket");
 	events.msg = function(msg) {
 		var keyUser = msg.to || msg.from;
@@ -179,7 +179,7 @@ var Antiprism = function(host,debugFlag,retries) {
 				[on]: error, msg, online, added
 			*/
 			addEventListener: function(event,callback) {
-				if(Object.keys(events).indexOf(event) === -1)
+				if(Object.keys(clientEvents).indexOf(event) === -1)
 					return "unknown event";
 				clientEvents[event] = callback;
 			},
