@@ -168,8 +168,10 @@ var utils = {
         var contactlist = $('a[class="list-group-item"]').splice(1);
         var contactNames = [];
         for (var contact in contactlist) {
-            var name = contactlist[contact].id;
-            contactNames.push(name);
+            if(contactlist.hasOwnProperty(contact)) {
+                var name = contactlist[contact].id;
+                contactNames.push(name);
+            }
         }
         return contactNames;
     },
@@ -287,22 +289,28 @@ var utils = {
         contactList.appendChild(contactsHeadline);
 
         for (var contact in msg.contacts) {
-            var contactElement = utils.createContactElement(contact, msg);
-            contactList.appendChild(contactElement);
+            if(msg.contacts.hasOwnProperty(contact)) {
+                var contactElement = utils.createContactElement(contact, msg);
+                contactList.appendChild(contactElement);
+            }
         }
         for (var i in msg.requests) {
-            contactElement = utils.createContactElement(msg.requests[i], msg);
-            contactList.appendChild(contactElement);
+            if (msg.requests.hasOwnProperty(i)) {
+                contactElement = utils.createContactElement(msg.requests[i], msg);
+                contactList.appendChild(contactElement);
+            }
         }
         if ($active.length)
             var formerSelectedContact = $active[0].id;
         friendList.text("");
         friendList.append(contactList);
         for (contact in msg.contacts) {
-            utils.displayOnline({user: contact, online: msg.contacts[contact].online, confirmed: msg.contacts[contact].confirmed});
+            if(msg.contacts.hasOwnProperty(contact))
+                utils.displayOnline({user: contact, online: msg.contacts[contact].online, confirmed: msg.contacts[contact].confirmed});
         }
         for (i in msg.requests) {
-            utils.displayOnline({user: msg.requests[i], online: false, request: true});
+            if(msg.requests.hasOwnProperty(i))
+                utils.displayOnline({user: msg.requests[i], online: false, request: true});
         }
         if (formerSelectedContact)
             $('#' + formerSelectedContact).addClass("active");
@@ -346,9 +354,11 @@ var utils = {
     urlToLink: function (message) {
         var urlregex = /(\b(https?):\/\/[\-A-Z0-9+&@#\/%?=~_|!:,.;]*[\-A-Z0-9+&@#\/%=~_|])/ig,
             results = message.match(urlregex);
-        for (link in results) {
-            var replaced = message.replace(results[link], results[link].link(results[link]));
-            message = replaced.replace("<a", "<a target=_blank");
+        for (var link in results) {
+            if(results.hasOwnProperty(link)) {
+                var replaced = message.replace(results[link], results[link].link(results[link]));
+                message = replaced.replace("<a", "<a target=_blank");
+            }
         }
         return message;
     },
@@ -415,7 +425,8 @@ var utils = {
     displayMessages: function (msg) {
         console.log(msg);
         for (var i in msg.msglist) {
-            utils.displayMessage(msg.msglist[i], true);
+            if(msg.msglist.hasOwnProperty(i))
+                utils.displayMessage(msg.msglist[i], true);
         }
         utils.messageDisplay().animate({ scrollTop: utils.messageDisplay().prop("scrollHeight") - utils.messageDisplay().height() }, 300);
     },
@@ -433,8 +444,9 @@ var client = {
         utils.setMuteTooltip();
     },
     lostConnection: function (reconnected) {
-        if (!reconnected)
+        if (!reconnected) {
             $('#serverLost').modal();
+        }
     },
     getMessages: function (contactName) {
         antiprism.getMessages(contactName, -10, -1, utils.displayMessages);
@@ -482,50 +494,48 @@ var client = {
         });
     },
     login: function () {
-        var username = utils.getUsername();
-        var password = utils.getPassword();
-        var registration = utils.register();
+        var username = utils.getUsername(),
+            password = utils.getPassword(),
+            registration = utils.register(),
 
-        var host = location.origin.replace(/^http/, 'ws');
-        antiprism.init(username, password, host, {
-            msg: function (msg) {
-                var $active = $('.active');
-                var selected = null;
-                if ($active.length)
-                    selected = $active.innerHTML;
-                if (!msg.to && (msg.from != selected || !document.hasFocus())) {
-                    if (!utils.muted())
-                        utils.playSound("ios.mp3");
+            host = location.origin.replace(/^http/, 'ws'),
+
+            antiprism = new Antiprism(host),
+            callback = function (msg) {
+                if (msg) {
+                    utils.switchChatLogin();
+                    antiprism.getContacts(utils.displayContacts);
+                    antiprism.getStatus(utils.setHeadline);
+                } else {
+                    $('#loginAlert').fadeIn(1000, function () {
+                        setTimeout(function () {
+                            $('#loginAlert').fadeOut()
+                        }, 5000)
+                    })
                 }
-                utils.displayMessage(msg);
-            },
-            closed: client.lostConnection,
-            error: utils.displayError,
-            online: utils.displayOnline,
-            added: function (msg) {
-                console.log("got added by " + msg.user + ", refreshing...");
-                antiprism.getContacts(utils.displayContacts);
-            }
-        });
-
-        var callback = function (msg) {
-            if (msg) {
-                utils.switchChatLogin();
-                antiprism.getContacts(utils.displayContacts);
-                antiprism.getStatus(utils.setHeadline);
-            } else {
-                $('#loginAlert').fadeIn(1000, function () {
-                    setTimeout(function () {
-                        $('#loginAlert').fadeOut()
-                    }, 5000)
-                })
-            }
-            $('#password').val("");
-        }
+                $('#password').val("");
+            };
         if (registration)
-            antiprism.register(callback);
+            antiprism.register(username, password, callback);
         else
-            antiprism.login(callback);
+            antiprism.login(username, password, callback);
+        antiprism.addEventListener("msg", function (msg) {
+            var $active = $('.active'),
+                selected = null;
+            if ($active.length)
+                selected = $active.innerHTML;
+            if (!msg.to && (msg.from != selected || !document.hasFocus())) {
+                if (!utils.muted())
+                    utils.playSound("ios.mp3");
+            }
+            utils.displayMessage(msg);
+        });
+        antiprism.addEventListener("closed",client.lostConnection);
+        antiprism.addEventListener("error",utils.displayError);
+        antiprism.addEventListener("online",utils.displayOnline);
+        antiprism.addEventListener("added",function () {
+            antiprism.getContacts(utils.displayContacts);
+        });
     },
     logout: function () {
         antiprism.close();
@@ -533,7 +543,6 @@ var client = {
         $('#messages').text("");
         utils.switchChatLogin();
     }
-
 };
 
 var helper = {
@@ -616,9 +625,11 @@ var helper = {
       ulMenu = helper.ulMenu();
     dropdownListContainer.appendChild(button);
     for(var i in linkArray) {
-      var listElement = helper.dropdownListElement(linkArray[i]);
-      listElement.onclick = function(ctx) {console.log(ctx);};
-      ulMenu.appendChild(listElement);
+        if(linkArray.hasOwnProperty(i)) {
+            var listElement = helper.dropdownListElement(linkArray[i]);
+            listElement.onclick = function(ctx) {console.log(ctx);};
+            ulMenu.appendChild(listElement);
+        }
     }
     dropdownListContainer.appendChild(ulMenu);
     return dropdownListContainer;
@@ -633,8 +644,10 @@ var helper = {
     var select = document.createElement("select");
     select.className = "form-control";
     for(var i in optionsArray) {
-      var option = helper.option(optionsArray[i]);
-      select.appendChild(option);
+        if(optionsArray.hasOwnProperty(i)) {
+          var option = helper.option(optionsArray[i]);
+          select.appendChild(option);
+        }
     }
     return select;
   },
