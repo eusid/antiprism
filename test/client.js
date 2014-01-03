@@ -378,7 +378,8 @@ var antiprism,
             var panelContent = helper.div("panel panel-body");
             var username = message.from || utils.getUsername();
             var time = (new Date(message.ts)).toLocaleTimeString().split(' ');
-            panelContent.textContent = utils.urlToLink(message.msg);
+            var receivedMessage = utils.htmlEncode(message.msg);
+            panelContent.innerHTML = utils.urlToLink(receivedMessage);
             panelHeader.innerHTML = time;
             if (username == utils.getUsername()) {
                 panelContainer.className = "panel panel-success col-md-8 pull-right";
