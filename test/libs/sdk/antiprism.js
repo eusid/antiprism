@@ -7,94 +7,8 @@
  * check antiprismSDK.md for more infos
  */
 
-var Antiprism = function(host,debugFlag,retries) {
-	if(host === undefined)
-		return -1;
-	var ws = new WebSocket(host),
-		session = {pass:{}, conversations:{}, outqueue:[], inqueue:[]},
-		pingfails = 3,
-		retries = retries !== undefined ? retries : 3;
-		timeoutms = 25000, // say hi every 25 seconds
-		events = {},
-		pingID = setInterval(function() {
-			if(--pingfails)
-				ws.send("PING");
-			else
-				actions.close();
-		}, timeoutms),
-		debug = function(msg, isError, error) {
-			if(!debugFlag && !isError)
-				return;
-			console.group(isError ? "ERROR" : "DEBUG");
-			if(isError)
-				console.log(error);
-			if(msg)
-				console.log(msg);
-			console.groupEnd();
-		},
-		clientEvents = {online:debug,msg:debug,error:debug,added:debug};
-	debug("created new websocket");
-	events.msg = function(msg) {
-		var keyUser = msg.to || msg.from;
-		if(session.conversations[keyUser]) {
-			msg.msg = utils.decryptAES(msg.msg, session.conversations[keyUser]);
-			try {
-				clientEvents.msg(msg);
-				debug(msg);
-			} catch(e) {
-				debug(msg,true,e);
-			}
-		} else {
-			session.inqueue.push(msg);
-			getKey(keyUser, function (resp) {
-				while(session.inqueue.length)
-					events.msg(session.inqueue.shift());
-			});
-		}
-	};
-	events.added = function(msg) {
-		session.conversations[msg.user] = msg.convkey;
-		delete msg.convkey;
-		try {
-			clientEvents.added(msg);
-			debug(msg);
-		} catch(e) {
-			debug(msg,true,e);
-		}
-	};
-	events.online = function(msg) { clientEvents.online(msg); };
-	ws.onmessage = function(msg) {
-		if(msg.data == "PONG")
-			return pingfails = 3;
-		var response = JSON.parse(msg.data);
-		for(var field in response)
-			if(Object.keys(events).indexOf(field) != -1)
-				events[field](response);
-	};
-	ws.onopen = function() {
-		retries = 3;
-		while(session.outqueue.length)
-			ws.sendObject(session.outqueue.shift());
-	};
-	ws.onclose = function() {
-		clearInterval(pingID);
-		debug("Connection closed");
-		if(retries === 0 || session.suicide)
-			return;
-		try {
-			actions.reconnect();
-			if(clientEvents.closed)
-				clientEvents.closed(true);
-		} catch(e) {
-			debug(null,true,e);
-		}
-	};
-	ws.sendObject = function(msg) {
-		if(ws.readyState != 1)
-			return session.outqueue.push(msg)
-		//console.log("quering server:");console.log(msg);
-		ws.send(JSON.stringify(msg));
-	};
+var Antiprism = function(host,debugFlag) {
+	// define all the methods!!11
 	var utils = {
 			hex2a: function(hex) {
 				var str = '';
@@ -171,6 +85,41 @@ var Antiprism = function(host,debugFlag,retries) {
 						});
 					if(callback)
 						callback(msg);
+				};
+			},
+			registerWsCallbacks: function() {
+				ws.onmessage = function(msg) {
+					if(msg.data == "PONG") {
+						debug("got PONG!");
+						return pingfails = 3;
+					}
+					var response = JSON.parse(msg.data);
+					for(var field in response)
+						if(Object.keys(events).indexOf(field) != -1)
+							events[field](response);
+				};
+				ws.onopen = function() {
+					retries = 3;
+					while(session.outqueue.length)
+						ws.sendObject(session.outqueue.shift());
+				};
+				ws.onclose = function() {
+					clearInterval(pingID);
+					if(clientEvents.closed)
+						clientEvents.closed(true);
+					debug("connection closed, retries: "+retries)
+					if(!retries--)
+						return;
+					setTimeout(function() {
+						actions.reconnect();
+					},1000);
+				};
+				ws.sendObject = function(msg) {
+					if(ws.readyState != 1)
+						return session.outqueue.push(msg)
+					msg = JSON.stringify(msg);
+					//debug("quering server: "+msg);
+					ws.send(msg);
 				};
 			}
 		},
@@ -289,29 +238,76 @@ var Antiprism = function(host,debugFlag,retries) {
 				events["sent"] = callback || debug;
 			},
 			close: function() {
-				session.suicide = true;
+				retries = 0;
 				ws.close();
 			},
 			reconnect: function(callback) {
-				var user = session.user,
-					pass = session.pass.plain,
-					copy = {};
-				for(event in clientEvents)
-					copy[event] = clientEvents[event];
 				if(ws.readyState != 1)
 					ws.close();
-				debug(retries);
-				if(!retries)
-					return debug("meowbai \\o/");
-				debug("reconnecting");
-				this.constructor(host,debugFlag,retries--);
-				for(event in copy)
-					this.addEventListener(event,copy[event]);
-				debug(copy);
-				this.login(user,pass); // todo: still not cool :S
+				ws = new WebSocket(host);
+				helpers.registerWsCallbacks();
+				this.login(session.user,session.pass); // todo: still not cool :S
 			},
 			debug: debug
 		};
+
+	// Constructor nao :D
+	if(host === undefined)
+		return -1;
+	var ws = new WebSocket(host),
+		session = {pass:{}, conversations:{}, outqueue:[], inqueue:[]},
+		pingfails = retries = 3,
+		timeoutms = 25000, // say hi every 25 seconds
+		events = {},
+		pingID = setInterval(function() {
+			debug("PiNGiNG, "+pingfails+" tries left");
+			if(pingfails--)
+				ws.send("PING");
+			else
+				actions.close();
+		}, timeoutms),
+		debug = function(msg, isError, error) {
+			if(!debugFlag && !isError)
+				return;
+			console.group(isError ? "ERROR" : "DEBUG");
+			if(isError)
+				console.log(error);
+			if(msg)
+				console.log(msg);
+			console.groupEnd();
+		},
+		clientEvents = {online:debug,msg:debug,error:debug,added:debug};
+	debug("created new websocket");
+	helpers.registerWsCallbacks();
+	events.msg = function(msg) {
+		var keyUser = msg.to || msg.from;
+		if(session.conversations[keyUser]) {
+			msg.msg = utils.decryptAES(msg.msg, session.conversations[keyUser]);
+			try {
+				clientEvents.msg(msg);
+				debug(msg);
+			} catch(e) {
+				debug(msg,true,e);
+			}
+		} else {
+			session.inqueue.push(msg);
+			getKey(keyUser, function (resp) {
+				while(session.inqueue.length)
+					events.msg(session.inqueue.shift());
+			});
+		}
+	};
+	events.added = function(msg) {
+		session.conversations[msg.user] = msg.convkey;
+		delete msg.convkey;
+		try {
+			clientEvents.added(msg);
+			debug(msg);
+		} catch(e) {
+			debug(msg,true,e);
+		}
+	};
+	events.online = function(msg) { clientEvents.online(msg); };
 	for(action in actions)
 		this.constructor.prototype[action] = actions[action]; // todo: add chaining!
 };
