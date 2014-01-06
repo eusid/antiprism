@@ -4,12 +4,10 @@
  * Chatclient for Project Antiprism using the antiprismSDK
  * -------------------------------------------------------
  * 
- * ideas for functionalism's:
+ * ideas for features:
  * -------------------------
  *
  *    - Groupchat (wait for server implementation)
- *
- *    - !Work with the localstorage (e.g. save mute-setting)
  *                      
  */
 
@@ -46,7 +44,9 @@ var antiprism,
         }
     },
     muted: function () {
-        return $('#muteIcon')[0].classList[1] == "glyphicon-volume-off";
+        if(localStorage.muted === undefined)
+            localStorage.muted = "false";
+        return JSON.parse(localStorage.muted);
     },
     setMuteTooltip: function () {
         var msg;
@@ -56,6 +56,16 @@ var antiprism,
             msg = "Sounds are on";
         $('#mute').tooltip().attr("title", msg);
     },
+    setMuteButton: function() {
+        var button = helper.button("","btn btn-default", utils.changeMuteButton),
+            on = "volume-up",
+            off = "volume-off",
+            glyphicon = helper.glyphicon(utils.muted() ? off : on);
+        glyphicon.id = "muteIcon";
+        button.id = "mute";
+        button.appendChild(glyphicon);
+        $('#settings').append(button);
+    },
     changeMuteButton: function () {
         var muteIconClassList = $('#muteIcon')[0].classList;
         var on = "glyphicon-volume-up";
@@ -63,9 +73,11 @@ var antiprism,
         if (utils.muted()) {
             muteIconClassList.remove(off);
             muteIconClassList.add(on);
+            localStorage.muted = "false";
         } else {
             muteIconClassList.remove(on);
             muteIconClassList.add(off);
+            localStorage.muted = "true";
         }
         utils.setMuteTooltip();
     },
@@ -100,9 +112,6 @@ var antiprism,
         $('#signInButton').click(client.login);
         $('#addFriendButton').click(client.addFriend);
         $('#sendButton').click(client.sendMessage);
-        $('#mute').click(function () {
-            utils.changeMuteButton();
-        });
         $('#logout').click(client.logout);
         $('#savePassButton').click(client.changePass);
         $('#updateContactsButton').click(function () {
@@ -515,6 +524,7 @@ var client = {
         utils.addKeyEvents();
         utils.setOnClickEvents();
         utils.setMuteTooltip();
+        utils.setMuteButton();
         if(!antiprism)
             sessionStorage.clear();
     },
