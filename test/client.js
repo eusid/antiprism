@@ -281,7 +281,7 @@ var antiprism,
     displayContacts: function (msg) {
         var friendList = $('#friendList');
         var contactList = helper.div("list-group");
-        var contactsHeadline = helper.a("<strong>Contactlist</strong>", "");
+        var contactsHeadline = helper.a("<strong>Contactlist</strong>", "#");
         var $active = $('.active');
         contactsHeadline.className = "list-group-item";
         contactsHeadline.id = "contactsHeadline";
@@ -599,7 +599,7 @@ var client = {
                 }
                 $('#password').val("");
             };
-        antiprism = new Antiprism(host,true); // params: host,[debugFlag]
+        antiprism = new Antiprism(host, true); // params: host,[debugFlag]
         if (registration)
             antiprism.register(username, password, callback);
         else
