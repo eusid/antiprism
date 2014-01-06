@@ -9,11 +9,6 @@
  *
  *    - Groupchat (wait for server implementation)
  *
- *    - !!show more messages: * button which get more messages?
- *                            * number of messages: $('#messages').children().length (-1?)
- *                            * easy way: just empty messagefield and load the messages again + around 20
- *                            * better way: load only older messages and display them in front of the others
- *
  *    - !Work with the localstorage (e.g. save mute-setting)
  *                      
  */
