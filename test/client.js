@@ -63,7 +63,6 @@ var antiprism,
     },
     changeMuteButton: function () {
         var muteIconClassList = $('#muteIcon')[0].classList;
-        console.log(muteIconClassList);
         var on = "glyphicon-volume-up";
         var off = "glyphicon-volume-off";
         if (utils.muted()) {
@@ -186,7 +185,6 @@ var antiprism,
                 bootbox.confirm("Are you sure that you want to remove " + result + "?", function (result) {
                     if (result) {
                         antiprism.removeContact(firstResult, function () {
-                            console.log("Successfully removed contact: " + result);
                             antiprism.getContacts(utils.displayContacts);
                         });
                     }
@@ -204,7 +202,6 @@ var antiprism,
         $('.tt-hint').remove();
     },
     getErrorByCode: function (errorCode) {
-        console.log(errorCode);
         var error;
 
         var Error = {
@@ -282,7 +279,6 @@ var antiprism,
         return contactElement;
     },
     displayContacts: function (msg) {
-        console.log(msg);
         var friendList = $('#friendList');
         var contactList = helper.div("list-group");
         var contactsHeadline = helper.a("<strong>Contactlist</strong>", "");
@@ -372,7 +368,6 @@ var antiprism,
             }
             catch (e) {
                 utils.displayError({error:-1});
-                console.log("there was an JSON.parse error in utils.retrieveMessages");
             }
         }
         else
@@ -420,7 +415,6 @@ var antiprism,
         $contactNode.removeClass("newMessage");
         utils.messageDisplay().empty();
         var iconClass = $contactNode.children()[0].className;
-        console.log(iconClass);
         if (iconClass.indexOf("glyphicon-user") != -1) {
             utils.displayRetrieveMoreMessagesButton(contactName);
             client.getMessages(contactName);
@@ -442,7 +436,6 @@ var antiprism,
         return message;
     },
     displayMessage: function (message, contactName, chained, moreMessages) {
-        console.log(message);
         var $active = $('.active');
         var selectedContact = "";
         if (!document.hasFocus())
@@ -507,7 +500,6 @@ var antiprism,
             $user.children()[0].className = "glyphicon glyphicon-time";
     },
     displayMessages: function (msg, contactName, moreMessages) {
-        console.log(msg);
         for (var i in msg.msglist) {
             if(msg.msglist.hasOwnProperty(i))
                 utils.displayMessage(msg.msglist[i], contactName, true, moreMessages);
