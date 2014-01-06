@@ -295,7 +295,6 @@ var antiprism,
             if(msg.contacts.hasOwnProperty(contact)) {
                 var contactElement = utils.createContactElement(contact, msg);
                 contactList.appendChild(contactElement);
-                utils.updateContactObject(contact);
             }
         }
         for (var i in msg.requests) {
@@ -333,7 +332,12 @@ var antiprism,
         utils.disableRetrieveMoreMessagesButton(contactName);
     },
     disableRetrieveMoreMessagesButton: function(contactName) {
-        console.log(sessionStorage[contactName]);
+        if(!sessionStorage[contactName]) {
+            utils.updateContactObject(contactName, function () {
+                utils.disableRetrieveMoreMessagesButton(contactName);
+            });
+            return;
+        }
         try {
             var obj = JSON.parse(sessionStorage[contactName]);
         }
@@ -367,7 +371,8 @@ var antiprism,
                 }
             }
             catch (e) {
-                utils.displayError(-1);
+                utils.displayError({error:-1});
+                console.log("there was an JSON.parse error in utils.retrieveMessages");
             }
         }
         else
@@ -523,6 +528,8 @@ var client = {
         utils.addKeyEvents();
         utils.setOnClickEvents();
         utils.setMuteTooltip();
+        if(!antiprism)
+            sessionStorage.clear();
     },
     lostConnection: function (reconnected) {
         if (!reconnected) {
@@ -628,6 +635,7 @@ var client = {
         $('h1').text(headline);
         utils.messageDisplay().text("");
         utils.switchChatLogin();
+        sessionStorage.clear();
     }
 };
 
