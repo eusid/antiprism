@@ -98,6 +98,9 @@ var antiprism,
     register: function () {
         return $('#registration').prop('checked');
     },
+    numberOfDisplayedMessages: function() {
+        return utils.messageDisplay().children().length - 1;
+    },
     setOnClickEvents: function () {
         $('#registration').click(utils.changeButton);
         $('#signInButton').click(client.login);
@@ -147,7 +150,7 @@ var antiprism,
                 client.addFriend();
             }
         });
-        $('#newPassFieldCheck').keyup(function (    ) {
+        $('#newPassFieldCheck').keyup(function () {
             function validate() {
                 var $div = $('#changePassContainer');
                 if (!utils.changePasswordValidated()) {
@@ -177,7 +180,6 @@ var antiprism,
         return contactNames;
     },
     removeContactPrompt: function () {
-
         bootbox.prompt("What Contact do you want to remove?", function (result) {
             if (result !== null) {
                 var firstResult = result;
@@ -261,7 +263,7 @@ var antiprism,
         });
     },
     createContactElement: function (contact, msg) {
-        var contactElement = helper.a("", "#");
+        var contactElement = helper.jsLink("");
         var icon = helper.span("online");
         var status = helper.small();
         contactElement.className = "list-group-item";
@@ -293,6 +295,7 @@ var antiprism,
             if(msg.contacts.hasOwnProperty(contact)) {
                 var contactElement = utils.createContactElement(contact, msg);
                 contactList.appendChild(contactElement);
+                utils.updateContactObject(contact);
             }
         }
         for (var i in msg.requests) {
@@ -319,6 +322,39 @@ var antiprism,
             msg.requests = [];
         utils.addFriendsPopover(Object.keys(msg.contacts).length + msg.requests.length);
     },
+    displayRetrieveMoreMessagesButton: function() {
+        var container = helper.div("col-md-12");
+        var button = helper.button("Retrieve More Messages","btn btn-info btn-sm btn-block",utils.retrieveMessages);
+        button.id = "retrieveMoreMessagesButton";
+        button.disabled = "true";
+        container.appendChild(button);
+        utils.messageDisplay().append(container);
+        console.log($('.active'));
+        utils.disableRetrieveMoreMessagesButton($('.active')[0].id);
+    },
+    disableRetrieveMoreMessagesButton: function(contactName) {
+        console.log(sessionStorage[contactName]);
+        try {
+            var obj = JSON.parse(sessionStorage[contactName]);
+        }
+        catch (e) {
+            utils.displayError({error: -1});
+            return;
+        }
+        if (!obj || (obj.numberOfDisplayedMessages === 0 && obj.numberOfMessages > 0)) {
+            utils.updateContactObject(contactName, function () {
+                utils.disableRetrieveMoreMessagesButton(contactName);
+            });
+            return;
+        }
+        if(!(obj.numberOfDisplayedMessages < obj.numberOfMessages))
+            $('#retrieveMoreMessagesButton')[0].disabled = true;
+        else
+            $('#retrieveMoreMessagesButton')[0].disabled = false;
+    },
+    retrieveMessages: function() {
+        console.log("hey you want to retrieve some messages. Try it on your own! :D");
+    },
     addFriendsPopover: function (contactLength) {
         if (!contactLength && contactLength !== undefined) {
             var $addFriendField = $('#addFriendField');
@@ -336,21 +372,40 @@ var antiprism,
             $('#addFriendField').unbind("focus").unbind("focusout");
         }
     },
+    countMessages: function(contactName, callback) {
+        antiprism.countMessages(contactName,function(msg) {utils.updateContactObject(msg.user,callback, msg.msgcount)});
+    },
+    updateContactObject: function(contactName, callback, numberOfMessages) {
+        if(numberOfMessages === undefined) {
+            utils.countMessages(contactName, callback);
+            return;
+        }
+        var obj = {numberOfMessages: numberOfMessages, numberOfDisplayedMessages: utils.numberOfDisplayedMessages()};
+        sessionStorage[contactName] = JSON.stringify(obj);
+        if(callback)
+            callback();
+        return;
+    },
     onContactSelect: function (contactName) {
-        $('.active').removeClass("active");
         var $contactNode = $('#' + contactName);
+        var $active = $('.active');
+        if($active.length) {
+            utils.updateContactObject($active[0].id);
+            $active.removeClass("active");
+        }
         $contactNode.addClass("active");
         $contactNode.removeClass("newMessage");
         utils.messageDisplay().empty();
         var iconClass = $contactNode.children()[0].className;
         console.log(iconClass);
-        if (iconClass.indexOf("glyphicon-user") != -1)
+        if (iconClass.indexOf("glyphicon-user") != -1) {
+            utils.displayRetrieveMoreMessagesButton();
             client.getMessages(contactName);
+        }
         else if (iconClass.indexOf("glyphicon-time") != -1) {
-            utils.displayMessage({from: contactName, msg: "Waiting for confirmation by user.", ts: (new Date()).getTime()}, false);
-            console.log("Waiting for confirmation");
+            utils.displayMessage({from: contactName, msg: "Waiting for confirmation by user.", ts: (new Date()).getTime()}, contactName, false);
         } else if (iconClass.indexOf("glyphicon-question-sign") != -1)
-            utils.displayMessage({from: contactName, msg: "This user sent you a friendrequest. To confirm please click the button below.", ts: (new Date()).getTime(), request: true}, false);
+            utils.displayMessage({from: contactName, msg: "This user sent you a friendrequest. To confirm please click the button below.", ts: (new Date()).getTime(), request: true}, contactName, false);
     },
     urlToLink: function (message) {
         var urlregex = /(\b(https?):\/\/[\-A-Z0-9+&@#\/%?=~_|!:,.;]*[\-A-Z0-9+&@#\/%=~_|])/ig,
@@ -363,16 +418,15 @@ var antiprism,
         }
         return message;
     },
-    displayMessage: function (message, chained) {
+    displayMessage: function (message, contactName, chained) {
         console.log(message);
-        var contactName = message.from || message.to;
         var $active = $('.active');
         var selectedContact = "";
         if (!document.hasFocus())
             $('title').text("#AP - " + contactName + " just contacted you!");
         if ($active.length)
             selectedContact = $active[0].id;
-        if (selectedContact == message.from || selectedContact == message.to || utils.getUsername() == message.from) {
+        if (selectedContact == contactName) {
             var panelContainer = helper.div();
             var panelHeader = helper.div("panel panel-heading");
             var panelContent = helper.div("panel panel-body");
@@ -395,8 +449,8 @@ var antiprism,
             utils.messageDisplay().append(panelContainer);
             if (message.request) {
                 var buttonDiv = helper.div("col-md-12");
-                var confirmButton = helper.button("Confirm " + utils.htmlEncode(message.from), "btn btn-success", function () {
-                    antiprism.confirm(message.from, function (ack) {
+                var confirmButton = helper.button("Confirm " + utils.htmlEncode(contactName), "btn btn-success", function () {
+                    antiprism.confirm(contactName, function (ack) {
                         if (ack)
                             utils.messageDisplay().empty();
                         antiprism.getContacts(utils.displayContacts);
@@ -406,8 +460,10 @@ var antiprism,
                 buttonDiv.appendChild(confirmButton);
                 panelContent.appendChild(buttonDiv);
             }
-            if (!chained)
+            if (!chained) {
                 utils.messageDisplay().animate({ scrollTop: utils.messageDisplay().prop("scrollHeight") - utils.messageDisplay().height() }, 300);
+                utils.updateContactObject(contactName, function() { utils.disableRetrieveMoreMessagesButton(contactName); });
+            }
         } else {
             $('#' + contactName).addClass("newMessage");
         }
@@ -424,17 +480,18 @@ var antiprism,
         } else
             $user.children()[0].className = "glyphicon glyphicon-time";
     },
-    displayMessages: function (msg) {
+    displayMessages: function (msg, contactName) {
         console.log(msg);
         for (var i in msg.msglist) {
             if(msg.msglist.hasOwnProperty(i))
-                utils.displayMessage(msg.msglist[i], true);
+                utils.displayMessage(msg.msglist[i], contactName, true);
         }
         utils.messageDisplay().animate({ scrollTop: utils.messageDisplay().prop("scrollHeight") - utils.messageDisplay().height() }, 300);
+        utils.updateContactObject(contactName, function() { utils.disableRetrieveMoreMessagesButton(contactName); });
     },
     playSound: function (mp3) {
         var sound = new Audio();
-        sound.src = sound.canPlayType("audio/mpeg") ? mp3 : fallback;
+        sound.src = sound.canPlayType("audio/mpeg") ? mp3 : console.log("BING - you have got a new message!"); //TODO fallback einrichten
         sound.play();
     }
 };
@@ -450,8 +507,12 @@ var client = {
             $('#serverLost').modal();
         }
     },
-    getMessages: function (contactName) {
-        antiprism.getMessages(contactName, -10, -1, utils.displayMessages);
+    getMessages: function (contactName, start, end) {
+        if(start === undefined)
+            start = -10;
+        if(end === undefined)
+            end = -1;
+        antiprism.getMessages(contactName, start, end, utils.displayMessages);
     },
     sendMessage: function () {
         var messageField = $('#messageField');
@@ -465,12 +526,12 @@ var client = {
         messageField.val('');
         if (to)
             antiprism.sendMessage(to, message, function (msg) {
-                utils.displayMessage({to: to, ts: msg.ts, msg: message});
+                utils.displayMessage({to: to, ts: msg.ts, msg: message}, to);
             });
         else {
             utils.displayMessage({to: null, ts: (new Date()).getTime(), msg: "You didn\'t choose a contact!"});
             if (message == "clear()")
-                $('#messages').text("");
+                utils.messageDisplay().text("");
         }
     },
     changePass: function () {
@@ -529,7 +590,7 @@ var client = {
                 if (!utils.muted())
                     utils.playSound("ios.mp3");
             }
-            utils.displayMessage(msg);
+            utils.displayMessage(msg, msg.from);
         });
         antiprism.addEventListener("closed",client.lostConnection);
         antiprism.addEventListener("error",utils.displayError);
@@ -541,7 +602,7 @@ var client = {
     logout: function () {
         antiprism.close();
         $('h1').text(headline);
-        $('#messages').text("");
+        utils.messageDisplay().text("");
         utils.switchChatLogin();
     }
 };
@@ -616,7 +677,7 @@ var helper = {
   },
   dropdownListElement: function(text) {
     var li = document.createElement("li"),
-      a = helper.a(text, "#");
+      a = helper.jsLink(text);
     li.appendChild(a);
     return li;
   },
@@ -660,7 +721,8 @@ var helper = {
   },
   jsLink: function(linkName, clickEvent) {
     var jsLink = helper.a(linkName, "#");
-    jsLink.onclick = clickEvent;
+    if(clickEvent)
+        jsLink.onclick = clickEvent;
     jsLink.className = "jsLink";
     return jsLink;
   },
@@ -681,7 +743,7 @@ var helper = {
       return -1;
     }
   },
-  getValuesFromArray: function(selectArray) {
+  getValuesFromArray: function(selectArray) {    //Put in a jQuery-Object with DOM-Objects that all have a value
     var result = [];
     for(var i = 0; i < selectArray.length; i++) {
       result.push(selectArray[i].value);
