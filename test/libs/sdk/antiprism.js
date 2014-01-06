@@ -223,11 +223,11 @@ var Antiprism = function(host,debugFlag) {
 						return helpers.getKey(user, function() {
 							for(var x in msg.msglist)
 								msg.msglist[x].msg = utils.decryptAES(msg.msglist[x].msg, session.conversations[user]);
-							callback(msg, user);
+							callback(msg);
 						});
 					for(var x in msg.msglist)
 						msg.msglist[x].msg = utils.decryptAES(msg.msglist[x].msg, session.conversations[user]);
-					callback(msg, user);
+					callback(msg);
 				}
 			},
 			sendMessage: function(user, message, callback) {
