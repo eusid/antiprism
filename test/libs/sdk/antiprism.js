@@ -9,7 +9,8 @@
 
 var Antiprism = function(host,debugFlag) {
 	// define all the methods!!11
-	var utils = {
+	var retries,
+        utils = {
 			hex2a: function(hex) {
 				var str = '';
 				for (var i = 0; i < hex.length; i += 2)
@@ -34,20 +35,20 @@ var Antiprism = function(host,debugFlag) {
 			decryptAES: function(cipher, key) {
 				cipher = atob(cipher);
 				var iv = utils.parseLatin(cipher.substring(0,16));
-				var cipher = utils.parseLatin(cipher.substring(16));
-				var key = utils.parseLatin(key);
+				cipher = utils.parseLatin(cipher.substring(16));
+				key = utils.parseLatin(key);
 				var decrypted = CryptoJS.AES.decrypt({ciphertext:cipher},key,{iv:iv});
 				return CryptoJS.enc.Utf8.stringify(decrypted);
 			},
 			encryptAES: function(string, key) {
-				var key = utils.parseLatin(key);
+				key = utils.parseLatin(key);
 				var iv = utils.parseLatin(rng_get_string(16));
 				var cipher = CryptoJS.AES.encrypt(string, key, { iv: iv });
 				return btoa(utils.hex2a(cipher.iv+cipher.ciphertext));
 			},
 			buildAESKey: function(password) {
 				var salt = "i_iz_static_salt";
-				var hash = scrypt.crypto_scrypt(scrypt.encode_utf8(password),scrypt.encode_utf8(salt), 16384, 8, 1, 32)
+				var hash = scrypt.crypto_scrypt(scrypt.encode_utf8(password),scrypt.encode_utf8(salt), 16384, 8, 1, 32);
 				return String.fromCharCode.apply(null, new Uint8Array(hash));
 			},
 			generateKeypair: function() {
@@ -72,7 +73,7 @@ var Antiprism = function(host,debugFlag) {
 		helpers = {
 			getKey: function(user, callback) {
 				if(session.conversations[user])
-					callback()
+					callback();
 				ws.sendObject({action:"conversationKey",user:user});
 				events["convkey"] = function(msg) {
 					if(msg.convkey)
@@ -116,7 +117,7 @@ var Antiprism = function(host,debugFlag) {
 				};
 				ws.sendObject = function(msg) {
 					if(ws.readyState != 1)
-						return session.outqueue.push(msg)
+						return session.outqueue.push(msg);
 					msg = JSON.stringify(msg);
 					//debug("quering server: "+msg);
 					ws.send(msg);
@@ -183,7 +184,7 @@ var Antiprism = function(host,debugFlag) {
 						session.conversations[user] = utils.decryptRSA(msg.contacts[user].key,session.pubkey,session.privkey);
 						delete msg.contacts[user].key;
 					}
-					for(var user in msg.requests)
+					for(user in msg.requests)
 						session.conversations[user] = utils.decryptRSA(msg.requests[user], session.pubkey, session.privkey);
 					if(msg.requests)
 						msg.requests = Object.keys(msg.requests);
@@ -198,7 +199,7 @@ var Antiprism = function(host,debugFlag) {
 					keys.push(utils.encryptRSA(convkey, session.pubkey));
 					keys.push(utils.encryptRSA(convkey, msg.pubkey));
 					ws.sendObject({action:"initConversation", user:user, convkeys:keys});
-				}
+				};
 				events["initiated"] = callback || debug;
 			},
 			confirm: function(user, callback) {
@@ -291,7 +292,7 @@ var Antiprism = function(host,debugFlag) {
 			}
 		} else {
 			session.inqueue.push(msg);
-			getKey(keyUser, function (resp) {
+			helpers.getKey(keyUser, function (resp) {
 				while(session.inqueue.length)
 					events.msg(session.inqueue.shift());
 			});
@@ -309,5 +310,5 @@ var Antiprism = function(host,debugFlag) {
 	};
 	events.online = function(msg) { clientEvents.online(msg); };
 	for(action in actions)
-		this.constructor.prototype[action] = actions[action]; // todo: add chaining!
+		this.constructor.prototype[action] = actions[action]; // TODO: add chaining!
 };

@@ -51,7 +51,7 @@ var helpers = {
 				rsa.setPublic(reply.pubkeyN, reply.pubkeyE);
 				storage.validationKey = randomString;
 				helpers.sendClient(
-					{validationKey: rsa.encrypt(randomString), pubkey: {n:reply.pubkeyN, e:reply.pubkeyE}, privkey: reply.privkey}
+					{validationKey: rsa.encrypt(randomString), pubkey: pubkey, privkey: reply.privkey}
 				);
 			});
 		},
@@ -313,4 +313,4 @@ exports.handleMessage = function(message, storage, callbacks) {
 		result = {error:result};
 	if(result)
 		helpers.sendClient(result);
-}
+};
