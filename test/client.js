@@ -57,7 +57,9 @@ var antiprism,
         $('#mute').tooltip().attr("title", msg);
     },
     setMuteButton: function() {
-        var button = helper.button("","btn btn-default", utils.changeMuteButton),
+        var button = helper.button("","btn btn-default", function() {
+                utils.changeMuteButton();
+            }),
             on = "volume-up",
             off = "volume-off",
             glyphicon = helper.glyphicon(utils.muted() ? off : on);
@@ -66,18 +68,22 @@ var antiprism,
         button.appendChild(glyphicon);
         $('#settings').append(button);
     },
-    changeMuteButton: function () {
-        var muteIconClassList = $('#muteIcon')[0].classList;
-        var on = "glyphicon-volume-up";
-        var off = "glyphicon-volume-off";
-        if (utils.muted()) {
-            muteIconClassList.remove(off);
-            muteIconClassList.add(on);
-            localStorage.muted = "false";
-        } else {
-            muteIconClassList.remove(on);
-            muteIconClassList.add(off);
-            localStorage.muted = "true";
+    changeMuteButton: function (newValue) {
+        var $muteIcon = $('#muteIcon'),
+            on = "glyphicon-volume-up",
+            off = "glyphicon-volume-off";
+        if(newValue === undefined) {
+            if (utils.muted()) {
+                $muteIcon.removeClass(off).addClass(on);
+                localStorage.muted = "false";
+            } else {
+                $muteIcon.removeClass(on).addClass(off);
+                localStorage.muted = "true";
+            }
+        } else if(newValue == "true") {
+            $muteIcon.removeClass(on).addClass(off);
+        } else if(newValue == "false") {
+            $muteIcon.removeClass(off).addClass(on);
         }
         utils.setMuteTooltip();
     },
@@ -527,6 +533,11 @@ var client = {
         utils.setMuteButton();
         if(!antiprism)
             sessionStorage.clear();
+        window.addEventListener("storage", function(storageEvent) {
+            console.log(storageEvent);
+            if(storageEvent.key == "muted" && storageEvent.url == document.URL)
+                utils.changeMuteButton(storageEvent.newValue);
+        }, true)
     },
     lostConnection: function (reconnected) {
         if (!reconnected) {
