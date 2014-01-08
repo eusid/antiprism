@@ -357,10 +357,7 @@ var antiprism,
             });
             return;
         }
-        if(!(obj.numberOfDisplayedMessages < obj.numberOfMessages))
-            $('#retrieveMoreMessagesButton')[0].disabled = true;
-        else
-            $('#retrieveMoreMessagesButton')[0].disabled = false;
+        $('#retrieveMoreMessagesButton')[0].disabled = !(obj.numberOfDisplayedMessages < obj.numberOfMessages);
     },
     retrieveMessages: function(contactName) {
         if(sessionStorage[contactName]) {
@@ -412,7 +409,6 @@ var antiprism,
         sessionStorage[contactName] = JSON.stringify(obj);
         if(callback)
             callback();
-        return;
     },
     onContactSelect: function (contactName) {
         var $contactNode = $('#' + contactName);
@@ -554,15 +550,15 @@ var client = {
         });
     },
     sendMessage: function () {
-        var messageField = $('#messageField');
-        var message = messageField.val();
+        var $messageField = $('#messageField');
+        var message = $messageField.val();
         if (!message)
             return;
         var to = null;
         var $active = $('.active');
         if ($active.length)
             to = $active[0].id;
-        messageField.val('');
+        $messageField.val('');
         if (to)
             antiprism.sendMessage(to, message, function (msg) {
                 utils.displayMessage({to: to, ts: msg.ts, msg: message}, to);
