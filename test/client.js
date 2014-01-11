@@ -4,17 +4,10 @@
  * Chatclient for Project Antiprism using the antiprismSDK
  * -------------------------------------------------------
  * 
- * ideas for functionalism's:
+ * ideas for features:
  * -------------------------
  *
  *    - Groupchat (wait for server implementation)
- *
- *    - !!show more messages: * button which get more messages?
- *                            * number of messages: $('#messages').children().length (-1?)
- *                            * easy way: just empty messagefield and load the messages again + around 20
- *                            * better way: load only older messages and display them in front of the others
- *
- *    - !Work with the localstorage (e.g. save mute-setting)
  *                      
  */
 
@@ -51,7 +44,9 @@ var antiprism,
         }
     },
     muted: function () {
-        return $('#muteIcon')[0].classList[1] == "glyphicon-volume-off";
+        if(localStorage.muted === undefined)
+            localStorage.muted = "false";
+        return JSON.parse(localStorage.muted);
     },
     setMuteTooltip: function () {
         var msg;
@@ -61,16 +56,34 @@ var antiprism,
             msg = "Sounds are on";
         $('#mute').tooltip().attr("title", msg);
     },
-    changeMuteButton: function () {
-        var muteIconClassList = $('#muteIcon')[0].classList;
-        var on = "glyphicon-volume-up";
-        var off = "glyphicon-volume-off";
-        if (utils.muted()) {
-            muteIconClassList.remove(off);
-            muteIconClassList.add(on);
-        } else {
-            muteIconClassList.remove(on);
-            muteIconClassList.add(off);
+    setMuteButton: function() {
+        var button = helper.button("","btn btn-default", function() {
+                utils.changeMuteButton();
+            }),
+            on = "volume-up",
+            off = "volume-off",
+            glyphicon = helper.glyphicon(utils.muted() ? off : on);
+        glyphicon.id = "muteIcon";
+        button.id = "mute";
+        button.appendChild(glyphicon);
+        $('#settings').append(button);
+    },
+    changeMuteButton: function (newValue) {
+        var $muteIcon = $('#muteIcon'),
+            on = "glyphicon-volume-up",
+            off = "glyphicon-volume-off";
+        if(newValue === undefined) {
+            if (utils.muted()) {
+                $muteIcon.removeClass(off).addClass(on);
+                localStorage.muted = "false";
+            } else {
+                $muteIcon.removeClass(on).addClass(off);
+                localStorage.muted = "true";
+            }
+        } else if(newValue == "true") {
+            $muteIcon.removeClass(on).addClass(off);
+        } else if(newValue == "false") {
+            $muteIcon.removeClass(off).addClass(on);
         }
         utils.setMuteTooltip();
     },
@@ -105,9 +118,6 @@ var antiprism,
         $('#signInButton').click(client.login);
         $('#addFriendButton').click(client.addFriend);
         $('#sendButton').click(client.sendMessage);
-        $('#mute').click(function () {
-            utils.changeMuteButton();
-        });
         $('#logout').click(client.logout);
         $('#savePassButton').click(client.changePass);
         $('#updateContactsButton').click(function () {
@@ -347,10 +357,7 @@ var antiprism,
             });
             return;
         }
-        if(!(obj.numberOfDisplayedMessages < obj.numberOfMessages))
-            $('#retrieveMoreMessagesButton')[0].disabled = true;
-        else
-            $('#retrieveMoreMessagesButton')[0].disabled = false;
+        $('#retrieveMoreMessagesButton')[0].disabled = !(obj.numberOfDisplayedMessages < obj.numberOfMessages);
     },
     retrieveMessages: function(contactName) {
         if(sessionStorage[contactName]) {
@@ -402,7 +409,6 @@ var antiprism,
         sessionStorage[contactName] = JSON.stringify(obj);
         if(callback)
             callback();
-        return;
     },
     onContactSelect: function (contactName) {
         var $contactNode = $('#' + contactName);
@@ -520,8 +526,14 @@ var client = {
         utils.addKeyEvents();
         utils.setOnClickEvents();
         utils.setMuteTooltip();
+        utils.setMuteButton();
         if(!antiprism)
             sessionStorage.clear();
+        window.addEventListener("storage", function(storageEvent) {
+            console.log(storageEvent);
+            if(storageEvent.key == "muted" && storageEvent.url == document.URL)
+                utils.changeMuteButton(storageEvent.newValue);
+        }, true)
     },
     lostConnection: function (reconnected) {
         if (!reconnected) {
@@ -538,15 +550,15 @@ var client = {
         });
     },
     sendMessage: function () {
-        var messageField = $('#messageField');
-        var message = messageField.val();
+        var $messageField = $('#messageField');
+        var message = $messageField.val();
         if (!message)
             return;
         var to = null;
         var $active = $('.active');
         if ($active.length)
             to = $active[0].id;
-        messageField.val('');
+        $messageField.val('');
         if (to)
             antiprism.sendMessage(to, message, function (msg) {
                 utils.displayMessage({to: to, ts: msg.ts, msg: message}, to);
