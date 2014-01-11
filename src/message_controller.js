@@ -9,7 +9,7 @@ var helpers = {
 		broadcast: function(storage, user, msg, callback) {
 			storage.redis.smembers("sess."+user, function(err,reply) {
 				if(err)
-					return dbg("redis-Error: "+err);
+					return helpers.dbg("redis-Error: "+err);
 				for(var id in reply) {
 					if(storage.sockets[reply[id]] !== undefined) // not sure if redis and node are in sync
 						storage.sockets[reply[id]].ctx(msg);
@@ -33,7 +33,7 @@ var helpers = {
 						},
 						function(err,res) {
 							if(err)
-								dbg("redis-Error: "+err);
+								helpers.dbg("redis-Error: "+err);
 						});
 				}
 			})
@@ -62,7 +62,7 @@ var helpers = {
 				return Error.INVALID_AUTH;
 			storage.redis.hset("users."+storage.username, "privkey", data.privkey, function(err,reply) {
 				if(err)
-					return dbg("redis-Error: "+err);
+					return helpers.dbg("redis-Error: "+err);
 				helpers.sendClient({updated:true});
 			});
 		},
@@ -75,10 +75,10 @@ var helpers = {
 			storage.loggedIn = true;
 			storage.redis.sadd("sess."+storage.username, storage.id, function(err, reply) {
 				if(err)
-					return dbg("redis-Error: "+err);
+					return helpers.dbg("redis-Error: "+err);
 				storage.redis.scard("sess."+storage.username, function(err, reply) {
 					if(err)
-						return dbg("redis-Error: "+err);
+						return helpers.dbg("redis-Error: "+err);
 					if(parseInt(reply) == 1)
 						storage.redis.hgetall("convs."+storage.username, function(err, contacts) {
 							for (var user in contacts)
@@ -96,7 +96,7 @@ var helpers = {
 				return Error.INVALID_AUTH;
 			storage.redis.hmset("users."+storage.username,"status",data.status, function(err,reply) {
 				if(err)
-					dbg("redis-Error: "+err);
+					helpers.dbg("redis-Error: "+err);
 				helpers.sendClient({status:true});
 			});
 		},
@@ -119,7 +119,6 @@ var helpers = {
 		contacts: function(data, storage) {
 			if(!storage.loggedIn)
 				return Error.INVALID_AUTH;
-
 			storage.redis.multi()
 				.hgetall("convs."+storage.username)
 				.hgetall("reqs."+storage.username)
@@ -130,27 +129,36 @@ var helpers = {
 						requests = replies[1];
 					if(!contacts)
 						return helpers.sendClient({contacts:{}, requests:requests||[]});
-					var ret = {}, users = Object.keys(contacts), usersIndex = users.length;
+					var	multi = storage.redis.multi(),
+						users = Object.keys(contacts),
+						opCount;
 					for(var i in users) {
-						storage.redis.multi()
+						multi
 							.scard("sess."+users[i])
 							.hmget("users."+users[i],"status","lastseen")
 							.hexists("convs."+users[i],storage.username)
-							.hexists("convs."+storage.username,users[i])
-							.exec(function(err,replies) {
-								var friends = !!(replies[2]&&replies[3]);
-								ret[users[i-usersIndex+1]] = {
-									key: contacts[users[i-usersIndex+1]],
-									online: !!(replies[0]&&friends),
-									status: replies[1][0], // maybe priv8?
-									lastseen: friends ? replies[1][1] : 0,
-									confirmed: friends ? undefined : false 
-								};
-								usersIndex--;
-								if(!usersIndex)
-									helpers.sendClient({contacts:ret,requests:requests||[]});
-							});
+							.hexists("convs."+storage.username,users[i]);
+						if(opCount === undefined)
+							opCount = multi.queue.length - 1;
 					}
+					multi.exec(function(err,replies) {
+						var ret = {};
+						for(var i = 0; i < users.length; i++) {
+							var redisIndex = i*opCount,
+								reply = [];
+							for(var j = 0; j < opCount; j++)
+								reply.push(replies[redisIndex+j]);
+							var friends = !!(reply[2]&&reply[3]);
+							ret[users[i]] = {
+								key: contacts[users[i]],
+								online: !!(reply[0]&&friends),
+								status: reply[1][0], // maybe priv8?
+								lastseen: friends ? reply[1][1] : 0,
+								confirmed: friends ? undefined : false 
+							};
+						}
+						helpers.sendClient({contacts:ret,requests:requests||[]});
+					});
 				});
 		},
 		pubkey: function(data, storage) {
@@ -182,12 +190,12 @@ var helpers = {
 				.hexists("reqs."+storage.username, data.user)
 				.exec(function(err,replies) {
 					if(err)
-						return dbg("redis-Error: "+err);
+						return helpers.dbg("redis-Error: "+err);
 					if(!replies[0]||replies[1])
 						return helpers.sendClient({initiated:false,with:data.user});
 					storage.redis.hsetnx("reqs."+data.user,storage.username,data.convkeys[1],function(err,reply) {
 						if(err)
-							return dbg("redis-Error: "+err);
+							return helpers.dbg("redis-Error: "+err);
 						if(!reply)
 							return helpers.sendClient({initiated:false,with:data.user});
 						helpers.sendClient({initiated:true,with:data.user});
@@ -206,7 +214,7 @@ var helpers = {
 				.hdel("reqs."+storage.username, data.user)
 				.exec(function(err,replies) {
 					if(err)
-						return dbg("redis-Error: "+err);
+						return helpers.dbg("redis-Error: "+err);
 					if(replies[0] || !replies[1])
 						return helpers.sendClient({ack:false});
 					storage.redis.hset("convs."+storage.username, data.user, replies[1], function(err,reply) {
@@ -226,7 +234,7 @@ var helpers = {
 				var convid = storage.username+'.'+data.user;
 			storage.redis.llen("msgs."+convid, function(err, reply) {
 				if(err)
-					return dbg("redis-Error: "+err);
+					return helpers.dbg("redis-Error: "+err);
 				helpers.sendClient({msgcount:reply, user:data.user});
 			});
 		},
@@ -258,12 +266,12 @@ var helpers = {
 				var convid = storage.username+'.'+data.user;
 			storage.redis.rpush("msgs."+convid, JSON.stringify(storeMsg), function(err, reply) {
 				if(err)
-					return dbg("redis-Error: "+err);
+					return helpers.dbg("redis-Error: "+err);
 			});
 			helpers.broadcast(storage, data.user, storeMsg);
 			storage.redis.smembers("sess."+storage.username, function(err,reply) {
 				if(err)
-					return dbg("redis-Error: "+err);
+					return helpers.dbg("redis-Error: "+err);
 				storeMsg.to = data.user;
 				delete storeMsg.from;
 				for(var id in reply)
@@ -301,6 +309,7 @@ var helpers = {
 exports.helpers = helpers;
 exports.handleMessage = function(message, storage, callbacks) {
 	helpers.sendClient = callbacks.response;
+	helpers.dbg = callbacks.dbg;
 	var result;
 	try {
 		var data = JSON.parse(message);

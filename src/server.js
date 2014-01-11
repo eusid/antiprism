@@ -53,7 +53,8 @@ webSocketServer.on("connection", function(ws) {
 				return ws.send("PONG");
 			};
 			messageController.handleMessage(message, session, {
-				response: session.ctx
+				response: session.ctx,
+				dbg: dbg
 			});
 		})
 		.on("error", function() {

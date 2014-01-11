@@ -179,10 +179,13 @@ var Antiprism = function(host,debugFlag) {
 			getContacts: function(callback) {
 				ws.sendObject({action:"contacts"});
 				events["contacts"] = function(msg) {
+					var then = new Date();
+					debug("decrypt-loop in getContacts started");
 					for(var user in msg.contacts) {
 						session.conversations[user] = utils.decryptRSA(msg.contacts[user].key,session.pubkey,session.privkey);
 						delete msg.contacts[user].key;
 					}
+					debug("loop done, took "+(new Date() - then)+"ms");
 					for(var user in msg.requests)
 						session.conversations[user] = utils.decryptRSA(msg.requests[user], session.pubkey, session.privkey);
 					if(msg.requests)
