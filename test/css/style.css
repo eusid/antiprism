@@ -84,7 +84,7 @@ body {
 
 .contactDiv {
 	width: calc(90%-150px);
-	width: -moz-calc(90%-150px)
+	width: -moz-calc(90%-150px);
 	float: right;
 }
 
