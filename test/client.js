@@ -482,14 +482,17 @@ var antiprism,
             if ($active.length)
                 selectedContact = $active[0].id;
             if (selectedContact == contactName) {
-                var panelContainer = helper.div();
-                var panelHeader = helper.div("panel panel-heading");
-                var panelContent = helper.div("panel panel-body");
-                var username = message.from || utils.getUsername();
-                var time = (new Date(message.ts)).toLocaleTimeString().split(' ');
-                var receivedMessage = utils.htmlEncode(message.msg);
+                var panelContainer = helper.div(),
+                    panelHeader = helper.div("panel panel-heading"),
+                    panelContent = helper.div("panel panel-body"),
+                    username = message.from || utils.getUsername(),
+                    time = new Date(message.ts),
+                    receivedMessage = utils.htmlEncode(message.msg);
                 panelContent.innerHTML = utils.urlToLink(receivedMessage);
-                panelHeader.innerHTML = time;
+                if (time.toDateString() != (new Date()).toDateString())
+                    time = time.toDateString() + ", " + time.toLocaleTimeString();
+                else
+                    time = "today, " + time.toLocaleTimeString();
                 if (username == utils.getUsername()) {
                     panelContainer.className = "panel panel-success col-md-8 pull-right";
                     panelHeader.innerHTML = time + " | me";
