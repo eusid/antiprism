@@ -52,9 +52,9 @@ var antiprism,
         }
     },
     muted: function () {
-        if(localStorage.muted === undefined)
-            localStorage.muted = "false";
-        return JSON.parse(localStorage.muted);
+        if(localStorage.getObject("muted") === null)
+            localStorage.setObject("muted", false);
+        return localStorage.getObject("muted");
     },
     setMuteTooltip: function () {
         var msg;
@@ -356,7 +356,7 @@ var antiprism,
             return;
         }
         try {
-            var obj = JSON.parse(sessionStorage[contactName]);
+            var obj = sessionStorage.getObject(contactName);
         }
         catch (e) {
             utils.displayError({error: -1});
@@ -373,7 +373,7 @@ var antiprism,
     retrieveMessages: function(contactName) {
         if(sessionStorage[contactName]) {
             try {
-                var userObj = JSON.parse(sessionStorage[contactName]);
+                var userObj = sessionStorage.getObject(contactName);
                 if(userObj.numberOfMessages > userObj.numberOfDisplayedMessages) {
                     var diff = userObj.numberOfMessages - userObj.numberOfDisplayedMessages;
                     if(diff > 10)
@@ -417,7 +417,7 @@ var antiprism,
             return;
         }
         var obj = {numberOfMessages: numberOfMessages, numberOfDisplayedMessages: utils.numberOfDisplayedMessages()};
-        sessionStorage[contactName] = JSON.stringify(obj);
+        sessionStorage.setObject(contactName, obj);
         if(callback)
             callback();
     },
@@ -544,7 +544,8 @@ var client = {
             console.log(storageEvent);
             if(storageEvent.key == "muted" && storageEvent.url == document.URL)
                 utils.changeMuteButton(storageEvent.newValue);
-        }, true)
+        }, true);
+        helper.addStorageObjectFunctions();
     },
     lostConnection: function (reconnected) {
         if (!reconnected) {
@@ -657,6 +658,16 @@ var client = {
 };
 
 var helper = {
+  addStorageObjectFunctions: function() {
+      Storage.prototype.setObject = function(key, value) {
+          this.setItem(key, JSON.stringify(value));
+      }
+
+      Storage.prototype.getObject = function(key) {
+          var value = this.getItem(key);
+          return value && JSON.parse(value);
+      }
+  },
   lineBreak: function() {
     return document.createElement("br");
   },
