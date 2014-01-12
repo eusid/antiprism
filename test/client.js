@@ -20,8 +20,11 @@
  */
 
 $(document).ready(function () {
-  client.init();
-  $('form').submit(function(e) {e.preventDefault(); });
+    helper.addStorageObjectFunctions();
+    client.init();
+    $('form').submit(function (e) {
+        e.preventDefault();
+    });
 });
 
 var antiprism,
@@ -452,7 +455,19 @@ var antiprism,
         }
         return message;
     },
-    displayMessage: function (message, contactName, chained, moreMessages) {
+        onMessage: function (msg) {
+            console.log(msg);
+            var $active = $('.active'),
+                selected = null;
+            if ($active.length)
+                selected = $active[0].id;
+            if (!msg.to && (msg.from != selected || !document.hasFocus())) {
+                if (!utils.muted())
+                    utils.playSound("ios.mp3");
+            }
+            utils.displayMessage(msg, msg.from);
+        },
+        displayMessage: function (message, contactName, chained, moreMessages) {
         var $active = $('.active');
         var selectedContact = "";
         if (!document.hasFocus())
@@ -538,14 +553,13 @@ var client = {
         utils.setOnClickEvents();
         utils.setMuteTooltip();
         utils.setMuteButton();
-        if(!antiprism)
+        if (!antiprism) //TODO not good enough
             sessionStorage.clear();
         window.addEventListener("storage", function(storageEvent) {
             console.log(storageEvent);
             if(storageEvent.key == "muted" && storageEvent.url == document.URL)
                 utils.changeMuteButton(storageEvent.newValue);
         }, true);
-        helper.addStorageObjectFunctions();
     },
     lostConnection: function (reconnected) {
         if (!reconnected) {
@@ -629,18 +643,7 @@ var client = {
             antiprism.register(username, password, callback);
         else
             antiprism.login(username, password, callback);
-        antiprism.addEventListener("msg", function (msg) {
-            console.log(msg);
-            var $active = $('.active'),
-                selected = null;
-            if ($active.length)
-                selected = $active[0].id;
-            if (!msg.to && (msg.from != selected || !document.hasFocus())) {
-                if (!utils.muted())
-                    utils.playSound("ios.mp3");
-            }
-            utils.displayMessage(msg, msg.from);
-        });
+        antiprism.addEventListener("msg", utils.onMessage);
         antiprism.addEventListener("closed",client.lostConnection);
         antiprism.addEventListener("error",utils.displayError);
         antiprism.addEventListener("online",utils.displayOnline);
@@ -661,7 +664,7 @@ var helper = {
   addStorageObjectFunctions: function() {
       Storage.prototype.setObject = function(key, value) {
           this.setItem(key, JSON.stringify(value));
-      }
+      };
 
       Storage.prototype.getObject = function(key) {
           var value = this.getItem(key);
@@ -788,27 +791,5 @@ var helper = {
   },
   glyphicon: function(name) {
     return helper.div("glyphicon glyphicon-" + name);
-  },
-  createObjectFromArrays: function(keyArray, valueArray) {
-    var objStr = "{";
-    for (var i = 0; i < keyArray.length; i++) {
-      objStr += "\"" + keyArray[i] + "\":\"" + valueArray[i] + "\",";
-    }
-    objStr = objStr.substr(0,objStr.length-1);
-    objStr += "}";
-    try {
-      return JSON.parse(objStr);
-    }
-    catch (e) {
-      return -1;
-    }
-  },
-  getValuesFromArray: function(selectArray) {    //Put in a jQuery-Object with DOM-Objects that all have a value
-    var result = [];
-    for(var i = 0; i < selectArray.length; i++) {
-      result.push(selectArray[i].value);
-    }
-    return result;
   }
-
 };
