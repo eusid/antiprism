@@ -8,6 +8,14 @@
  * -------------------------
  *
  *    - Groupchat (wait for server implementation)
+ *
+ *    - show date above message if message is not from today (?)
+ *
+ *    - save messages in localstorage
+ *
+ *    - add friend error if friend not found
+ *
+ *    - errors on sign-up (empty friendlist results in shit and you can't add friends and so on :/ )
  *                      
  */
 
@@ -291,7 +299,7 @@ var antiprism,
     displayContacts: function (msg) {
         var friendList = $('#friendList');
         var contactList = helper.div("list-group");
-        var contactsHeadline = helper.a("<strong>Contactlist</strong>", "#");
+        var contactsHeadline = helper.jsLink("<strong>Contactlist</strong>");
         var $active = $('.active');
         contactsHeadline.className = "list-group-item";
         contactsHeadline.id = "contactsHeadline";
@@ -309,6 +317,9 @@ var antiprism,
                 contactList.appendChild(contactElement);
             }
         }
+        //if(msg.contacts.length == 0 && msg.requests.length == 0) {
+        //    contactElement = utils.createContactElement("")
+        //} TODO was passiert, wenn Kontaktliste leer?!?
         if ($active.length)
             var formerSelectedContact = $active[0].id;
         friendList.text("");
@@ -565,13 +576,14 @@ var client = {
             });
         else {
             utils.displayMessage({to: null, ts: (new Date()).getTime(), msg: "You didn\'t choose a contact!"});
-            if (message == "clear()")
-                utils.messageDisplay().text("");
         }
     },
     changePass: function () {
         if (utils.changePasswordValidated()) {
-            antiprism.changePassword($('#newPassField').val());
+            var $passwordField = $('#newPassField');
+            antiprism.changePassword($passwordField.val());
+            $('#changePassContainer').removeClass("has-success");
+            $passwordField.unbind("keyup");
             utils.hideChangePasswordDialog();
         }
     },
@@ -617,10 +629,11 @@ var client = {
         else
             antiprism.login(username, password, callback);
         antiprism.addEventListener("msg", function (msg) {
+            console.log(msg);
             var $active = $('.active'),
                 selected = null;
             if ($active.length)
-                selected = $active.innerHTML;
+                selected = $active[0].id;
             if (!msg.to && (msg.from != selected || !document.hasFocus())) {
                 if (!utils.muted())
                     utils.playSound("ios.mp3");
