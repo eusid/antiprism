@@ -190,7 +190,7 @@ var Antiprism = function(host,debugFlag) {
 						delete msg.contacts[user].key;
 					}
 					for(var user in msg.requests)
-						session.conversations[user] = utils.decryptRSA(msg.requests[user], session.pubkey, session.privkey);
+						session.cache.keys[user] = msg.requests[user].key;
 					if(msg.requests)
 						msg.requests = Object.keys(msg.requests);
 					(callback||debug)(msg);
