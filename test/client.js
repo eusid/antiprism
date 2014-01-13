@@ -9,10 +9,6 @@
  *
  *    - Groupchat (wait for server implementation)
  *
- *    - show date above message if message is not from today (?)
- *
- *    - save messages in localstorage
- *
  *    - add friend error if friend not found
  *
  *    - errors on sign-up (empty friendlist results in shit and you can't add friends and so on :/ )
@@ -120,9 +116,6 @@ var antiprism,
         },
         register: function () {
             return $('#registration').prop('checked');
-        },
-        numberOfDisplayedMessages: function () {
-            return utils.messageDisplay().children().length - 1;
         },
         setOnClickEvents: function () {
             $('#registration').click(utils.changeButton);
@@ -320,9 +313,10 @@ var antiprism,
                     contactList.appendChild(contactElement);
                 }
             }
-            //if(msg.contacts.length == 0 && msg.requests.length == 0) {
-            //    contactElement = utils.createContactElement("")
-            //} TODO was passiert, wenn Kontaktliste leer?!?
+//            if (msg.contacts.length == 0 && msg.requests.length == 0) {
+//                contactElement = utils.createContactElement("", "");
+//                contactList.appendChild(contactElement);
+//            } //TODO was passiert, wenn Kontaktliste leer?!?
             if ($active.length)
                 var formerSelectedContact = $active[0].id;
             friendList.text("");
@@ -360,38 +354,28 @@ var antiprism,
                 });
                 return;
             }
-            try {
-                var obj = sessionStorage.getObject(contactName);
-            }
-            catch (e) {
-                utils.displayError({error: -1});
-                return;
-            }
-            if (!obj || (obj.numberOfDisplayedMessages === 0 && obj.numberOfMessages > 0)) {
+            var obj = sessionStorage.getObject(contactName);
+            if (!obj || (obj.msglist.length === 0 && obj.numberOfMessages > 0)) {
                 utils.updateContactObject(contactName, function () {
                     utils.disableRetrieveMoreMessagesButton(contactName);
                 });
                 return;
             }
-            $('#retrieveMoreMessagesButton')[0].disabled = !(obj.numberOfDisplayedMessages < obj.numberOfMessages);
+            $('#retrieveMoreMessagesButton')[0].disabled = !(obj.msglist.length < obj.numberOfMessages);
         },
         retrieveMessages: function (contactName) {
             if (sessionStorage[contactName]) {
-                try {
-                    var userObj = sessionStorage.getObject(contactName);
-                    if (userObj.numberOfMessages > userObj.numberOfDisplayedMessages) {
-                        var diff = userObj.numberOfMessages - userObj.numberOfDisplayedMessages;
-                        if (diff > 10)
-                            diff = 10;
-                        antiprism.getMessages(contactName, (0 - userObj.numberOfDisplayedMessages - diff),
-                            (-1 - userObj.numberOfDisplayedMessages), function (msg) {
-                                msg.msglist = msg.msglist.reverse();
-                                utils.displayMessages(msg, contactName, true);
-                            });
-                    }
-                }
-                catch (e) {
-                    utils.displayError({error: -1});
+                var userObj = sessionStorage.getObject(contactName);
+                if (userObj.numberOfMessages > userObj.msglist.length) {
+                    var diff = userObj.numberOfMessages - userObj.msglist.length;
+                    if (diff > 10)
+                        diff = 10;
+                    antiprism.getMessages(contactName, (0 - userObj.msglist.length - diff),
+                        (-1 - userObj.msglist.length), function (msg) {
+                            utils.addMessagesToStorage(contactName, msg.msglist, true);
+                            msg.msglist = msg.msglist.reverse();
+                            utils.displayMessages(msg, contactName, true);
+                        });
                 }
             }
             else
@@ -417,16 +401,20 @@ var antiprism,
             }
         },
         countMessages: function (contactName, callback) {
-            antiprism.countMessages(contactName, function (msg) {
-                utils.updateContactObject(msg.user, callback, msg.msgcount)
-            });
+            antiprism.countMessages(contactName, callback);
         },
         updateContactObject: function (contactName, callback, numberOfMessages) {
             if (numberOfMessages === undefined) {
-                utils.countMessages(contactName, callback);
+                utils.countMessages(contactName, function (msg) {
+                    utils.updateContactObject(contactName, callback, msg.msgcount);
+                });
                 return;
             }
-            var obj = {numberOfMessages: numberOfMessages, numberOfDisplayedMessages: utils.numberOfDisplayedMessages()};
+            var oldObj = sessionStorage.getObject(contactName);
+            var msglist = [];
+            if (oldObj)
+                msglist = oldObj.msglist;
+            var obj = {numberOfMessages: numberOfMessages, msglist: msglist};
             sessionStorage.setObject(contactName, obj);
             if (callback)
                 callback();
@@ -440,6 +428,7 @@ var antiprism,
             }
             $contactNode.addClass("active");
             $contactNode.removeClass("newMessage");
+            utils.updateContactObject($contactNode[0].id);
             utils.messageDisplay().empty();
             var iconClass = $contactNode.children()[0].className;
             if (iconClass.indexOf("glyphicon-user") != -1) {
@@ -462,7 +451,16 @@ var antiprism,
             }
             return message;
         },
-        onMessage: function (msg) {
+        onMessage: function (msg, secondCall) {
+            var userObj = sessionStorage.getObject(msg.from);
+            if (!userObj) {
+                utils.updateContactObject(msg.from, function () {
+                    utils.onMessage(msg, true);
+                });
+                return;
+            } else if (!secondCall) {
+                userObj.numberOfMessages++;
+            }
             console.log(msg);
             var $active = $('.active'),
                 selected = null;
@@ -472,6 +470,7 @@ var antiprism,
                 if (!utils.muted())
                     utils.playSound("ios.mp3");
             }
+            utils.pushOneMessageToStorage(msg.from, msg);
             utils.displayMessage(msg, msg.from);
         },
         displayMessage: function (message, contactName, chained, moreMessages) {
@@ -531,6 +530,27 @@ var antiprism,
                 $('#' + contactName).addClass("newMessage");
             }
         },
+        pushOneMessageToStorage: function (contactname, msg) {
+            var userObj = sessionStorage.getObject(contactname);
+            userObj.msglist.push(msg);
+            sessionStorage.setObject(contactname, userObj);
+        },
+        addMessagesToStorage: function (contactname, msglist, tail) {  //tail: boolean (if true then the received messages are received by "receiveMoreMessagesButton")
+            var userObj = sessionStorage.getObject(contactname);
+            console.group("addMessagesToStorage");
+            console.log("...was called with: ");
+            console.log(contactname);
+            console.log(msglist);
+            console.log(tail);
+            console.log("Userobject is:");
+            console.log(userObj);
+            console.groupEnd();
+            if (tail) {
+                msglist = msglist.concat(userObj.msglist);
+                userObj.msglist = msglist;
+            } else userObj.msglist = msglist;
+            sessionStorage.setObject(contactname, userObj);
+        },
         displayOnline: function (msg) {
             var $user = $('#' + msg.user);
             if (msg.confirmed === undefined) {
@@ -581,11 +601,22 @@ var client = {
         }
     },
     getMessages: function (contactName, start, end) {
+        var userObj = sessionStorage.getObject(contactName);
+        if (userObj) {
+            if (userObj.msglist.length >= 10) {
+                utils.displayMessages(userObj, contactName);
+                console.log("displayed messages from sessionstorage");
+                return;
+            }
+        }
+        else utils.updateContactObject(contactName);
         if (start === undefined)
             start = -10;
-        if (end === undefined)
+        if (end === undefined) {
             end = -1;
+        }
         antiprism.getMessages(contactName, start, end, function (msg) {
+            utils.addMessagesToStorage(contactName, msg.msglist);
             utils.displayMessages(msg, contactName);
         });
     },
@@ -601,7 +632,9 @@ var client = {
         $messageField.val('');
         if (to)
             antiprism.sendMessage(to, message, function (msg) {
-                utils.displayMessage({to: to, ts: msg.ts, msg: message}, to);
+                var sentMessage = {to: to, ts: msg.ts, msg: message};
+                utils.pushOneMessageToStorage(to, sentMessage);
+                utils.displayMessage(sentMessage, to);
             });
         else {
             utils.displayMessage({to: null, ts: (new Date()).getTime(), msg: "You didn\'t choose a contact!"});
