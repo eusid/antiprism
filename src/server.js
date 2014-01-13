@@ -9,7 +9,7 @@
 var DEBUG = true, // change to your needs!
 	dbg = function(text) {
 		if(DEBUG)
-			console.log("#ANTiPRiSM @ "+(new Date()).toISOString()+" / "+text);
+			console.log("#AP @ "+(new Date()).toISOString()+" / "+text);
 	};
 var http = require('http'),
 	file = new(require('node-static').Server)('./test'),
@@ -24,6 +24,7 @@ var WebSocketServer = require("ws").Server,
 	timeouts = {}, timeoutms = 35000, // 35s for safety
 	redis = require("redis").createClient();
 
+console.log("Welcome 2 #ANTiPRiSM");
 dbg("Listening on port "+(process.env.PORT||9000)+"...");
 
 redis.keys("sess.*", function(err,reply) { // clear sessions
@@ -33,7 +34,10 @@ redis.keys("sess.*", function(err,reply) { // clear sessions
 
 webSocketServer.on("connection", function(ws) {
 	webSockets[wscount] = {id: wscount, pingfail: 0, ctx: function(msg){
-		ws.send(JSON.stringify(msg));
+		if(ws.readyState === ws.OPEN)
+			ws.send(JSON.stringify(msg));
+		else
+			ws.close();
 	}};
 	var session = webSockets[wscount++],
 		killSocket = function() { ws.close(); };
