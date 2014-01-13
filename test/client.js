@@ -420,15 +420,15 @@ var antiprism,
                 callback();
         },
         onContactSelect: function (contactName) {
-            var $contactNode = $('#' + contactName);
-            var $active = $('.active');
-            if ($active.length) {
-                utils.updateContactObject($active[0].id);
+            var $contactNode = $('#' + contactName),
+                $active = $('.active'),
+                userObj = sessionStorage.getObject(contactName);
+            if ($active.length)
                 $active.removeClass("active");
-            }
             $contactNode.addClass("active");
             $contactNode.removeClass("newMessage");
-            utils.updateContactObject($contactNode[0].id);
+            utils.updateContactObject($contactNode[0].id, function () {
+            }, userObj ? userObj.msglist.length : undefined);
             utils.messageDisplay().empty();
             var iconClass = $contactNode.children()[0].className;
             if (iconClass.indexOf("glyphicon-user") != -1) {
@@ -451,15 +451,13 @@ var antiprism,
             }
             return message;
         },
-        onMessage: function (msg, secondCall) {
+        onMessage: function (msg) {
             var userObj = sessionStorage.getObject(msg.from);
             if (!userObj) {
                 utils.updateContactObject(msg.from, function () {
-                    utils.onMessage(msg, true);
+                    utils.onMessage(msg);
                 });
                 return;
-            } else if (!secondCall) {
-                userObj.numberOfMessages++;
             }
             console.log(msg);
             var $active = $('.active'),
@@ -522,9 +520,7 @@ var antiprism,
                 }
                 if (!chained) {
                     utils.messageDisplay().animate({ scrollTop: utils.messageDisplay().prop("scrollHeight") - utils.messageDisplay().height() }, 300);
-                    utils.updateContactObject(contactName, function () {
-                        utils.disableRetrieveMoreMessagesButton(contactName);
-                    });
+                    utils.disableRetrieveMoreMessagesButton(contactName);
                 }
             } else {
                 $('#' + contactName).addClass("newMessage");
@@ -533,18 +529,11 @@ var antiprism,
         pushOneMessageToStorage: function (contactname, msg) {
             var userObj = sessionStorage.getObject(contactname);
             userObj.msglist.push(msg);
+            userObj.numberOfMessages++;
             sessionStorage.setObject(contactname, userObj);
         },
         addMessagesToStorage: function (contactname, msglist, tail) {  //tail: boolean (if true then the received messages are received by "receiveMoreMessagesButton")
             var userObj = sessionStorage.getObject(contactname);
-            console.group("addMessagesToStorage");
-            console.log("...was called with: ");
-            console.log(contactname);
-            console.log(msglist);
-            console.log(tail);
-            console.log("Userobject is:");
-            console.log(userObj);
-            console.groupEnd();
             if (tail) {
                 msglist = msglist.concat(userObj.msglist);
                 userObj.msglist = msglist;
@@ -570,9 +559,7 @@ var antiprism,
             }
             if (!moreMessages)
                 utils.messageDisplay().animate({ scrollTop: utils.messageDisplay().prop("scrollHeight") - utils.messageDisplay().height() }, 300);
-            utils.updateContactObject(contactName, function () {
-                utils.disableRetrieveMoreMessagesButton(contactName);
-            });
+            utils.disableRetrieveMoreMessagesButton(contactName);
         },
         playSound: function (mp3) {
             var sound = new Audio();
