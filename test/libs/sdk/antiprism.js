@@ -73,7 +73,12 @@ var Antiprism = function(host,debugFlag) {
 		helpers = {
 			getKey: function(user, callback) {
 				if(session.conversations[user])
-					callback();
+					return callback ? callback() : 0;
+				else if(session.cache.keys[user]) {
+					session.conversations[user] = utils.decryptRSA(session.cache.keys[user],session.pubkey,session.privkey);
+					delete session.cache.keys[user];
+					return callback ? callback() : 0;
+				}
 				ws.sendObject({action:"conversationKey",user:user});
 				events["convkey"] = function(msg) {
 					if(msg.convkey)
@@ -180,13 +185,10 @@ var Antiprism = function(host,debugFlag) {
 			getContacts: function(callback) {
 				ws.sendObject({action:"contacts"});
 				events["contacts"] = function(msg) {
-					var then = new Date();
-					debug("decrypt-loop in getContacts started");
 					for(var user in msg.contacts) {
-						session.conversations[user] = utils.decryptRSA(msg.contacts[user].key,session.pubkey,session.privkey);
+						session.cache.keys[user] = msg.contacts[user].key;
 						delete msg.contacts[user].key;
 					}
-					debug("loop done, took "+(new Date() - then)+"ms");
 					for(var user in msg.requests)
 						session.conversations[user] = utils.decryptRSA(msg.requests[user], session.pubkey, session.privkey);
 					if(msg.requests)
@@ -259,7 +261,7 @@ var Antiprism = function(host,debugFlag) {
 	if(host === undefined)
 		return -1;
 	var ws = new WebSocket(host),
-		session = {pass:{}, conversations:{}, outqueue:[], inqueue:[]},
+		session = {pass:{}, conversations:{}, outqueue:[], inqueue:[], cache:{keys:{}}},
 		pingfails = retries = 3,
 		timeoutms = 25000, // say hi every 25 seconds
 		events = {},
