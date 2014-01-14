@@ -30,6 +30,9 @@ var antiprism,
             var $h1 = $('h1');
             var statusMsg = helper.small();
             statusMsg.id = "statusMsg";
+            $(statusMsg).click(function () {
+                bootbox.prompt("What's up?", utils.statusPromptCallback);
+            });
             $h1.text(headline + " (" + utils.getUsername() + ") ");
             $h1.append(statusMsg);
             if (msg.status === null)
@@ -333,7 +336,7 @@ var antiprism,
                 $('#' + formerSelectedContact).addClass("active");
             if (msg.requests === undefined)
                 msg.requests = [];
-            utils.addFriendsPopover(Object.keys(msg.contacts).length + msg.requests.length);
+            utils.addFriendsPopover(Object.keys(msg.contacts).length + Object.keys(msg.requests).length);
         },
         displayRetrieveMoreMessagesButton: function (contactName) {
             var container = helper.div("col-md-12");
