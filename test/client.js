@@ -36,7 +36,7 @@ var antiprism,
             $h1.text(headline + " (" + utils.getUsername() + ") ");
             $h1.append(statusMsg);
             if (msg.status === null)
-                msg.status = "Set your status now! (Click on Settings->set status)";
+                msg.status = "Set your status now! (Click here)";
             $('#statusMsg').text(msg.status).html();
 
         },
