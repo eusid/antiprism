@@ -189,7 +189,7 @@ var Antiprism = function(host,debugFlag) {
 						session.cache.keys[user] = msg.contacts[user].key;
 						delete msg.contacts[user].key;
 					}
-					for(var user in msg.requests)
+					for(user in msg.requests)
 						session.cache.keys[user] = msg.requests[user].key;
 					if(msg.requests)
 						msg.requests = Object.keys(msg.requests);

@@ -11,7 +11,7 @@
  *
  *    - add friend error if friend not found
  *
- *    - errors on sign-up (empty friendlist results in shit and you can't add friends and so on :/ )
+ *    - port to firefox
  *
  */
 
@@ -293,7 +293,7 @@ var antiprism,
             return contactElement;
         },
         displayContacts: function (msg) {
-            var friendList = $('#friendList');
+            var $friendList = $('#friendList');
             var contactList = helper.div("list-group");
             var contactsHeadline = helper.jsLink("<strong>Contactlist</strong>");
             var $active = $('.active');
@@ -319,8 +319,8 @@ var antiprism,
 //            } //TODO was passiert, wenn Kontaktliste leer?!?
             if ($active.length)
                 var formerSelectedContact = $active[0].id;
-            friendList.text("");
-            friendList.append(contactList);
+            $friendList.text("");
+            $friendList.append(contactList);
             for (contact in msg.contacts) {
                 if (msg.contacts.hasOwnProperty(contact))
                     utils.displayOnline({user: contact, online: msg.contacts[contact].online, confirmed: msg.contacts[contact].confirmed});
@@ -520,7 +520,6 @@ var antiprism,
                 }
                 if (!chained) {
                     utils.messageDisplay().animate({ scrollTop: utils.messageDisplay().prop("scrollHeight") - utils.messageDisplay().height() }, 300);
-                    utils.disableRetrieveMoreMessagesButton(contactName);
                 }
             } else {
                 $('#' + contactName).addClass("newMessage");
@@ -674,7 +673,9 @@ var client = {
             };
         antiprism = new Antiprism(host, true); // params: host,[debugFlag]
         if (registration)
-            antiprism.register(username, password, callback);
+            antiprism.register(username, password, function () {
+                antiprism.login(username, password, callback)
+            });
         else
             antiprism.login(username, password, callback);
         antiprism.addEventListener("msg", utils.onMessage);
