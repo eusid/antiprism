@@ -227,18 +227,19 @@ var Antiprism = function(host,debugFlag) {
 				events["msglist"] = function(msg) {
 					if(!session.conversations[user])
 						return helpers.getKey(user, function() {
-							for(var x in msg.msglist)
-								msg.msglist[x].msg = utils.decryptAES(msg.msglist[x].msg, session.conversations[user]);
-							callback(msg);
+							events.msglist(msg);
 						});
 					for(var x in msg.msglist)
 						msg.msglist[x].msg = utils.decryptAES(msg.msglist[x].msg, session.conversations[user]);
-					callback(msg);
+					if(callback)
+						callback(msg);
 				}
 			},
 			sendMessage: function(user, message, callback) {
 				if(!session.conversations[user])
-					return helpers.getKey(user, function() { actions.sendMessage(user,message,callback); });
+					return helpers.getKey(user, function() {
+						actions.sendMessage(user,message,callback);
+					});
 				var encrypted = utils.encryptAES(message, session.conversations[user]);
 				ws.sendObject({action:"storeMessage",user:user,msg:encrypted});
 				events["sent"] = callback || debug;
@@ -304,7 +305,7 @@ var Antiprism = function(host,debugFlag) {
 		}
 	};
 	events.added = function(msg) {
-		session.conversations[msg.user] = msg.convkey;
+		session.conversations[msg.user] = utils.decryptRSA(msg.convkey,session.pubkey,session.privkey);
 		delete msg.convkey;
 		try {
 			clientEvents.added(msg);
