@@ -9,9 +9,9 @@
  *
  *    - Groupchat (wait for server implementation)
  *
- *    - add friend error if friend not found
+ *    - error handling
  *
- *    - port to firefox
+ *    - (port to firefox)
  *
  */
 
