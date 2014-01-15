@@ -40,8 +40,10 @@ webSocketServer.on("connection", function(ws) {
 			ws.close();
 	}};
 	var session = webSockets[wscount++],
-		killSocket = function() { ws.close(); };
-		addr = ws._socket.address(),
+        killSocket = function () {
+            ws.close();
+        },
+        addr = ws._socket.address(),
 		ip = ws.upgradeReq.headers['x-forwarded-for'] || addr.address,
 		connection = ip+':'+addr.port;
 	dbg("Got connection from "+ip);
@@ -55,8 +57,8 @@ webSocketServer.on("connection", function(ws) {
 				clearTimeout(timeouts[session.id]);
 				timeouts[session.id] = setTimeout(killSocket, timeoutms);
 				return ws.send("PONG");
-			};
-			messageController.handleMessage(message, session, {
+            }
+            messageController.handleMessage(message, session, {
 				response: session.ctx,
 				dbg: dbg
 			});
