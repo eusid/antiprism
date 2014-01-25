@@ -340,6 +340,7 @@ var antiprism,
             utils.addFriendsPopover(Object.keys(msg.contacts).length + Object.keys(msg.requests).length);
         },
         displayRetrieveMoreMessagesButton: function (contactName) {
+            console.log("displaying retrieveMoreMessagesButton...");
             var container = helper.div("col-md-12");
             var button = helper.button("Retrieve More Messages", "btn btn-info btn-sm btn-block", function () {
                 utils.retrieveMessages(contactName);
@@ -353,16 +354,20 @@ var antiprism,
         },
         disableRetrieveMoreMessagesButton: function (contactName) {
             if (!sessionStorage[contactName]) {
+                console.log("disableRetrieveMoreMessagesButton is called and sessionStorage[\"" + contactName + "\"] does not exist");
                 utils.updateContactObject(contactName, function () {
-                    utils.disableRetrieveMoreMessagesButton(contactName);
+                    var obj = sessionStorage.getObject(contactName);
+                    $('#retrieveMoreMessagesButton')[0].disabled = !(obj.msglist.length < obj.numberOfMessages);
                 });
                 return;
             }
             var obj = sessionStorage.getObject(contactName);
             if (!obj || (obj.msglist.length === 0 && obj.numberOfMessages > 0)) {
+                console.log("I'M THE MISTAKE BITCH!!");
                 utils.updateContactObject(contactName, function () {
-                    utils.disableRetrieveMoreMessagesButton(contactName);
-                });
+                    var obj = sessionStorage.getObject(contactName);
+                    $('#retrieveMoreMessagesButton')[0].disabled = !(obj.msglist.length < obj.numberOfMessages);
+                }, obj.numberOfMessages);
                 return;
             }
             $('#retrieveMoreMessagesButton')[0].disabled = !(obj.msglist.length < obj.numberOfMessages);
@@ -382,10 +387,12 @@ var antiprism,
                         });
                 }
             }
-            else
+            else {
+                console.log("retrieveMessages is called and has no sessionStorage[\"" + contactName + "\"]!");
                 utils.updateContactObject(contactName, function () {
                     utils.retrieveMessages(contactName);
                 });
+            }
         },
         addFriendsPopover: function (contactLength) {
             if (!contactLength && contactLength !== undefined) {
@@ -406,9 +413,18 @@ var antiprism,
         },
         updateContactObject: function (contactName, callback, numberOfMessages) {
             if (numberOfMessages === undefined) {
+                console.log("numberOfMessages was undefined! numberOfMessages: " + numberOfMessages);
                 // this querying-global is the dirtiest piece of shit ever
                 // time to fix the loop-bug that occurs without it!
                 antiprism.countMessages(contactName, function (msg) {
+                    /*console.group("countMessages-Callback");
+                    console.log("got callback from countmessages with msg = " + JSON.stringify(msg));
+                    console.log("msg.msgcount = " + msg.msgcount);
+                    console.log("functioncall:");
+                    console.log("utils.updateContactObject(" + contactName + ", callback, " + msg.msgcount + ");");
+                    console.log("callback:");
+                    console.log(callback);
+                    console.groupEnd("countMessages-Callback");*/
                     utils.updateContactObject(contactName, callback, msg.msgcount);
                 });
                 return;
@@ -425,20 +441,22 @@ var antiprism,
         onContactSelect: function (contactName) {
             var $contactNode = $('#' + contactName),
                 $active = $('.active'),
-                userObj = sessionStorage.getObject(contactName);
+                userObj = sessionStorage.getObject(contactName),
+                iconClass = $contactNode.children()[0].className;
             if ($active.length)
                 $active.removeClass("active");
             $contactNode.addClass("active");
             $contactNode.removeClass("newMessage");
-            utils.updateContactObject($contactNode[0].id, function () {
-            }, userObj ? userObj.msglist.length : undefined);
             utils.messageDisplay().empty();
-            var iconClass = $contactNode.children()[0].className;
-            if (iconClass.indexOf("glyphicon-user") != -1) {
-                utils.displayRetrieveMoreMessagesButton(contactName);
-                client.getMessages(contactName);
-            }
-            else if (iconClass.indexOf("glyphicon-time") != -1) {
+            utils.updateContactObject($contactNode[0].id, function () {
+                console.log("onContactSelect->updateContactObject callback is called with iconclass: " + iconClass);
+                console.log("and contactName: " + contactName);
+                if (iconClass.indexOf("glyphicon-user") != -1) {
+                    utils.displayRetrieveMoreMessagesButton(contactName);
+                    client.getMessages(contactName);
+                }
+            }, userObj ? userObj.msglist.length : undefined);
+            if (iconClass.indexOf("glyphicon-time") != -1) {
                 utils.displayMessage({from: contactName, msg: "Waiting for confirmation by user.", ts: (new Date()).getTime()}, contactName, false);
             } else if (iconClass.indexOf("glyphicon-question-sign") != -1)
                 utils.displayMessage({from: contactName, msg: "This user sent you a friendrequest. To confirm please click the button below.", ts: (new Date()).getTime(), request: true}, contactName, false);
@@ -455,6 +473,7 @@ var antiprism,
             return message;
         },
         onMessage: function (msg) {
+            console.log("onMessage is called!");
             var userObj = sessionStorage.getObject(msg.from);
             if (!userObj) {
                 utils.updateContactObject(msg.from, function () {
@@ -599,7 +618,10 @@ var client = {
                 return;
             }
         }
-        else utils.updateContactObject(contactName);
+        else {
+            console.log("getMessages was called and it has no sessionstorage[\"" + contactName + "\"]!");
+            utils.updateContactObject(contactName);
+        }
         if (start === undefined)
             start = -10;
         if (end === undefined) {
