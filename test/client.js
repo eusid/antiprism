@@ -543,15 +543,17 @@ var antiprism,
         },
         displayOnline: function (msg) {
             var $user = $('#' + msg.user);
-            if (msg.confirmed === undefined) {
-                if (msg.online && $user.children().length > 0)
-                    $user.children()[0].className = "glyphicon glyphicon-user online";
-                else if (!msg.online && $user.children()[0].className != "glyphicon glyphicon-user" && !msg.request)
-                    $user.children()[0].className = "glyphicon glyphicon-user";
-                else if (msg.request)
-                    $user.children()[0].className = "glyphicon glyphicon-question-sign";
-            } else
-                $user.children()[0].className = "glyphicon glyphicon-time";
+            if ($user.children().length > 0) {
+                if (msg.confirmed === undefined) {
+                    if (msg.online)
+                        $user.children()[0].className = "glyphicon glyphicon-user online";
+                    else if ($user.children()[0].className != "glyphicon glyphicon-user" && !msg.request)
+                        $user.children()[0].className = "glyphicon glyphicon-user";
+                    else
+                        $user.children()[0].className = "glyphicon glyphicon-question-sign";
+                } else
+                    $user.children()[0].className = "glyphicon glyphicon-time";
+            }
         },
         displayMessages: function (msg, contactName, moreMessages) {
             for (var i in msg.msglist) {
@@ -660,11 +662,11 @@ var client = {
 
             host = location.origin.replace(/^http/, 'ws'),
             callback = function (msg) {
-                console.log("got "+JSON.stringify(msg));
+                console.log("got " + JSON.stringify(msg));
                 if (msg) {
                     utils.switchChatLogin();
                     console.log("asking for contacts..");
-                    antiprism.getContacts(function(msg) {
+                    antiprism.getContacts(function (msg) {
                         console.log("contacts-callback called!");
                         utils.displayContacts(msg);
                     });
