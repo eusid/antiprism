@@ -10,14 +10,13 @@ var DEBUG = true, // change to your needs!
 	dbg = function(text) {
 		if(DEBUG)
 			console.log("#AP @ "+(new Date()).toISOString()+" / "+text);
-	};
-var http = require('http'),
+	},
+	http = require('http'),
 	file = new(require('node-static').Server)('./test'),
 	webserver = http.createServer(function (req, res) {
 		file.serve(req,res);
-	}).listen(process.env.PORT||9000);
-
-var WebSocketServer = require("ws").Server,
+	}).listen(process.env.PORT||9000),
+	WebSocketServer = require("ws").Server,
 	webSocketServer = new WebSocketServer({server: webserver}),
 	messageController = require("./message_controller.js"),
 	webSockets = {}, wscount = 1,

@@ -10,7 +10,7 @@
 var Antiprism = function(host,debugFlag) {
 	// define all the methods!!11
 	var retries,
-        utils = {
+		utils = {
 			hex2a: function(hex) {
 				var str = '';
 				for (var i = 0; i < hex.length; i += 2)
@@ -147,7 +147,7 @@ var Antiprism = function(host,debugFlag) {
 				ws.sendObject({action:"login",username:session.user});
 				events["validationKey"] = function(response) {
 					session.pubkey = response.pubkey;
-	      			try {
+					try {
 						var privkey = utils.decryptAES(response.privkey,session.pass.enc);
 						session.privkey = privkey;
 						var validationKey = utils.decryptRSA(response.validationKey, response.pubkey, privkey);
@@ -255,7 +255,19 @@ var Antiprism = function(host,debugFlag) {
 				helpers.registerWsCallbacks();
 				this.login(session.user,session.pass); // todo: still not cool :S
 			},
-			debug: debug
+			debug: debug,
+			raw: function(action,params,callback) {
+				var saved = ws.onmessage,
+					actionObj = {action:action};
+				for(var x in params)
+					actionObj[x] = params[x];
+				ws.sendObject(actionObj);
+				if(callback)
+					ws.onmessage = function(msg) {
+						ws.onmessage = saved;
+						callback(JSON.parse(msg.data));
+					}
+			}
 		};
 
 	// Constructor nao :D

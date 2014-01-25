@@ -280,6 +280,9 @@ var helpers = {
 						storage.sockets[reply[id]].ctx(storeMsg);
 			});
 			return {ts:storeMsg.ts, sent:true};
+		},
+		snapshot: function(data,storage) {
+			require('heapdump').writeSnapshot();
 		}
 	},
 
