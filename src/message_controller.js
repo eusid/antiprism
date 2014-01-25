@@ -5,30 +5,29 @@
  * -------------------------------------------------------------
  */
 var helpers = {
-		sendClient: undefined, // gets set on startup
 		broadcast: function(storage, user, msg, callback) {
 			storage.redis.smembers("sess."+user, function(err,reply) {
 				if(err)
 					return helpers.dbg("redis-Error: "+err);
 				for(var id in reply) {
 					if(storage.sockets[reply[id]] !== undefined) // not sure if redis and node are in sync
-						storage.sockets[reply[id]].ctx(msg);
+						storage.sockets[reply[id]].send(msg);
 				}
 			});
 			if(callback) callback();
 		}
 	},
 	actions = {
-		register: function(data, storage) {
-			storage.redis.hexists("users."+data.username,"privkey",function(e,res) {
+		register: function(ctx, username, pubkey, privkey) {
+			ctx.storage.redis.hexists("users."+username,"privkey",function(e,res) {
 				if(res)
-					helpers.sendClient({'registered':false});
+					ctx.sendClient({'registered':false});
 				else {
-					helpers.sendClient({'registered':true});
-					storage.redis.hmset("users."+data.username, {
-							pubkeyN: data.pubkey.n,
-							pubkeyE: data.pubkey.e,
-							privkey: data.privkey,
+					ctx.sendClient({'registered':true});
+					ctx.storage.redis.hmset("users."+username, {
+							pubkeyN: pubkey.n,
+							pubkeyE: pubkey.e,
+							privkey: privkey,
 							lastseen: new Date().getTime()
 						},
 						function(err,res) {
@@ -38,106 +37,104 @@ var helpers = {
 				}
 			})
 		},
-		login: function(data, storage) {
-			if(data.username === undefined)
+		login: function(ctx, username) {
+			if(username === undefined)
 				return Error.INVALID_PARAMS;
-			storage.redis.hgetall("users."+data.username, function(err,reply) {
+			ctx.storage.redis.hgetall("users."+username, function(err,reply) {
 				if(!reply)
-					return helpers.sendClient({error:"unknown user"});
-				storage.username = data.username;
+					return ctx.sendClient({error:"unknown user"});
+				ctx.storage.username = username;
 				var randomString = require('crypto').randomBytes(32).toString();
 				var rsa = new (require('node-bignumber').Key)();
 				var pubkey = {n:reply.pubkeyN, e:reply.pubkeyE};
 				rsa.setPublic(reply.pubkeyN, reply.pubkeyE);
-				storage.validationKey = randomString;
-				helpers.sendClient(
+				ctx.storage.validationKey = randomString;
+				ctx.sendClient(
 					{validationKey: rsa.encrypt(randomString), pubkey: pubkey, privkey: reply.privkey}
 				);
 			});
 		},
-		changePass: function(data, storage) {
-			if(data.privkey === undefined)
+		changePass: function(ctx, privkey) {
+			if(privkey === undefined)
 				return Error.INVALID_PARAMS;
-			if(!storage.loggedIn)
+			if(!ctx.storage.loggedIn)
 				return Error.INVALID_AUTH;
-			storage.redis.hset("users."+storage.username, "privkey", data.privkey, function(err,reply) {
+			ctx.storage.redis.hset("users."+ctx.storage.username, "privkey", privkey, function(err,reply) {
 				if(err)
 					return helpers.dbg("redis-Error: "+err);
-				helpers.sendClient({updated:true});
+				ctx.sendClient({updated:true});
 			});
 		},
-		auth: function(data, storage) {
-			if(!data.validationKey)
+		auth: function(ctx, validationKey) {
+			if(!validationKey)
 				return Error.INVALID_PARAMS;
-			var validationKey = new Buffer(data.validationKey, 'base64').toString('utf8');
-			if(storage.validationKey == undefined || validationKey != storage.validationKey)
+			var validationKey = new Buffer(validationKey, 'base64').toString('utf8');
+			if(ctx.storage.validationKey == undefined || validationKey != ctx.storage.validationKey)
 				return Error.INVALID_AUTH;
-			storage.loggedIn = true;
-			storage.redis.sadd("sess."+storage.username, storage.id, function(err, reply) {
+			ctx.storage.loggedIn = true;
+			ctx.storage.redis.sadd("sess."+ctx.storage.username, ctx.storage.id, function(err, reply) {
 				if(err)
 					return helpers.dbg("redis-Error: "+err);
-				storage.redis.scard("sess."+storage.username, function(err, reply) {
+				ctx.storage.redis.scard("sess."+ctx.storage.username, function(err, reply) {
 					if(err)
 						return helpers.dbg("redis-Error: "+err);
 					if(parseInt(reply) == 1)
-						storage.redis.hgetall("convs."+storage.username, function(err, contacts) {
+						ctx.storage.redis.hgetall("convs."+ctx.storage.username, function(err, contacts) {
 							for (var user in contacts)
-								helpers.broadcast(storage, user, {online:true, user:storage.username});
+								helpers.broadcast(ctx.storage, user, {online:true, user:ctx.storage.username});
 						});
 				});
 			});
-			delete storage.validationKey;
-			return {loggedIn:true};
+			delete ctx.storage.validationKey;
+			ctx.sendClient({loggedIn:true});
 		},
-		setStatus: function(data, storage) {
-			if(!data.status && data.status !== "")
+		setStatus: function(ctx, status) {
+			if(!status && status !== "")
 				return Error.INVALID_PARAMS;
-			if(!storage.loggedIn)
+			if(!ctx.storage.loggedIn)
 				return Error.INVALID_AUTH;
-			storage.redis.hmset("users."+storage.username,"status",data.status, function(err,reply) {
+			ctx.storage.redis.hmset("users."+ctx.storage.username,"status",status, function(err,reply) {
 				if(err)
 					helpers.dbg("redis-Error: "+err);
-				helpers.sendClient({status:true});
+				ctx.sendClient({status:true});
 			});
 		},
-		getStatus: function(data, storage) {
-			if(!storage.loggedIn)
+		getStatus: function(ctx) {
+			if(!ctx.storage.loggedIn)
 				return Error.INVALID_AUTH;
-			storage.redis.hget("users."+storage.username, "status", function(err, reply) {
-				helpers.sendClient({status:reply});
+			ctx.storage.redis.hget("users."+ctx.storage.username, "status", function(err, reply) {
+				ctx.sendClient({status:reply});
 			});
 		},
-		removeContact: function(data, storage) {
-			if(!data.user)
+		removeContact: function(ctx, user) {
+			if(!user)
 				return Error.INVALID_PARAMS;
-			if(!storage.loggedIn)
+			if(!ctx.storage.loggedIn)
 				return Error.INVALID_AUTH;
-			storage.redis.hdel("convs."+storage.username, data.user, function(err, reply) {
-				helpers.sendClient({removed:!!reply});
+			ctx.storage.redis.hdel("convs."+ctx.storage.username, user, function(err, reply) {
+				ctx.sendClient({removed:!!reply});
 			});
 		},
-		contacts: function(data, storage) {
-			if(!storage.loggedIn)
+		contacts: function(ctx) {
+			if(!ctx.storage.loggedIn)
 				return Error.INVALID_AUTH;
-			storage.redis.multi()
-				.hgetall("convs."+storage.username)
-				.hgetall("reqs."+storage.username)
+			ctx.storage.redis.multi()
+				.hgetall("convs."+ctx.storage.username)
+				.hgetall("reqs."+ctx.storage.username)
 				.exec(function(err,replies) {
-					if(!replies[0] && !replies[1])
-						return helpers.sendClient({contacts:{}});
 					var contacts = replies[0],
 						requests = replies[1];
 					if(!contacts)
-						return helpers.sendClient({contacts:{}, requests:requests||[]});
-					var	multi = storage.redis.multi(),
+						return ctx.sendClient({contacts:{}, requests:requests||[]});
+					var	multi = ctx.storage.redis.multi(),
 						users = Object.keys(contacts),
 						opCount;
 					for(var i in users) {
 						multi
 							.scard("sess."+users[i])
 							.hmget("users."+users[i],"status","lastseen")
-							.hexists("convs."+users[i],storage.username)
-							.hexists("convs."+storage.username,users[i]);
+							.hexists("convs."+users[i],ctx.storage.username)
+							.hexists("convs."+ctx.storage.username,users[i]);
 						if(opCount === undefined)
 							opCount = multi.queue.length - 1;
 					}
@@ -157,131 +154,132 @@ var helpers = {
 								confirmed: friends ? undefined : false 
 							};
 						}
-						helpers.sendClient({contacts:ret,requests:requests||[]});
+						helpers.dbg("replying to contacts-request");
+						ctx.sendClient({contacts:ret,requests:requests||[]});
 					});
 				});
 		},
-		pubkey: function(data, storage) {
-			if(data.user === undefined)
+		pubkey: function(ctx, user) {
+			if(user === undefined)
 				return Error.INVALID_PARAMS;
-			storage.redis.hmget("users."+data.user, "pubkeyN", "pubkeyE", function(err,reply) {
+			ctx.storage.redis.hmget("users."+user, "pubkeyN", "pubkeyE", function(err,reply) {
 				if(reply[0] && reply[1])
-					helpers.sendClient({user:data.user,pubkey:{n:reply[0],e:reply[1]}});
+					ctx.sendClient({user:user,pubkey:{n:reply[0],e:reply[1]}});
 				else
-					helpers.sendClient({error:Error.UNKNOWN_USER});
+					ctx.sendClient({error:Error.UNKNOWN_USER});
 			});
 		},
-		conversationKey: function(data, storage) {
-			if(data.user === undefined)
+		conversationKey: function(ctx, user) {
+			if(user === undefined)
 				return Error.INVALID_PARAMS;
-			if(!storage.loggedIn)
+			if(!ctx.storage.loggedIn)
 				return Error.INVALID_AUTH;
-			storage.redis.hget("convs."+storage.username,data.user, function(err,reply) {
-				helpers.sendClient({user:data.user,convkey:reply});
+			ctx.storage.redis.hget("convs."+ctx.storage.username, user, function(err,reply) {
+				ctx.sendClient({user:user,convkey:reply});
 			});
 		},
-		initConversation: function(data, storage) {
-			if(data.user === undefined || !data.convkeys)
+		initConversation: function(ctx, user, convkeys) {
+			if(user === undefined || !convkeys)
 				return Error.INVALID_PARAMS;
-			if(!storage.loggedIn)
+			if(!ctx.storage.loggedIn)
 				return Error.INVALID_AUTH;
-			storage.redis.multi()
-				.hsetnx("convs."+storage.username,data.user,data.convkeys[0])
-				.hexists("reqs."+storage.username, data.user)
+			ctx.storage.redis.multi()
+				.hsetnx("convs."+ctx.storage.username,user,convkeys[0])
+				.hexists("reqs."+ctx.storage.username, user)
 				.exec(function(err,replies) {
 					if(err)
 						return helpers.dbg("redis-Error: "+err);
 					if(!replies[0]||replies[1])
-						return helpers.sendClient({initiated:false,with:data.user});
-					storage.redis.hsetnx("reqs."+data.user,storage.username,data.convkeys[1],function(err,reply) {
+						return ctx.sendClient({initiated:false,with:user});
+					ctx.storage.redis.hsetnx("reqs."+user,ctx.storage.username,convkeys[1],function(err,reply) {
 						if(err)
 							return helpers.dbg("redis-Error: "+err);
 						if(!reply)
-							return helpers.sendClient({initiated:false,with:data.user});
-						helpers.sendClient({initiated:true,with:data.user});
-						helpers.broadcast(storage,data.user,{user:storage.username,convkey:data.convkeys[1],added:true});
+							return ctx.sendClient({initiated:false,with:user});
+						ctx.sendClient({initiated:true,with:user});
+						helpers.broadcast(ctx.storage,user,{user:ctx.storage.username,convkey:convkeys[1],added:true});
 					});
 				});
 		},
-		confirm: function(data, storage) {
-			if(data.user === undefined)
+		confirm: function(ctx, user) {
+			if(user === undefined)
 				return Error.INVALID_PARAMS;
-			if(!storage.loggedIn)
+			if(!ctx.storage.loggedIn)
 				return Error.INVALID_AUTH;
-			storage.redis.multi()
-				.hexists("convs."+storage.username,data.user)
-				.hget("reqs."+storage.username, data.user)
-				.hdel("reqs."+storage.username, data.user)
+			ctx.storage.redis.multi()
+				.hexists("convs."+ctx.storage.username,user)
+				.hget("reqs."+ctx.storage.username, user)
+				.hdel("reqs."+ctx.storage.username, user)
 				.exec(function(err,replies) {
 					if(err)
 						return helpers.dbg("redis-Error: "+err);
 					if(replies[0] || !replies[1])
-						return helpers.sendClient({ack:false});
-					storage.redis.hset("convs."+storage.username, data.user, replies[1], function(err,reply) {
-						helpers.broadcast(storage, data.user, {online:true, user:storage.username});
-						helpers.sendClient({ack:true});
+						return ctx.sendClient({ack:false});
+					ctx.storage.redis.hset("convs."+ctx.storage.username, user, replies[1], function(err,reply) {
+						helpers.broadcast(ctx.storage, user, {online:true, user:ctx.storage.username});
+						ctx.sendClient({ack:true});
 					});
 				});
 		},
-		countMessages: function(data, storage) {
-			if(data.user === undefined)
+		countMessages: function(ctx, user) {
+			if(user === undefined)
 				return Error.INVALID_PARAMS;
-			if(!storage.loggedIn)
+			if(!ctx.storage.loggedIn)
 				return Error.INVALID_AUTH;
-			if(data.user < storage.username) // lawl-sort
-				var convid = data.user+'.'+storage.username;
+			if(user < ctx.storage.username) // lawl-sort
+				var convid = user+'.'+ctx.storage.username;
 			else
-				var convid = storage.username+'.'+data.user;
-			storage.redis.llen("msgs."+convid, function(err, reply) {
+				var convid = ctx.storage.username+'.'+user;
+			ctx.storage.redis.llen("msgs."+convid, function(err, reply) {
 				if(err)
 					return helpers.dbg("redis-Error: "+err);
-				helpers.sendClient({msgcount:reply, user:data.user});
+				ctx.sendClient({msgcount:reply, user:user});
 			});
 		},
-		retrieveMessages: function(data, storage) {
-			if(data.user === undefined)
+		retrieveMessages: function(ctx, user, start, end) {
+			if(user === undefined || isNaN(start) || isNaN(end))
 				return Error.INVALID_PARAMS;
-			if(!storage.loggedIn)
+			if(!ctx.storage.loggedIn)
 				return Error.INVALID_AUTH;
-			var start = parseInt(data.start), end = parseInt(data.end);
+			var start = parseInt(start), end = parseInt(end);
 			if(isNaN(start) || isNaN(end))
 				return Error.INVALID_PARAMS;
-			if(data.user < storage.username) // lawl-sort
-				var convid = data.user+'.'+storage.username;
+			if(user < ctx.storage.username) // lawl-sort
+				var convid = user+'.'+ctx.storage.username;
 			else
-				var convid = storage.username+'.'+data.user;
-			storage.redis.lrange("msgs."+convid, start, end, function(err, reply) {
-				helpers.sendClient({msglist:reply.map(JSON.parse)});
+				var convid = ctx.storage.username+'.'+user;
+			ctx.storage.redis.lrange("msgs."+convid, start, end, function(err, reply) {
+				ctx.sendClient({msglist:reply.map(JSON.parse)});
 			});
 		},
-		storeMessage: function(data, storage) {
-			if(data.user === undefined || data.msg === undefined)
+		storeMessage: function(ctx, user, msg) {
+			if(user === undefined || msg === undefined)
 				return Error.INVALID_PARAMS;
-			if(!storage.loggedIn)
+			if(!ctx.storage.loggedIn)
 				return Error.INVALID_AUTH;
-			var storeMsg = {ts:new Date().getTime(), from:storage.username, msg:data.msg};
-			if(data.user < storage.username) // lawl-sort
-				var convid = data.user+'.'+storage.username;
+			var storeMsg = {ts:new Date().getTime(), from:ctx.storage.username, msg:msg};
+			if(user < ctx.storage.username) // lawl-sort
+				var convid = user+'.'+ctx.storage.username;
 			else
-				var convid = storage.username+'.'+data.user;
-			storage.redis.rpush("msgs."+convid, JSON.stringify(storeMsg), function(err, reply) {
+				var convid = ctx.storage.username+'.'+user;
+			ctx.storage.redis.rpush("msgs."+convid, JSON.stringify(storeMsg), function(err, reply) {
 				if(err)
 					return helpers.dbg("redis-Error: "+err);
 			});
-			helpers.broadcast(storage, data.user, storeMsg);
-			storage.redis.smembers("sess."+storage.username, function(err,reply) {
+			helpers.broadcast(ctx.storage, user, storeMsg);
+			ctx.storage.redis.smembers("sess."+ctx.storage.username, function(err,reply) {
 				if(err)
 					return helpers.dbg("redis-Error: "+err);
-				storeMsg.to = data.user;
+				storeMsg.to = user;
 				delete storeMsg.from;
 				for(var id in reply)
-					if(storage.sockets[reply[id]] !== undefined // not sure if redis and node are in sync
-						&& reply[id] != storage.id) // do not push back to sending user
-						storage.sockets[reply[id]].ctx(storeMsg);
+					if(ctx.storage.sockets[reply[id]] !== undefined // not sure if redis and node are in sync
+						&& reply[id] != ctx.storage.id) // do not push back to sending user
+						ctx.storage.sockets[reply[id]].send(storeMsg);
 			});
 			return {ts:storeMsg.ts, sent:true};
 		},
-		snapshot: function(data,storage) {
+		snapshot: function() {
 			require('heapdump').writeSnapshot();
 		}
 	},
@@ -298,31 +296,42 @@ var helpers = {
 		"NOT_ALLOWED": 8
 	},
 
-	parseRequest = function(data, storage) {
-		var action, actionName = data.action;
-		if (!actionName) return Error.MISSING_ACTION;
-
-		action = actions[actionName];
-		if (!action || action.constructor.prototype[actionName]) return Error.INVALID_ACTION;
-
-		delete data.action;
-		return action(data, storage);
+	parseRequest = function(data, ctx) {
+		for(var actionName in data) {
+			var action = actions[actionName];
+			if (!action || action.constructor.prototype[actionName])
+				return Error.INVALID_ACTION;
+			if(Array.isArray(data[actionName]))
+				data[actionName].unshift(ctx);
+			else
+				data[actionName] = [ctx];
+			helpers.dbg("Calling: "+actionName+"("+data[actionName].slice(1)+")");
+			return action.apply(this, data[actionName]); // only one action for now
+		}
 	};
 
 exports.helpers = helpers;
 exports.handleMessage = function(message, storage, callbacks) {
-	helpers.sendClient = callbacks.response;
 	helpers.dbg = callbacks.dbg;
-	var result;
+	var result,
+		data,
+		seq;
 	try {
-		var data = JSON.parse(message);
+		data = JSON.parse(message);
+		seq = data.seq;
+		delete data.seq;
 	} catch (e) {
 		result = Error.JSON;
 	}
 	if (result !== Error.JSON) 
-		result = parseRequest(data, storage);
+		result = parseRequest(data, {
+			storage: storage,
+			sendClient: function(msg) {
+				callbacks.response(msg, seq);
+			}
+		});
 	if(!isNaN(result))
 		result = {error:result};
 	if(result)
-		helpers.sendClient(result);
+		callbacks.response(result);
 };

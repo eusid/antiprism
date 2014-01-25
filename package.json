@@ -4,10 +4,12 @@
   "author": "no@p.e",
   "version": "0.0.1",
   "dependencies": {
+	  "hiredis":"*",
 	  "redis": "*",
 	  "ws": "*",
 	  "node-bignumber": "*",
-	  "node-static": "*"
+	  "node-static": "*",
+	  "heapdump":"*"
   },
   "devDependencies": {
     "vows": "*",

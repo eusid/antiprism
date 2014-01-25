@@ -296,6 +296,7 @@ var antiprism,
             return contactElement;
         },
         displayContacts: function (msg) {
+            console.log(msg);
             var $friendList = $('#friendList');
             var contactList = helper.div("list-group");
             var contactsHeadline = helper.jsLink("<strong>Contactlist</strong>");
@@ -403,12 +404,11 @@ var antiprism,
                 $('#addFriendField').unbind("focus").unbind("focusout");
             }
         },
-        countMessages: function (contactName, callback) {
-            antiprism.countMessages(contactName, callback);
-        },
         updateContactObject: function (contactName, callback, numberOfMessages) {
             if (numberOfMessages === undefined) {
-                utils.countMessages(contactName, function (msg) {
+                // this querying-global is the dirtiest piece of shit ever
+                // time to fix the loop-bug that occurs without it!
+                antiprism.countMessages(contactName, function (msg) {
                     utils.updateContactObject(contactName, callback, msg.msgcount);
                 });
                 return;
@@ -462,7 +462,6 @@ var antiprism,
                 });
                 return;
             }
-            console.log(msg);
             var $active = $('.active'),
                 selected = null;
             if ($active.length)
@@ -545,7 +544,7 @@ var antiprism,
         displayOnline: function (msg) {
             var $user = $('#' + msg.user);
             if (msg.confirmed === undefined) {
-                if (msg.online)
+                if (msg.online && $user.children().length > 0)
                     $user.children()[0].className = "glyphicon glyphicon-user online";
                 else if (!msg.online && $user.children()[0].className != "glyphicon glyphicon-user" && !msg.request)
                     $user.children()[0].className = "glyphicon glyphicon-user";
@@ -661,9 +660,14 @@ var client = {
 
             host = location.origin.replace(/^http/, 'ws'),
             callback = function (msg) {
+                console.log("got "+JSON.stringify(msg));
                 if (msg) {
                     utils.switchChatLogin();
-                    antiprism.getContacts(utils.displayContacts);
+                    console.log("asking for contacts..");
+                    antiprism.getContacts(function(msg) {
+                        console.log("contacts-callback called!");
+                        utils.displayContacts(msg);
+                    });
                     antiprism.getStatus(utils.setHeadline);
                 } else {
                     $('#loginAlert').fadeIn(1000, function () {

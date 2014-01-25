@@ -10,6 +10,7 @@
 var Antiprism = function(host,debugFlag) {
 	// define all the methods!!11
 	var retries,
+		seq = 0,
 		utils = {
 			hex2a: function(hex) {
 				var str = '';
@@ -79,19 +80,17 @@ var Antiprism = function(host,debugFlag) {
 					delete session.cache.keys[user];
 					return callback ? callback() : 0;
 				}
-				ws.sendObject({action:"conversationKey",user:user});
-				events["convkey"] = function(msg) {
+				ws.callServer("conversationKey",[user],function(msg) {
 					if(msg.convkey)
 						session.conversations[msg.user] = utils.decryptRSA(msg.convkey,session.pubkey,session.privkey);
 					else
 						return actions.initConversation(user,function(resp) {
-							debug(resp);
 							if(resp.initiated)
 								callback(msg);
 						});
 					if(callback)
 						callback(msg);
-				};
+				});
 			},
 			registerWsCallbacks: function() {
 				ws.onmessage = function(msg) {
@@ -100,14 +99,16 @@ var Antiprism = function(host,debugFlag) {
 						return pingfails = 3;
 					}
 					var response = JSON.parse(msg.data);
+					if(response.seq && events[response.seq])
+						return events[response.seq](response);
 					for(var field in response)
 						if(Object.keys(events).indexOf(field) != -1)
-							events[field](response);
+							return events[field](response);
 				};
 				ws.onopen = function() {
 					retries = 3;
 					while(session.outqueue.length)
-						ws.sendObject(session.outqueue.shift());
+						ws.send(session.outqueue.shift());
 				};
 				ws.onclose = function() {
 					clearInterval(pingID);
@@ -120,12 +121,20 @@ var Antiprism = function(host,debugFlag) {
 						actions.reconnect();
 					},1000);
 				};
-				ws.sendObject = function(msg) {
-					if(ws.readyState != 1)
-						return session.outqueue.push(msg);
+				ws.callServer = function(action, params, callback) {
+					var msg = {seq:++seq};
+					msg[action] = params;
 					msg = JSON.stringify(msg);
-					//debug("quering server: "+msg);
+					if(callback)
+						events[seq] = function(arg) {
+							delete events[seq];
+							callback(arg);
+						}
+					debug("querying: "+msg);
+					if(ws.readyState != ws.OPEN)
+						return session.outqueue.push(msg);
 					ws.send(msg);
+					return seq;
 				};
 			}
 		},
@@ -144,19 +153,17 @@ var Antiprism = function(host,debugFlag) {
 					session.pass.plain = password;
 					session.pass.enc = utils.buildAESKey(password);
 				}
-				ws.sendObject({action:"login",username:session.user});
-				events["validationKey"] = function(response) {
+				ws.callServer("login", [session.user], function(response) {
 					session.pubkey = response.pubkey;
 					try {
 						var privkey = utils.decryptAES(response.privkey,session.pass.enc);
 						session.privkey = privkey;
 						var validationKey = utils.decryptRSA(response.validationKey, response.pubkey, privkey);
-						ws.sendObject({action:"auth","validationKey":utils.utf8_b64enc(validationKey)}); 
+						ws.callServer("auth", [utils.utf8_b64enc(validationKey)], callback); 
 					} catch (e) {
 						debug("wrong password", true, e);
 					}
-				};
-				events["loggedIn"] = callback || debug;
+				});
 			},
 			register: function(user,password,callback) {
 				if(session.user === undefined) {
@@ -166,25 +173,20 @@ var Antiprism = function(host,debugFlag) {
 				}
 				var keypair = utils.generateKeypair();
 				keypair.crypt = utils.encryptAES(keypair.privkey, session.pass.enc);
-				ws.sendObject({action:"register", username:session.user, pubkey:keypair.pubkey, privkey:keypair.crypt});
-				events["registered"] = callback || debug;
+				ws.callServer("register", [session.user, keypair.pubkey, keypair.crypt], callback);
 			},
 			changePassword: function(newpass, callback) {
 				var passAES = utils.buildAESKey(newpass);
-				ws.sendObject({action:"changePass", privkey:utils.encryptAES(session.privkey, passAES)});
-				events["updated"] = callback || debug;
+				ws.callServer("changePass", [utils.encryptAES(session.privkey, passAES)], callback);
 			},
 			setStatus: function(status, callback) {
-				ws.sendObject({action:"setStatus",status:status});
-				events["status"] = callback || debug;
+				ws.callServer("setStatus",[status],callback);
 			},
 			getStatus: function(callback) {
-				ws.sendObject({action:"getStatus"});
-				events["status"] = callback || debug;
+				ws.callServer("getStatus",[],callback);
 			},
 			getContacts: function(callback) {
-				ws.sendObject({action:"contacts"});
-				events["contacts"] = function(msg) {
+				ws.callServer("contacts",[],function(msg) {
 					for(var user in msg.contacts) {
 						session.cache.keys[user] = msg.contacts[user].key;
 						delete msg.contacts[user].key;
@@ -193,47 +195,43 @@ var Antiprism = function(host,debugFlag) {
 						session.cache.keys[user] = msg.requests[user].key;
 					if(msg.requests)
 						msg.requests = Object.keys(msg.requests);
-					(callback||debug)(msg);
-				};
+					if(callback)
+						callback(msg);
+				});
 			},
 			initConversation: function(user,callback) {
-				ws.sendObject({action:"pubkey",user:user}); // request pubkey first
-				events["pubkey"] = function(msg) {
+				ws.callServer("pubkey", [user], function(msg) { // request pubkey first
 					var convkey = rng_get_string(32), keys = [];
 					session.conversations[user] = convkey;
 					keys.push(utils.encryptRSA(convkey, session.pubkey));
 					keys.push(utils.encryptRSA(convkey, msg.pubkey));
-					ws.sendObject({action:"initConversation", user:user, convkeys:keys});
-				};
-				events["initiated"] = callback || debug;
+					ws.callServer("initConversation", [user, keys], callback);
+				});
 			},
 			confirm: function(user, callback) {
-				ws.sendObject({action:"confirm",user:user});
-				events["ack"] = function(msg) {
+				ws.callServer("confirm",[user],function(msg) {
 					if(callback)
 						callback(msg.ack); // bool
-				};
+				});
 			},
 			countMessages: function(user, callback) {
-				ws.sendObject({action:"countMessages", user:user});
-				events["msgcount"] = callback || debug;
+				ws.callServer("countMessages", [user], callback);
 			},
 			removeContact: function(user, callback) {
-				ws.sendObject({action:"removeContact", user:user});
-				events["removed"] = callback || debug;
+				ws.callServer("removeContact", [user], callback);
 			},
 			getMessages: function(user, start, end, callback) { // start = -10, end = -1 -> last 10 msgs!
-				ws.sendObject({action:"retrieveMessages",user:user, start:start, end:end});
-				events["msglist"] = function(msg) {
+				var handleMessages = function(msg) {
 					if(!session.conversations[user])
 						return helpers.getKey(user, function() {
-							events.msglist(msg);
+							handleMessages(msg);
 						});
 					for(var x in msg.msglist)
 						msg.msglist[x].msg = utils.decryptAES(msg.msglist[x].msg, session.conversations[user]);
 					if(callback)
 						callback(msg);
 				}
+				ws.callServer("retrieveMessages", [user, start, end], handleMessages);
 			},
 			sendMessage: function(user, message, callback) {
 				if(!session.conversations[user])
@@ -241,8 +239,7 @@ var Antiprism = function(host,debugFlag) {
 						actions.sendMessage(user,message,callback);
 					});
 				var encrypted = utils.encryptAES(message, session.conversations[user]);
-				ws.sendObject({action:"storeMessage",user:user,msg:encrypted});
-				events["sent"] = callback || debug;
+				ws.callServer("storeMessage",[user,encrypted], callback);
 			},
 			close: function() {
 				retries = 0;
@@ -253,21 +250,27 @@ var Antiprism = function(host,debugFlag) {
 					ws.close();
 				ws = new WebSocket(host);
 				helpers.registerWsCallbacks();
-				this.login(session.user,session.pass); // todo: still not cool :S
+				actions.login(session.user,session.pass); // todo: still not cool :S
 			},
-			debug: debug,
-			raw: function(action,params,callback) {
-				var saved = ws.onmessage,
-					actionObj = {action:action};
-				for(var x in params)
-					actionObj[x] = params[x];
-				ws.sendObject(actionObj);
-				if(callback)
-					ws.onmessage = function(msg) {
-						ws.onmessage = saved;
-						callback(JSON.parse(msg.data));
-					}
+			// <Developer-Mode>
+			debug: function() { // call to get benchmarked debug-func
+				var id = new Date().getTime().toString();
+				console.time(id);
+				return function(msg, isError, error) {
+					console.timeEnd(id);
+					debug(msg, isError, error);
+				}
+			},
+			raw: function() {
+				var args = [];
+				for(var x in arguments)
+					args.push(arguments[x]);
+				ws.callServer.apply(this, arguments);
+			},
+			listEvents: function() {
+				return events;
 			}
+			// </Developer-Mode>
 		};
 
 	// Constructor nao :D
@@ -304,7 +307,6 @@ var Antiprism = function(host,debugFlag) {
 			msg.msg = utils.decryptAES(msg.msg, session.conversations[keyUser]);
 			try {
 				clientEvents.msg(msg);
-				debug(msg);
 			} catch(e) {
 				debug(msg,true,e);
 			}
@@ -321,7 +323,6 @@ var Antiprism = function(host,debugFlag) {
 		delete msg.convkey;
 		try {
 			clientEvents.added(msg);
-			debug(msg);
 		} catch(e) {
 			debug(msg,true,e);
 		}

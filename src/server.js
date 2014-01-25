@@ -32,7 +32,10 @@ redis.keys("sess.*", function(err,reply) { // clear sessions
 });
 
 webSocketServer.on("connection", function(ws) {
-	webSockets[wscount] = {id: wscount, pingfail: 0, ctx: function(msg){
+	webSockets[wscount] = {id: wscount, pingfail: 0, send: function(msg, seq){
+		if(seq)
+			msg.seq = seq;
+		dbg("sending reply: "+JSON.stringify(msg));
 		if(ws.readyState === ws.OPEN)
 			ws.send(JSON.stringify(msg));
 		else
@@ -58,7 +61,7 @@ webSocketServer.on("connection", function(ws) {
 				return ws.send("PONG");
             }
             messageController.handleMessage(message, session, {
-				response: session.ctx,
+				response: session.send,
 				dbg: dbg
 			});
 		})
