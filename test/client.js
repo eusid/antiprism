@@ -418,13 +418,13 @@ var antiprism,
                 // time to fix the loop-bug that occurs without it!
                 antiprism.countMessages(contactName, function (msg) {
                     /*console.group("countMessages-Callback");
-                    console.log("got callback from countmessages with msg = " + JSON.stringify(msg));
-                    console.log("msg.msgcount = " + msg.msgcount);
-                    console.log("functioncall:");
-                    console.log("utils.updateContactObject(" + contactName + ", callback, " + msg.msgcount + ");");
-                    console.log("callback:");
-                    console.log(callback);
-                    console.groupEnd("countMessages-Callback");*/
+                     console.log("got callback from countmessages with msg = " + JSON.stringify(msg));
+                     console.log("msg.msgcount = " + msg.msgcount);
+                     console.log("functioncall:");
+                     console.log("utils.updateContactObject(" + contactName + ", callback, " + msg.msgcount + ");");
+                     console.log("callback:");
+                     console.log(callback);
+                     console.groupEnd("countMessages-Callback");*/
                     utils.updateContactObject(contactName, callback, msg.msgcount);
                 });
                 return;
@@ -455,7 +455,7 @@ var antiprism,
                     utils.displayRetrieveMoreMessagesButton(contactName);
                     client.getMessages(contactName);
                 }
-            }, userObj ? userObj.msglist.length : undefined);
+            }, userObj ? userObj.numberOfMessages : undefined);
             if (iconClass.indexOf("glyphicon-time") != -1) {
                 utils.displayMessage({from: contactName, msg: "Waiting for confirmation by user.", ts: (new Date()).getTime()}, contactName, false);
             } else if (iconClass.indexOf("glyphicon-question-sign") != -1)
@@ -605,9 +605,18 @@ var client = {
         }, true);
     },
     lostConnection: function (reconnected) {
-        if (!reconnected) {
+        if (reconnected)
+            for (var userObj in sessionStorage) {
+                try {
+                    userObj = sessionStorage.getObject(userObj);
+                } catch (e) {
+                    continue;
+                }
+                userObj.numberOfMessages = undefined;
+                sessionStorage.setObject(userObj);
+            }
+        else
             $('#serverLost').modal();
-        }
     },
     getMessages: function (contactName, start, end) {
         var userObj = sessionStorage.getObject(contactName);
@@ -622,11 +631,8 @@ var client = {
             console.log("getMessages was called and it has no sessionstorage[\"" + contactName + "\"]!");
             utils.updateContactObject(contactName);
         }
-        if (start === undefined)
-            start = -10;
-        if (end === undefined) {
-            end = -1;
-        }
+        start = (start === undefined) ? -10 : start;
+        end = (end === undefined) ? -1 : end;
         antiprism.getMessages(contactName, start, end, function (msg) {
             utils.addMessagesToStorage(contactName, msg.msglist);
             utils.displayMessages(msg, contactName);
@@ -742,25 +748,21 @@ var helper = {
     },
     div: function (className) {
         var div = document.createElement("div");
-        if (className === undefined)
-            className = "";
-        div.className = className;
+        div.className = className || "";
         return div;
     },
     span: function (className, value) {
-        if (value === undefined)
-            value = "";
         var span = document.createElement("span");
-        span.className = className;
-        span.innerHTML = value;
+        span.className = className || "";
+        span.innerHTML = value || "";
         return span;
     },
     input: function (type, name) {
         var input = document.createElement("input");
         input.type = type;
         input.className = "form-control";
-        input.id = name;
-        input.placeholder = name;
+        input.id = name || "";
+        input.placeholder = name || "";
         return input;
     },
     a: function (linkName, location) {
@@ -778,8 +780,8 @@ var helper = {
     },
     button: function (value, className, clickEvent) {
         var button = document.createElement("button");
-        button.className = className;
-        button.innerHTML = value;
+        button.className = className || "";
+        button.innerHTML = value || "";
         button.type = "button";
         if (clickEvent)
             button.onclick = clickEvent;
@@ -787,12 +789,12 @@ var helper = {
     },
     ul: function (className) {
         var ul = document.createElement("ul");
-        ul.className = className;
+        ul.className = className || "";
         return ul;
     },
     li: function (className) {
         var li = document.createElement("li");
-        li.className = className;
+        li.className = className || "";
         return li;
     },
     option: function (optionName) {
@@ -815,7 +817,7 @@ var helper = {
     form: function (className) {
         var form = document.createElement("form");
         form.role = "form";
-        form.className = className;
+        form.className = className || "";
         return form;
     },
     jsLink: function (linkName, clickEvent) {
