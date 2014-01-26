@@ -246,7 +246,7 @@ var Antiprism = function(host,debugFlag) {
 				ws.close();
 			},
 			reconnect: function(callback) {
-				if(ws.readyState != 1)
+				if(ws.readyState != ws.OPEN)
 					ws.close();
 				ws = new WebSocket(host);
 				helpers.registerWsCallbacks();
