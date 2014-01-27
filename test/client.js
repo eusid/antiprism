@@ -200,9 +200,8 @@ var antiprism,
                 if (result !== null) {
                     var firstResult = result;
                     bootbox.confirm("Are you sure that you want to remove " + result + "?", function (result) {
-                        if (result) {
+                        if (result)
                             antiprism.removeContact(firstResult, client.getContacts);
-                        }
                     });
                 }
             });
