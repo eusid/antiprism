@@ -218,6 +218,12 @@ var Antiprism = function(host,debugFlag) {
 						callback(msg.ack); // bool
 				});
 			},
+			deny: function(user, callback) {
+				ws.callServer("deny", [user], function(msg) {
+					if(callback)
+						callback(msg.ack); // bool
+				});
+			},
 			countMessages: function(user, callback) {
 				ws.callServer("countMessages", [user], callback);
 			},

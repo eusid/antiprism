@@ -221,6 +221,24 @@ var helpers = {
 					});
 				});
 		},
+		deny: function(ctx, user) {
+			if(user === undefined)
+				return Error.INVALID_PARAMS;
+			if(!ctx.storage.loggedIn)
+				return Error.INVALID_AUTH;
+			ctx.storage.redis.hget("reqs."+ctx.storage.username, user, function(err, reply) {
+				if(err)
+						return helpers.dbg("redis-Error: "+err);
+				if(reply === null)
+					return ctx.sendClient({ack:false, error:Error.UNKNOWN_USER});
+				ctx.storage.redis.multi()
+					.hdel("reqs."+ctx.storage.username, user)
+					.hdel("convs."+user, ctx.storage.username)
+					.exec(function(err,replies) {
+						ctx.sendClient({ack:true});
+					});
+			});
+		},
 		countMessages: function(ctx, user) {
 			if(user === undefined)
 				return Error.INVALID_PARAMS;
