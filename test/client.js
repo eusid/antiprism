@@ -227,7 +227,8 @@ var antiprism,
                 "INVALID_PARAMS": 4,
                 "UNKNOWN_USER": 5,
                 "INVALID_AUTH": 6,
-                "UNKNOWN_PUBKEY": 7
+                "UNKNOWN_PUBKEY": 7,
+                "NOT_ALLOWED": 8
             };
             if (!isNaN(errorCode.error))
                 switch (errorCode.error) {
@@ -251,6 +252,9 @@ var antiprism,
                         break;
                     case Error.UNKNOWN_PUBKEY:
                         error = "Requested pubkey does not exist.";
+                        break;
+                    case Error.NOT_ALLOWED:
+                        error = "Requested action is not permitted.";
                         break;
                     default:
                         error = "Unknown Error.";
@@ -677,10 +681,12 @@ var client = {
         });
     },
     addFriend: function () {
-        var friend = $('#addFriendField').val();
+        var $friendField = $('#addFriendField'),
+            friend = $friendField.val();
         if (!friend)
             return;
         antiprism.initConversation(friend, function (msg) {
+            $friendField.val("");
             if (msg.initiated)
                 client.getContacts();
             else
