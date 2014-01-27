@@ -691,9 +691,9 @@ var client = {
                 utils.switchChatLogin();
                 antiprism.getContacts(function (msg) {
                     utils.displayContacts(msg);
-                    antiprism.getStatus(function (msg) {
-                        utils.setHeadline(msg);
-                    });
+                });
+                antiprism.getStatus(function (msg) {
+                    utils.setHeadline(msg);
                 });
             } else {
                 $('#loginAlert').fadeIn(1000, function () {
