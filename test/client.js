@@ -342,7 +342,7 @@ var antiprism,
             utils.disableRetrieveMoreMessagesButton(contactName);
         },
         disableRetrieveMoreMessagesButton: function (contactName) {
-            var obj,
+            var obj = {msglist: []},
                 disableButton = function () {
                     obj = sessionStorage.getObject(contactName);
                     $('#retrieveMoreMessagesButton')[0].disabled = !(obj.msglist.length < obj.numberOfMessages);
