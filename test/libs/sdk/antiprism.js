@@ -101,7 +101,7 @@ var Antiprism = function(host,debugFlag) {
 						debug("got PONG!");
 						return pingfails = 3;
 					}
-					var response = JSON.parse(msg.data);
+                    var response = JSON.parse(msg.data);
 					if(response.seq && events[response.seq])
 						return events[response.seq](response);
 					for(var field in response)
@@ -117,7 +117,7 @@ var Antiprism = function(host,debugFlag) {
 					clearInterval(pingID);
 					if(clientEvents.closed)
 						clientEvents.closed(true);
-					debug("connection closed, retries: "+retries)
+					debug("connection closed, retries: "+retries);
 					if(!retries--)
 						return;
 					setTimeout(function() {
@@ -133,7 +133,7 @@ var Antiprism = function(host,debugFlag) {
 						events[id] = function(arg) {
 							delete events[id];
 							callback(arg);
-						}
+						};
 					debug("querying: "+msg);
 					if(ws.readyState != ws.OPEN)
 						return session.outqueue.push(msg);
@@ -234,7 +234,7 @@ var Antiprism = function(host,debugFlag) {
 						msg.msglist[x].msg = utils.decryptAES(msg.msglist[x].msg, session.conversations[user]);
 					if(callback)
 						callback(msg);
-				}
+				};
 				ws.callServer("retrieveMessages", [user, start, end], handleMessages);
 			},
 			sendMessage: function(user, message, callback) {

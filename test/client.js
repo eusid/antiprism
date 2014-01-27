@@ -54,9 +54,12 @@ var antiprism,
             }
         },
         muted: function () {
-            if (localStorage.getObject("muted") === null)
+            var obj = localStorage.getObject("muted");
+            if (obj === null) {
                 localStorage.setObject("muted", false);
-            return localStorage.getObject("muted");
+                obj = false;
+            }
+            return obj;
         },
         setMuteTooltip: function () {
             var msg;
@@ -295,32 +298,23 @@ var antiprism,
             contactElement.appendChild(status);
             return contactElement;
         },
+        appendContactElement: function (contacts, msg, contactListDOM) {
+            for (var contact in contacts) {
+                var contactElement = utils.createContactElement(contacts[contact], msg);
+                contactListDOM.appendChild(contactElement);
+            }
+        },
         displayContacts: function (msg) {
             console.log(msg);
-            var $friendList = $('#friendList');
-            var contactList = helper.div("list-group");
-            var contactsHeadline = helper.jsLink("<strong>Contactlist</strong>");
-            var $active = $('.active');
+            var $friendList = $('#friendList'),
+                contactList = helper.div("list-group"),
+                contactsHeadline = helper.jsLink("<strong>Contactlist</strong>"),
+                $active = $('.active');
             contactsHeadline.className = "list-group-item";
             contactsHeadline.id = "contactsHeadline";
             contactList.appendChild(contactsHeadline);
-
-            for (var contact in msg.contacts) {
-                if (msg.contacts.hasOwnProperty(contact)) {
-                    var contactElement = utils.createContactElement(contact, msg);
-                    contactList.appendChild(contactElement);
-                }
-            }
-            for (var i in msg.requests) {
-                if (msg.requests.hasOwnProperty(i)) {
-                    contactElement = utils.createContactElement(msg.requests[i], msg);
-                    contactList.appendChild(contactElement);
-                }
-            }
-//            if (msg.contacts.length == 0 && msg.requests.length == 0) {
-//                contactElement = utils.createContactElement("", "");
-//                contactList.appendChild(contactElement);
-//            } //TODO was passiert, wenn Kontaktliste leer?!?
+            utils.appendContactElement(Object.keys(msg.contacts), msg, contactList);
+            utils.appendContactElement(msg.requests, msg, contactList);
             if ($active.length)
                 var formerSelectedContact = $active[0].id;
             $friendList.text("");
@@ -363,7 +357,7 @@ var antiprism,
             }
             var obj = sessionStorage.getObject(contactName);
             if (!obj || (obj.msglist.length === 0 && obj.numberOfMessages > 0)) {
-                console.log("I'M THE MISTAKE BITCH!!");
+                console.log("disableRetrieveMoreMessagesButton has not enough displayed messages");
                 utils.updateContactObject(contactName, function () {
                     var obj = sessionStorage.getObject(contactName);
                     $('#retrieveMoreMessagesButton')[0].disabled = !(obj.msglist.length < obj.numberOfMessages);
@@ -413,18 +407,9 @@ var antiprism,
         },
         updateContactObject: function (contactName, callback, numberOfMessages) {
             if (numberOfMessages === undefined) {
-                console.log("numberOfMessages was undefined! numberOfMessages: " + numberOfMessages);
                 // this querying-global is the dirtiest piece of shit ever
                 // time to fix the loop-bug that occurs without it!
                 antiprism.countMessages(contactName, function (msg) {
-                    /*console.group("countMessages-Callback");
-                    console.log("got callback from countmessages with msg = " + JSON.stringify(msg));
-                    console.log("msg.msgcount = " + msg.msgcount);
-                    console.log("functioncall:");
-                    console.log("utils.updateContactObject(" + contactName + ", callback, " + msg.msgcount + ");");
-                    console.log("callback:");
-                    console.log(callback);
-                    console.groupEnd("countMessages-Callback");*/
                     utils.updateContactObject(contactName, callback, msg.msgcount);
                 });
                 return;
@@ -449,13 +434,11 @@ var antiprism,
             $contactNode.removeClass("newMessage");
             utils.messageDisplay().empty();
             utils.updateContactObject($contactNode[0].id, function () {
-                console.log("onContactSelect->updateContactObject callback is called with iconclass: " + iconClass);
-                console.log("and contactName: " + contactName);
                 if (iconClass.indexOf("glyphicon-user") != -1) {
                     utils.displayRetrieveMoreMessagesButton(contactName);
                     client.getMessages(contactName);
                 }
-            }, userObj ? userObj.msglist.length : undefined);
+            }, userObj ? userObj.numberOfMessages : undefined);
             if (iconClass.indexOf("glyphicon-time") != -1) {
                 utils.displayMessage({from: contactName, msg: "Waiting for confirmation by user.", ts: (new Date()).getTime()}, contactName, false);
             } else if (iconClass.indexOf("glyphicon-question-sign") != -1)
@@ -492,6 +475,38 @@ var antiprism,
             utils.pushOneMessageToStorage(msg.from, msg);
             utils.displayMessage(msg, msg.from);
         },
+        displayMessageContent: function (message, contactName, moreMessages) {
+            var panelContainer = helper.div(),
+                panelHeader = helper.div("panel panel-heading"),
+                panelContent = helper.div("panel panel-body"),
+                username = message.from || utils.getUsername(),
+                time = new Date(message.ts),
+                receivedMessage = utils.htmlEncode(message.msg);
+            panelContent.innerHTML = utils.urlToLink(receivedMessage);
+            if (time.toDateString() != (new Date()).toDateString())
+                time = time.toDateString() + ", " + time.toLocaleTimeString();
+            else
+                time = "today, " + time.toLocaleTimeString();
+            if (username == utils.getUsername()) {
+                panelContainer.className = "panel panel-success col-md-8 pull-right";
+                panelHeader.innerHTML = time + " | me";
+                panelContent.align = "right";
+                panelHeader.align = "right";
+            } else {
+                panelContainer.className = "panel panel-info col-md-8";
+                panelHeader.innerHTML = username + " | " + time;
+            }
+            panelContainer.appendChild(panelHeader);
+            panelContainer.appendChild(panelContent);
+            if (moreMessages)
+                $('#retrieveMoreMessages').after(panelContainer);
+            else
+                utils.messageDisplay().append(panelContainer);
+            if (message.request) {
+                var confirmButtonDiv = utils.createConfirmButton(contactName);
+                panelContent.appendChild(confirmButtonDiv);
+            }
+        },
         displayMessage: function (message, contactName, chained, moreMessages) {
             var $active = $('.active');
             var selectedContact = "";
@@ -500,51 +515,29 @@ var antiprism,
             if ($active.length)
                 selectedContact = $active[0].id;
             if (selectedContact == contactName) {
-                var panelContainer = helper.div(),
-                    panelHeader = helper.div("panel panel-heading"),
-                    panelContent = helper.div("panel panel-body"),
-                    username = message.from || utils.getUsername(),
-                    time = new Date(message.ts),
-                    receivedMessage = utils.htmlEncode(message.msg);
-                panelContent.innerHTML = utils.urlToLink(receivedMessage);
-                if (time.toDateString() != (new Date()).toDateString())
-                    time = time.toDateString() + ", " + time.toLocaleTimeString();
-                else
-                    time = "today, " + time.toLocaleTimeString();
-                if (username == utils.getUsername()) {
-                    panelContainer.className = "panel panel-success col-md-8 pull-right";
-                    panelHeader.innerHTML = time + " | me";
-                    panelContent.align = "right";
-                    panelHeader.align = "right";
-                } else {
-                    panelContainer.className = "panel panel-info col-md-8";
-                    panelHeader.innerHTML = username + " | " + time;
-                }
-                panelContainer.appendChild(panelHeader);
-                panelContainer.appendChild(panelContent);
-                if (moreMessages)
-                    $('#retrieveMoreMessages').after(panelContainer);
-                else
-                    utils.messageDisplay().append(panelContainer);
-                if (message.request) {
-                    var buttonDiv = helper.div("col-md-12");
-                    var confirmButton = helper.button("Confirm " + utils.htmlEncode(contactName), "btn btn-success", function () {
-                        antiprism.confirm(contactName, function (ack) {
-                            if (ack)
-                                utils.messageDisplay().empty();
-                            antiprism.getContacts(utils.displayContacts);
-                        });
-                    });
-                    buttonDiv.appendChild(helper.lineBreak());
-                    buttonDiv.appendChild(confirmButton);
-                    panelContent.appendChild(buttonDiv);
-                }
-                if (!chained) {
-                    utils.messageDisplay().animate({ scrollTop: utils.messageDisplay().prop("scrollHeight") - utils.messageDisplay().height() }, 300);
-                }
+                utils.displayMessageContent(message, contactName, moreMessages);
+                if (!chained)
+                    utils.animateDisplay();
             } else {
                 $('#' + contactName).addClass("newMessage");
             }
+        },
+        animateDisplay: function () {
+            utils.messageDisplay().animate({ scrollTop: utils.messageDisplay().prop("scrollHeight") - utils.messageDisplay().height() }, 300);
+        },
+        createConfirmButton: function (contactName) {
+            var buttonDiv = helper.div("col-md-12");
+            var confirmButton = helper.button("Confirm " + utils.htmlEncode(contactName), "btn btn-success", function () {
+                antiprism.confirm(contactName, function (ack) {
+                    if (ack) {
+                        utils.messageDisplay().empty();
+                        antiprism.getContacts(utils.displayContacts);
+                    }
+                });
+            });
+            buttonDiv.appendChild(helper.lineBreak());
+            buttonDiv.appendChild(confirmButton);
+            return buttonDiv;
         },
         pushOneMessageToStorage: function (contactname, msg) {
             var userObj = sessionStorage.getObject(contactname);
@@ -557,21 +550,26 @@ var antiprism,
             if (tail) {
                 msglist = msglist.concat(userObj.msglist);
                 userObj.msglist = msglist;
-            } else userObj.msglist = msglist;
+            } else
+                userObj.msglist = msglist;
             sessionStorage.setObject(contactname, userObj);
         },
         displayOnline: function (msg) {
-            var $user = $('#' + msg.user);
-            if ($user.children().length > 0) {
-                if (msg.confirmed === undefined) {
-                    if (msg.online)
-                        $user.children()[0].className = "glyphicon glyphicon-user online";
-                    else if ($user.children()[0].className != "glyphicon glyphicon-user" && !msg.request)
-                        $user.children()[0].className = "glyphicon glyphicon-user";
+            var $usericon = $('#' + msg.user).children();
+            if ($usericon.length > 0) {
+                var className = "glyphicon ";
+                if (msg.confirmed === false) {
+                    className += "glyphicon-time";
+                } else {
+                    if (msg.request)
+                        className += "glyphicon-question-sign";
+                    else if (msg.online)
+                        className += "glyphicon-user online";
                     else
-                        $user.children()[0].className = "glyphicon glyphicon-question-sign";
-                } else
-                    $user.children()[0].className = "glyphicon glyphicon-time";
+                        className += "glyphicon-user";
+
+                }
+                $usericon[0].className = className;
             }
         },
         displayMessages: function (msg, contactName, moreMessages) {
@@ -580,7 +578,7 @@ var antiprism,
                     utils.displayMessage(msg.msglist[i], contactName, true, moreMessages);
             }
             if (!moreMessages)
-                utils.messageDisplay().animate({ scrollTop: utils.messageDisplay().prop("scrollHeight") - utils.messageDisplay().height() }, 300);
+                utils.animateDisplay();
             utils.disableRetrieveMoreMessagesButton(contactName);
         },
         playSound: function (mp3) {
@@ -605,28 +603,32 @@ var client = {
         }, true);
     },
     lostConnection: function (reconnected) {
-        if (!reconnected) {
+        if (reconnected)
+            for (var userObj in sessionStorage) {
+                try {
+                    var obj = sessionStorage.getObject(userObj);
+                } catch (e) {
+                    continue;
+                }
+                obj.numberOfMessages = undefined;
+                sessionStorage.setObject(obj);
+            }
+        else
             $('#serverLost').modal();
-        }
     },
     getMessages: function (contactName, start, end) {
-        var userObj = sessionStorage.getObject(contactName);
-        if (userObj) {
-            if (userObj.msglist.length >= 10) {
-                utils.displayMessages(userObj, contactName);
-                console.log("displayed messages from sessionstorage");
-                return;
-            }
+        var userObj = sessionStorage.getObject(contactName) || {msglist: 0};
+        if (userObj.msglist.length >= 10) {
+            utils.displayMessages(userObj, contactName);
+            console.log("displayed messages from sessionstorage");
+            return;
         }
         else {
             console.log("getMessages was called and it has no sessionstorage[\"" + contactName + "\"]!");
             utils.updateContactObject(contactName);
         }
-        if (start === undefined)
-            start = -10;
-        if (end === undefined) {
-            end = -1;
-        }
+        start = (start === undefined) ? -10 : start;
+        end = (end === undefined) ? -1 : end;
         antiprism.getMessages(contactName, start, end, function (msg) {
             utils.addMessagesToStorage(contactName, msg.msglist);
             utils.displayMessages(msg, contactName);
@@ -682,27 +684,26 @@ var client = {
             password = utils.getPassword(),
             registration = utils.register(),
 
-            host = location.origin.replace(/^http/, 'ws'),
-            callback = function (msg) {
-                console.log("got " + JSON.stringify(msg));
-                if (msg) {
-                    utils.switchChatLogin();
-                    console.log("asking for contacts..");
-                    antiprism.getContacts(function (msg) {
-                        console.log("contacts-callback called!");
-                        utils.displayContacts(msg);
-                    });
-                    antiprism.getStatus(utils.setHeadline);
-                } else {
-                    $('#loginAlert').fadeIn(1000, function () {
-                        setTimeout(function () {
-                            $('#loginAlert').fadeOut()
-                        }, 5000)
-                    })
-                }
-                $('#password').val("");
-            };
+            host = location.origin.replace(/^http/, 'ws');
         antiprism = new Antiprism(host, true); // params: host,[debugFlag]
+        var callback = function (msg) {
+            if (msg) {
+                utils.switchChatLogin();
+                antiprism.getContacts(function (msg) {
+                    utils.displayContacts(msg);
+                });
+                antiprism.getStatus(function (msg) {
+                    utils.setHeadline(msg);
+                });
+            } else {
+                $('#loginAlert').fadeIn(1000, function () {
+                    setTimeout(function () {
+                        $('#loginAlert').fadeOut()
+                    }, 5000)
+                })
+            }
+            $('#password').val("");
+        };
         if (registration)
             antiprism.register(username, password, function () {
                 antiprism.login(username, password, callback)
@@ -742,25 +743,21 @@ var helper = {
     },
     div: function (className) {
         var div = document.createElement("div");
-        if (className === undefined)
-            className = "";
-        div.className = className;
+        div.className = className || "";
         return div;
     },
     span: function (className, value) {
-        if (value === undefined)
-            value = "";
         var span = document.createElement("span");
-        span.className = className;
-        span.innerHTML = value;
+        span.className = className || "";
+        span.innerHTML = value || "";
         return span;
     },
     input: function (type, name) {
         var input = document.createElement("input");
         input.type = type;
         input.className = "form-control";
-        input.id = name;
-        input.placeholder = name;
+        input.id = name || "";
+        input.placeholder = name || "";
         return input;
     },
     a: function (linkName, location) {
@@ -778,8 +775,8 @@ var helper = {
     },
     button: function (value, className, clickEvent) {
         var button = document.createElement("button");
-        button.className = className;
-        button.innerHTML = value;
+        button.className = className || "";
+        button.innerHTML = value || "";
         button.type = "button";
         if (clickEvent)
             button.onclick = clickEvent;
@@ -787,12 +784,12 @@ var helper = {
     },
     ul: function (className) {
         var ul = document.createElement("ul");
-        ul.className = className;
+        ul.className = className || "";
         return ul;
     },
     li: function (className) {
         var li = document.createElement("li");
-        li.className = className;
+        li.className = className || "";
         return li;
     },
     option: function (optionName) {
@@ -815,7 +812,7 @@ var helper = {
     form: function (className) {
         var form = document.createElement("form");
         form.role = "form";
-        form.className = className;
+        form.className = className || "";
         return form;
     },
     jsLink: function (linkName, clickEvent) {
