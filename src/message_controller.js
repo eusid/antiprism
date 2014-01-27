@@ -359,15 +359,16 @@ exports.handleMessage = function(message, storage, callbacks) {
 	} catch (e) {
 		result = Error.JSON;
 	}
-	if (result !== Error.JSON) 
+	if (result !== Error.JSON) {
 		result = parseRequest(data, {
 			storage: storage,
 			sendClient: function(msg) {
 				callbacks.response(msg, seq);
 			}
 		});
-	if(!isNaN(result))
-		result = {error:result};
-	if(result)
-		callbacks.response(result);
+		if(!isNaN(result))
+			callbacks.response({error:result}, seq)
+	}
+	else
+		callbacks.response(Error.JSON);
 };
