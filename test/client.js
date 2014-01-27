@@ -30,9 +30,7 @@ var antiprism,
             var $h1 = $('h1');
             var statusMsg = helper.small();
             statusMsg.id = "statusMsg";
-            $(statusMsg).click(function () {
-                bootbox.prompt("What's up?", utils.statusPromptCallback);
-            });
+            $(statusMsg).click(utils.statusPrompt);
             $h1.text(headline + " (" + utils.getUsername() + ") ");
             $h1.append(statusMsg);
             if (msg.status === null)
@@ -130,17 +128,16 @@ var antiprism,
             $('#sendButton').click(client.sendMessage);
             $('#logout').click(client.logout);
             $('#savePassButton').click(client.changePass);
-            $('#updateContactsButton').click(function () {
-                antiprism.getContacts(utils.displayContacts);
-            });
+            $('#updateContactsButton').click(client.getContacts);
             $('#removeContactButton').click(utils.removeContactPrompt);
-            $('#setStatusButton').click(function () {
-                bootbox.prompt("What's up?", utils.statusPromptCallback);
-            });
+            $('#setStatusButton').click(utils.statusPrompt);
             $('#reconnectButton').click(function () {
                 antiprism.reconnect();
                 $('#serverLost').modal('hide');
             });
+        },
+        statusPrompt: function () {
+            bootbox.prompt("What's up?", utils.statusPromptCallback);
         },
         statusPromptCallback: function (result) {
             if (result !== null) {
@@ -204,9 +201,7 @@ var antiprism,
                     var firstResult = result;
                     bootbox.confirm("Are you sure that you want to remove " + result + "?", function (result) {
                         if (result) {
-                            antiprism.removeContact(firstResult, function () {
-                                antiprism.getContacts(utils.displayContacts);
-                            });
+                            antiprism.removeContact(firstResult, client.getContacts);
                         }
                     });
                 }
@@ -319,11 +314,11 @@ var antiprism,
                 var formerSelectedContact = $active[0].id;
             $friendList.text("");
             $friendList.append(contactList);
-            for (contact in msg.contacts) {
+            for (var contact in msg.contacts) {
                 if (msg.contacts.hasOwnProperty(contact))
                     utils.displayOnline({user: contact, online: msg.contacts[contact].online, confirmed: msg.contacts[contact].confirmed});
             }
-            for (i in msg.requests) {
+            for (var i in msg.requests) {
                 if (msg.requests.hasOwnProperty(i))
                     utils.displayOnline({user: msg.requests[i], online: false, request: true});
             }
@@ -347,24 +342,20 @@ var antiprism,
             utils.disableRetrieveMoreMessagesButton(contactName);
         },
         disableRetrieveMoreMessagesButton: function (contactName) {
+            var disableButton = function () {
+                    var obj = sessionStorage.getObject(contactName);
+                    $('#retrieveMoreMessagesButton')[0].disabled = !(obj.msglist.length < obj.numberOfMessages);
+                };
             if (!sessionStorage[contactName]) {
                 console.log("disableRetrieveMoreMessagesButton is called and sessionStorage[\"" + contactName + "\"] does not exist");
-                utils.updateContactObject(contactName, function () {
-                    var obj = sessionStorage.getObject(contactName);
-                    $('#retrieveMoreMessagesButton')[0].disabled = !(obj.msglist.length < obj.numberOfMessages);
-                });
+                utils.updateContactObject(contactName, disableButton);
                 return;
             }
-            var obj = sessionStorage.getObject(contactName);
+            disableButton();
             if (!obj || (obj.msglist.length === 0 && obj.numberOfMessages > 0)) {
                 console.log("disableRetrieveMoreMessagesButton has not enough displayed messages");
-                utils.updateContactObject(contactName, function () {
-                    var obj = sessionStorage.getObject(contactName);
-                    $('#retrieveMoreMessagesButton')[0].disabled = !(obj.msglist.length < obj.numberOfMessages);
-                }, obj.numberOfMessages);
-                return;
+                utils.updateContactObject(contactName, disableButton, obj.numberOfMessages);
             }
-            $('#retrieveMoreMessagesButton')[0].disabled = !(obj.msglist.length < obj.numberOfMessages);
         },
         retrieveMessages: function (contactName) {
             if (sessionStorage[contactName]) {
@@ -531,7 +522,7 @@ var antiprism,
                 antiprism.confirm(contactName, function (ack) {
                     if (ack) {
                         utils.messageDisplay().empty();
-                        antiprism.getContacts(utils.displayContacts);
+                        client.getContacts();
                     }
                 });
             });
@@ -616,6 +607,9 @@ var client = {
         else
             $('#serverLost').modal();
     },
+    getContacts: function () {
+        antiprism.getContacts(utils.displayContacts);
+    },
     getMessages: function (contactName, start, end) {
         var userObj = sessionStorage.getObject(contactName) || {msglist: 0};
         if (userObj.msglist.length >= 10) {
@@ -674,7 +668,7 @@ var client = {
             return;
         antiprism.initConversation(friend, function (msg) {
             if (msg.initiated)
-                antiprism.getContacts(utils.displayContacts);
+                client.getContacts();
             else
                 utils.displayError({error: "Did not initiate conversation with <b>" + utils.htmlEncode(friend) + "</b>. You may already added him or he may not exist."});
         });
@@ -689,9 +683,7 @@ var client = {
         var callback = function (msg) {
             if (msg) {
                 utils.switchChatLogin();
-                antiprism.getContacts(function (msg) {
-                    utils.displayContacts(msg);
-                });
+                client.getContacts();
                 antiprism.getStatus(function (msg) {
                     utils.setHeadline(msg);
                 });
@@ -714,9 +706,7 @@ var client = {
         antiprism.addEventListener("closed", client.lostConnection);
         antiprism.addEventListener("error", utils.displayError);
         antiprism.addEventListener("online", utils.displayOnline);
-        antiprism.addEventListener("added", function () {
-            antiprism.getContacts(utils.displayContacts);
-        });
+        antiprism.addEventListener("added", client.getContacts);
     },
     logout: function () {
         antiprism.close();
