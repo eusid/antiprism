@@ -555,17 +555,21 @@ var antiprism,
             sessionStorage.setObject(contactname, userObj);
         },
         displayOnline: function (msg) {
-            var $user = $('#' + msg.user);
-            if ($user.children().length > 0) {
-                if (msg.confirmed === undefined) {
-                    if (msg.online)
-                        $user.children()[0].className = "glyphicon glyphicon-user online";
-                    else if ($user.children()[0].className != "glyphicon glyphicon-user" && !msg.request)
-                        $user.children()[0].className = "glyphicon glyphicon-user";
+            var $usericon = $('#' + msg.user).children();
+            if ($usericon.length > 0) {
+                var className = "glyphicon ";
+                if (msg.confirmed === false) {
+                    className += "glyphicon-time";
+                } else {
+                    if (msg.request)
+                        className += "glyphicon-question-sign";
+                    else if (msg.online)
+                        className += "glyphicon-user online";
                     else
-                        $user.children()[0].className = "glyphicon glyphicon-question-sign";
-                } else
-                    $user.children()[0].className = "glyphicon glyphicon-time";
+                        className += "glyphicon-user";
+
+                }
+                $usericon[0].className = className;
             }
         },
         displayMessages: function (msg, contactName, moreMessages) {
@@ -680,25 +684,26 @@ var client = {
             password = utils.getPassword(),
             registration = utils.register(),
 
-            host = location.origin.replace(/^http/, 'ws'),
-            callback = function (msg) {
-                console.log("got " + JSON.stringify(msg));
-                if (msg) {
-                    utils.switchChatLogin();
-                    antiprism.getContacts(function (msg) {
-                        utils.displayContacts(msg);
-                    });
-                    antiprism.getStatus(utils.setHeadline);
-                } else {
-                    $('#loginAlert').fadeIn(1000, function () {
-                        setTimeout(function () {
-                            $('#loginAlert').fadeOut()
-                        }, 5000)
-                    })
-                }
-                $('#password').val("");
-            };
+            host = location.origin.replace(/^http/, 'ws');
         antiprism = new Antiprism(host, true); // params: host,[debugFlag]
+        var callback = function (msg) {
+            if (msg) {
+                utils.switchChatLogin();
+                antiprism.getContacts(function (msg) {
+                    utils.displayContacts(msg);
+                    antiprism.getStatus(function (msg) {
+                        utils.setHeadline(msg);
+                    });
+                });
+            } else {
+                $('#loginAlert').fadeIn(1000, function () {
+                    setTimeout(function () {
+                        $('#loginAlert').fadeOut()
+                    }, 5000)
+                })
+            }
+            $('#password').val("");
+        };
         if (registration)
             antiprism.register(username, password, function () {
                 antiprism.login(username, password, callback)
