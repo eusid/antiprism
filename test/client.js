@@ -342,8 +342,9 @@ var antiprism,
             utils.disableRetrieveMoreMessagesButton(contactName);
         },
         disableRetrieveMoreMessagesButton: function (contactName) {
-            var disableButton = function () {
-                    var obj = sessionStorage.getObject(contactName);
+            var obj,
+                disableButton = function () {
+                    obj = sessionStorage.getObject(contactName);
                     $('#retrieveMoreMessagesButton')[0].disabled = !(obj.msglist.length < obj.numberOfMessages);
                 };
             if (!sessionStorage[contactName]) {
@@ -494,7 +495,7 @@ var antiprism,
             else
                 utils.messageDisplay().append(panelContainer);
             if (message.request) {
-                var confirmButtonDiv = utils.createConfirmButton(contactName);
+                var confirmButtonDiv = utils.createConfirmDenyButton(contactName);
                 panelContent.appendChild(confirmButtonDiv);
             }
         },
@@ -516,18 +517,31 @@ var antiprism,
         animateDisplay: function () {
             utils.messageDisplay().animate({ scrollTop: utils.messageDisplay().prop("scrollHeight") - utils.messageDisplay().height() }, 300);
         },
-        createConfirmButton: function (contactName) {
-            var buttonDiv = helper.div("col-md-12");
-            var confirmButton = helper.button("Confirm " + utils.htmlEncode(contactName), "btn btn-success", function () {
-                antiprism.confirm(contactName, function (ack) {
-                    if (ack) {
-                        utils.messageDisplay().empty();
-                        client.getContacts();
-                    }
+        createConfirmDenyButton: function (contactName) {
+            var buttonDiv = helper.div("col-md-12"),
+                confirmButton = helper.button("Confirm " + utils.htmlEncode(contactName), "btn btn-success", function () {
+                    antiprism.confirm(contactName, function (ack) {
+                        if (ack) {
+                            utils.messageDisplay().empty();
+                            client.getContacts();
+                        }
+                    });
+                }),
+                denyButton = helper.button("Deny " + utils.htmlEncode(contactName), "btn btn-danger pull-right", function () {
+                    bootbox.confirm("Are you sure you want to remove " + utils.htmlEncode(contactName) +
+                        "? You can send a new Request if you want to add him later, though.", function (confirmed) {
+                        if (confirmed)
+                            antiprism.deny(contactName, function (ack) {
+                                if (ack) {
+                                    utils.messageDisplay().empty();
+                                    client.getContacts();
+                                }
+                            });
+                    });
                 });
-            });
             buttonDiv.appendChild(helper.lineBreak());
             buttonDiv.appendChild(confirmButton);
+            buttonDiv.appendChild(denyButton);
             return buttonDiv;
         },
         pushOneMessageToStorage: function (contactname, msg) {
