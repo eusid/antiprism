@@ -475,7 +475,7 @@ var antiprism,
             utils.pushOneMessageToStorage(msg.from, msg);
             utils.displayMessage(msg, msg.from);
         },
-        displayMessageContent: function (message, contactName) {
+        displayMessageContent: function (message, contactName, moreMessages) {
             var panelContainer = helper.div(),
                 panelHeader = helper.div("panel panel-heading"),
                 panelContent = helper.div("panel panel-body"),
@@ -515,7 +515,7 @@ var antiprism,
             if ($active.length)
                 selectedContact = $active[0].id;
             if (selectedContact == contactName) {
-                utils.displayMessageContent(message, contactName);
+                utils.displayMessageContent(message, contactName, moreMessages);
                 if (!chained)
                     utils.animateDisplay();
             } else {
@@ -529,9 +529,10 @@ var antiprism,
             var buttonDiv = helper.div("col-md-12");
             var confirmButton = helper.button("Confirm " + utils.htmlEncode(contactName), "btn btn-success", function () {
                 antiprism.confirm(contactName, function (ack) {
-                    if (ack)
+                    if (ack) {
                         utils.messageDisplay().empty();
-                    antiprism.getContacts(utils.displayContacts);
+                        antiprism.getContacts(utils.displayContacts);
+                    }
                 });
             });
             buttonDiv.appendChild(helper.lineBreak());
@@ -549,7 +550,8 @@ var antiprism,
             if (tail) {
                 msglist = msglist.concat(userObj.msglist);
                 userObj.msglist = msglist;
-            } else userObj.msglist = msglist;
+            } else
+                userObj.msglist = msglist;
             sessionStorage.setObject(contactname, userObj);
         },
         displayOnline: function (msg) {
@@ -611,13 +613,11 @@ var client = {
             $('#serverLost').modal();
     },
     getMessages: function (contactName, start, end) {
-        var userObj = sessionStorage.getObject(contactName);
-        if (userObj) {
-            if (userObj.msglist.length >= 10) {
-                utils.displayMessages(userObj, contactName);
-                console.log("displayed messages from sessionstorage");
-                return;
-            }
+        var userObj = sessionStorage.getObject(contactName) || {msglist: 0};
+        if (userObj.msglist.length >= 10) {
+            utils.displayMessages(userObj, contactName);
+            console.log("displayed messages from sessionstorage");
+            return;
         }
         else {
             console.log("getMessages was called and it has no sessionstorage[\"" + contactName + "\"]!");
@@ -685,9 +685,7 @@ var client = {
                 console.log("got " + JSON.stringify(msg));
                 if (msg) {
                     utils.switchChatLogin();
-                    console.log("asking for contacts..");
                     antiprism.getContacts(function (msg) {
-                        console.log("contacts-callback called!");
                         utils.displayContacts(msg);
                     });
                     antiprism.getStatus(utils.setHeadline);
