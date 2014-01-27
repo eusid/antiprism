@@ -44,11 +44,13 @@ var helpers = {
 				if(!reply)
 					return ctx.sendClient({error:"unknown user"});
 				ctx.storage.username = username;
-				var randomString = require('crypto').randomBytes(32).toString();
-				var rsa = new (require('node-bignumber').Key)();
-				var pubkey = {n:reply.pubkeyN, e:reply.pubkeyE};
+				var crypto = require('crypto'),
+					randomString = crypto.randomBytes(32).toString(),
+					rsa = new (require('node-bignumber').Key)(),
+					pubkey = {n:reply.pubkeyN, e:reply.pubkeyE},
+					sha256 = crypto.createHash('sha256');
 				rsa.setPublic(reply.pubkeyN, reply.pubkeyE);
-				ctx.storage.validationKey = randomString;
+				ctx.storage.validationKey = sha256.update(randomString).digest('base64');
 				ctx.sendClient(
 					{validationKey: rsa.encrypt(randomString), pubkey: pubkey, privkey: reply.privkey}
 				);
@@ -68,8 +70,7 @@ var helpers = {
 		auth: function(ctx, validationKey) {
 			if(!validationKey)
 				return Error.INVALID_PARAMS;
-			var validationKey = new Buffer(validationKey, 'base64').toString('utf8');
-			if(ctx.storage.validationKey == undefined || validationKey != ctx.storage.validationKey)
+			if(ctx.storage.validationKey == undefined || validationKey !== ctx.storage.validationKey)
 				return Error.INVALID_AUTH;
 			ctx.storage.loggedIn = true;
 			ctx.storage.redis.sadd("sess."+ctx.storage.username, ctx.storage.id, function(err, reply) {

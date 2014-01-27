@@ -115,13 +115,15 @@ var Antiprism = function(host,debugFlag) {
 				};
 				ws.onclose = function() {
 					clearInterval(pingID);
-					if(clientEvents.closed)
-						clientEvents.closed(true);
+					var callback = clientEvents.closed || function(){};
 					debug("connection closed, retries: "+retries);
-					if(!retries--)
+					if(!retries--) {
+						callback(false);
 						return;
+					}
+					callback(true);
 					setTimeout(function() {
-						actions.reconnect();
+						actions.reconnect(clientEvents.closed);
 					},1000);
 				};
 				ws.callServer = function(action, params, callback) {
@@ -162,8 +164,9 @@ var Antiprism = function(host,debugFlag) {
 					try {
 						var privkey = utils.decryptAES(response.privkey,session.pass.enc);
 						session.privkey = privkey;
-						var validationKey = utils.decryptRSA(response.validationKey, response.pubkey, privkey);
-						ws.callServer("auth", [utils.utf8_b64enc(validationKey)], callback); 
+						var validationKey = utils.decryptRSA(response.validationKey, response.pubkey, privkey),
+							hash = CryptoJS.SHA256(utils.parseLatin(validationKey)).toString(CryptoJS.enc.Base64);
+						ws.callServer("auth", [hash], callback); 
 					} catch (e) {
 						debug("wrong password", true, e);
 					}
@@ -256,7 +259,7 @@ var Antiprism = function(host,debugFlag) {
 				ws.close();
 			},
 			reconnect: function(callback) {
-				if(ws.readyState != ws.OPEN)
+				if(ws.readyState == ws.OPEN)
 					ws.close();
 				ws = new WebSocket(host);
 				helpers.registerWsCallbacks();
