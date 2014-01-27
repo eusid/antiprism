@@ -257,27 +257,45 @@ var helpers = {
 				return Error.INVALID_PARAMS;
 			if(!ctx.storage.loggedIn)
 				return Error.INVALID_AUTH;
-			var storeMsg = {ts:new Date().getTime(), from:ctx.storage.username, msg:msg};
+			var storeMsg = {ts:new Date().getTime(), from:ctx.storage.username, msg:msg},
+				storeMsgJSON = JSON.stringify(storeMsg);
 			if(user < ctx.storage.username) // lawl-sort
 				var convid = user+'.'+ctx.storage.username;
 			else
 				var convid = ctx.storage.username+'.'+user;
-			ctx.storage.redis.rpush("msgs."+convid, JSON.stringify(storeMsg), function(err, reply) {
+			var pushMessage = function() { 
+				helpers.broadcast(ctx.storage, user, storeMsg);
+				ctx.storage.redis.smembers("sess."+ctx.storage.username, function(err,reply) {
+					if(err)
+						return helpers.dbg("redis-Error: "+err);
+					storeMsg.to = user;
+					delete storeMsg.from;
+					for(var id in reply)
+						if(ctx.storage.sockets[reply[id]] !== undefined // not sure if redis and node are in sync
+							&& reply[id] != ctx.storage.id) // do not push back to sending session
+							ctx.storage.sockets[reply[id]].send(storeMsg);
+				});
+				ctx.sendClient({ts:storeMsg.ts, sent:true});
+			}
+			ctx.storage.redis.rpushx("msgs."+convid, storeMsgJSON, function(err, reply) {
 				if(err)
 					return helpers.dbg("redis-Error: "+err);
+				if(reply)
+					pushMessage();
+				else {
+					ctx.storage.redis.multi()
+						.hgetall("convs."+ctx.storage.username)
+						.hgetall("convs."+user)
+						.exec(function(err, replies){
+							if(replies[0] && replies[1]
+								&& Object.keys(replies[0]).indexOf(user) !== -1
+								&& Object.keys(replies[1]).indexOf(ctx.storage.username) !== -1)
+								ctx.storage.redis.rpush("msgs."+convid, storeMsgJSON, pushMessage);
+							else
+								ctx.sendClient({error:Error.NOT_ALLOWED});
+						});
+				}
 			});
-			helpers.broadcast(ctx.storage, user, storeMsg);
-			ctx.storage.redis.smembers("sess."+ctx.storage.username, function(err,reply) {
-				if(err)
-					return helpers.dbg("redis-Error: "+err);
-				storeMsg.to = user;
-				delete storeMsg.from;
-				for(var id in reply)
-					if(ctx.storage.sockets[reply[id]] !== undefined // not sure if redis and node are in sync
-						&& reply[id] != ctx.storage.id) // do not push back to sending user
-						ctx.storage.sockets[reply[id]].send(storeMsg);
-			});
-			return {ts:storeMsg.ts, sent:true};
 		},
 		snapshot: function() {
 			require('heapdump').writeSnapshot();
