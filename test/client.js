@@ -11,6 +11,8 @@
  *
  *    - error handling
  *
+ *    - keep logged in (localstorage)
+ *
  *    - (port to firefox)
  *
  */
@@ -347,7 +349,7 @@ var antiprism,
         disableRetrieveMoreMessagesButton: function (contactName) {
             var obj = {msglist: []},
                 disableButton = function () {
-                    obj = sessionStorage.getObject(contactName);
+                    obj = sessionStorage.getObject(contactName) || {msglist: []};
                     $('#retrieveMoreMessagesButton')[0].disabled = !(obj.msglist.length < obj.numberOfMessages);
                 };
             if (!sessionStorage[contactName]) {
