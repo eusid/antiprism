@@ -54,9 +54,12 @@ var antiprism,
             }
         },
         muted: function () {
-            if (localStorage.getObject("muted") === null)
+            var obj = localStorage.getObject("muted");
+            if (obj === null) {
                 localStorage.setObject("muted", false);
-            return localStorage.getObject("muted");
+                obj = false;
+            }
+            return obj;
         },
         setMuteTooltip: function () {
             var msg;
@@ -295,32 +298,23 @@ var antiprism,
             contactElement.appendChild(status);
             return contactElement;
         },
+        appendContactElement: function (contacts, msg, contactListDOM) {
+            for (var contact in contacts) {
+                var contactElement = utils.createContactElement(contacts[contact], msg);
+                contactListDOM.appendChild(contactElement);
+            }
+        },
         displayContacts: function (msg) {
             console.log(msg);
-            var $friendList = $('#friendList');
-            var contactList = helper.div("list-group");
-            var contactsHeadline = helper.jsLink("<strong>Contactlist</strong>");
-            var $active = $('.active');
+            var $friendList = $('#friendList'),
+                contactList = helper.div("list-group"),
+                contactsHeadline = helper.jsLink("<strong>Contactlist</strong>"),
+                $active = $('.active');
             contactsHeadline.className = "list-group-item";
             contactsHeadline.id = "contactsHeadline";
             contactList.appendChild(contactsHeadline);
-
-            for (var contact in msg.contacts) {
-                if (msg.contacts.hasOwnProperty(contact)) {
-                    var contactElement = utils.createContactElement(contact, msg);
-                    contactList.appendChild(contactElement);
-                }
-            }
-            for (var i in msg.requests) {
-                if (msg.requests.hasOwnProperty(i)) {
-                    contactElement = utils.createContactElement(msg.requests[i], msg);
-                    contactList.appendChild(contactElement);
-                }
-            }
-//            if (msg.contacts.length == 0 && msg.requests.length == 0) {
-//                contactElement = utils.createContactElement("", "");
-//                contactList.appendChild(contactElement);
-//            } //TODO was passiert, wenn Kontaktliste leer?!?
+            utils.appendContactElement(Object.keys(msg.contacts), msg, contactList);
+            utils.appendContactElement(msg.requests, msg, contactList);
             if ($active.length)
                 var formerSelectedContact = $active[0].id;
             $friendList.text("");
@@ -363,7 +357,7 @@ var antiprism,
             }
             var obj = sessionStorage.getObject(contactName);
             if (!obj || (obj.msglist.length === 0 && obj.numberOfMessages > 0)) {
-                console.log("I'M THE MISTAKE BITCH!!");
+                console.log("disableRetrieveMoreMessagesButton has not enough displayed messages");
                 utils.updateContactObject(contactName, function () {
                     var obj = sessionStorage.getObject(contactName);
                     $('#retrieveMoreMessagesButton')[0].disabled = !(obj.msglist.length < obj.numberOfMessages);
@@ -413,18 +407,9 @@ var antiprism,
         },
         updateContactObject: function (contactName, callback, numberOfMessages) {
             if (numberOfMessages === undefined) {
-                console.log("numberOfMessages was undefined! numberOfMessages: " + numberOfMessages);
                 // this querying-global is the dirtiest piece of shit ever
                 // time to fix the loop-bug that occurs without it!
                 antiprism.countMessages(contactName, function (msg) {
-                    /*console.group("countMessages-Callback");
-                     console.log("got callback from countmessages with msg = " + JSON.stringify(msg));
-                     console.log("msg.msgcount = " + msg.msgcount);
-                     console.log("functioncall:");
-                     console.log("utils.updateContactObject(" + contactName + ", callback, " + msg.msgcount + ");");
-                     console.log("callback:");
-                     console.log(callback);
-                     console.groupEnd("countMessages-Callback");*/
                     utils.updateContactObject(contactName, callback, msg.msgcount);
                 });
                 return;
@@ -449,8 +434,6 @@ var antiprism,
             $contactNode.removeClass("newMessage");
             utils.messageDisplay().empty();
             utils.updateContactObject($contactNode[0].id, function () {
-                console.log("onContactSelect->updateContactObject callback is called with iconclass: " + iconClass);
-                console.log("and contactName: " + contactName);
                 if (iconClass.indexOf("glyphicon-user") != -1) {
                     utils.displayRetrieveMoreMessagesButton(contactName);
                     client.getMessages(contactName);
@@ -492,6 +475,38 @@ var antiprism,
             utils.pushOneMessageToStorage(msg.from, msg);
             utils.displayMessage(msg, msg.from);
         },
+        displayMessageContent: function (message, contactName) {
+            var panelContainer = helper.div(),
+                panelHeader = helper.div("panel panel-heading"),
+                panelContent = helper.div("panel panel-body"),
+                username = message.from || utils.getUsername(),
+                time = new Date(message.ts),
+                receivedMessage = utils.htmlEncode(message.msg);
+            panelContent.innerHTML = utils.urlToLink(receivedMessage);
+            if (time.toDateString() != (new Date()).toDateString())
+                time = time.toDateString() + ", " + time.toLocaleTimeString();
+            else
+                time = "today, " + time.toLocaleTimeString();
+            if (username == utils.getUsername()) {
+                panelContainer.className = "panel panel-success col-md-8 pull-right";
+                panelHeader.innerHTML = time + " | me";
+                panelContent.align = "right";
+                panelHeader.align = "right";
+            } else {
+                panelContainer.className = "panel panel-info col-md-8";
+                panelHeader.innerHTML = username + " | " + time;
+            }
+            panelContainer.appendChild(panelHeader);
+            panelContainer.appendChild(panelContent);
+            if (moreMessages)
+                $('#retrieveMoreMessages').after(panelContainer);
+            else
+                utils.messageDisplay().append(panelContainer);
+            if (message.request) {
+                var confirmButtonDiv = utils.createConfirmButton(contactName);
+                panelContent.appendChild(confirmButtonDiv);
+            }
+        },
         displayMessage: function (message, contactName, chained, moreMessages) {
             var $active = $('.active');
             var selectedContact = "";
@@ -500,51 +515,28 @@ var antiprism,
             if ($active.length)
                 selectedContact = $active[0].id;
             if (selectedContact == contactName) {
-                var panelContainer = helper.div(),
-                    panelHeader = helper.div("panel panel-heading"),
-                    panelContent = helper.div("panel panel-body"),
-                    username = message.from || utils.getUsername(),
-                    time = new Date(message.ts),
-                    receivedMessage = utils.htmlEncode(message.msg);
-                panelContent.innerHTML = utils.urlToLink(receivedMessage);
-                if (time.toDateString() != (new Date()).toDateString())
-                    time = time.toDateString() + ", " + time.toLocaleTimeString();
-                else
-                    time = "today, " + time.toLocaleTimeString();
-                if (username == utils.getUsername()) {
-                    panelContainer.className = "panel panel-success col-md-8 pull-right";
-                    panelHeader.innerHTML = time + " | me";
-                    panelContent.align = "right";
-                    panelHeader.align = "right";
-                } else {
-                    panelContainer.className = "panel panel-info col-md-8";
-                    panelHeader.innerHTML = username + " | " + time;
-                }
-                panelContainer.appendChild(panelHeader);
-                panelContainer.appendChild(panelContent);
-                if (moreMessages)
-                    $('#retrieveMoreMessages').after(panelContainer);
-                else
-                    utils.messageDisplay().append(panelContainer);
-                if (message.request) {
-                    var buttonDiv = helper.div("col-md-12");
-                    var confirmButton = helper.button("Confirm " + utils.htmlEncode(contactName), "btn btn-success", function () {
-                        antiprism.confirm(contactName, function (ack) {
-                            if (ack)
-                                utils.messageDisplay().empty();
-                            antiprism.getContacts(utils.displayContacts);
-                        });
-                    });
-                    buttonDiv.appendChild(helper.lineBreak());
-                    buttonDiv.appendChild(confirmButton);
-                    panelContent.appendChild(buttonDiv);
-                }
-                if (!chained) {
-                    utils.messageDisplay().animate({ scrollTop: utils.messageDisplay().prop("scrollHeight") - utils.messageDisplay().height() }, 300);
-                }
+                utils.displayMessageContent(message, contactName);
+                if (!chained)
+                    utils.animateDisplay();
             } else {
                 $('#' + contactName).addClass("newMessage");
             }
+        },
+        animateDisplay: function () {
+            utils.messageDisplay().animate({ scrollTop: utils.messageDisplay().prop("scrollHeight") - utils.messageDisplay().height() }, 300);
+        },
+        createConfirmButton: function (contactName) {
+            var buttonDiv = helper.div("col-md-12");
+            var confirmButton = helper.button("Confirm " + utils.htmlEncode(contactName), "btn btn-success", function () {
+                antiprism.confirm(contactName, function (ack) {
+                    if (ack)
+                        utils.messageDisplay().empty();
+                    antiprism.getContacts(utils.displayContacts);
+                });
+            });
+            buttonDiv.appendChild(helper.lineBreak());
+            buttonDiv.appendChild(confirmButton);
+            return buttonDiv;
         },
         pushOneMessageToStorage: function (contactname, msg) {
             var userObj = sessionStorage.getObject(contactname);
@@ -580,7 +572,7 @@ var antiprism,
                     utils.displayMessage(msg.msglist[i], contactName, true, moreMessages);
             }
             if (!moreMessages)
-                utils.messageDisplay().animate({ scrollTop: utils.messageDisplay().prop("scrollHeight") - utils.messageDisplay().height() }, 300);
+                utils.animateDisplay();
             utils.disableRetrieveMoreMessagesButton(contactName);
         },
         playSound: function (mp3) {
@@ -608,12 +600,12 @@ var client = {
         if (reconnected)
             for (var userObj in sessionStorage) {
                 try {
-                    userObj = sessionStorage.getObject(userObj);
+                    var obj = sessionStorage.getObject(userObj);
                 } catch (e) {
                     continue;
                 }
-                userObj.numberOfMessages = undefined;
-                sessionStorage.setObject(userObj);
+                obj.numberOfMessages = undefined;
+                sessionStorage.setObject(obj);
             }
         else
             $('#serverLost').modal();
