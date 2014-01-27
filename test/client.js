@@ -11,6 +11,8 @@
  *
  *    - error handling
  *
+ *    - keep logged in (localstorage)
+ *
  *    - (port to firefox)
  *
  */
