@@ -66,9 +66,12 @@ var Antiprism = function(host,debugFlag) {
 				return rsa.encrypt(plain);
 			},
 			decryptRSA: function(cipher, pubkey, privkey) {
+				console.time("decryptRSA");
 				var rsa = new RSAKey();
-				rsa.setPrivate(pubkey.n, pubkey.e, privkey);
-				return rsa.decrypt(cipher);
+ 				rsa.setPrivate(pubkey.n, pubkey.e, privkey);
+				var plain = rsa.decrypt(cipher);
+				console.timeEnd("decryptRSA");
+				return plain;
 			}
 		},
 		helpers = {
@@ -122,12 +125,13 @@ var Antiprism = function(host,debugFlag) {
 					},1000);
 				};
 				ws.callServer = function(action, params, callback) {
-					var msg = {seq:++seq};
+					var id = ++seq,
+						msg = {seq:id};
 					msg[action] = params;
 					msg = JSON.stringify(msg);
 					if(callback)
-						events[seq] = function(arg) {
-							delete events[seq];
+						events[id] = function(arg) {
+							delete events[id];
 							callback(arg);
 						}
 					debug("querying: "+msg);
