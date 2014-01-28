@@ -131,24 +131,23 @@ var antiprism,
         },
         rememberMe: function () {
             return $('#rememberMe').prop('checked');
-        },
-        setOnClickEvents: function () {
-            $('#registration').click(utils.changeButton);
-            $('#rememberMe').click(utils.rememberMePrompt);
-            $('#signInButton').click(function () {
+        }, setOnClickEvents: function () {
+            document.getElementById('registration').onclick = utils.changeButton;
+            document.getElementById('rememberMe').onclick = utils.rememberMePrompt;
+            document.getElementById('signInButton').onclick = function () {
                 client.login();
-            });
-            $('#addFriendButton').click(client.addFriend);
-            $('#sendButton').click(client.sendMessage);
-            $('#logout').click(client.logout);
-            $('#savePassButton').click(client.changePass);
-            $('#updateContactsButton').click(client.getContacts);
-            $('#removeContactButton').click(utils.removeContactPrompt);
-            $('#setStatusButton').click(utils.statusPrompt);
-            $('#reconnectButton').click(function () {
+            };
+            document.getElementById('addFriendButton').onclick = client.addFriend;
+            document.getElementById('sendButton').onclick = client.sendMessage;
+            document.getElementById('logout').onclick = client.logout;
+            document.getElementById('savePassButton').onclick = client.changePass;
+            document.getElementById('updateContactsButton').onclick = client.getContacts;
+            document.getElementById('removeContactButton').onclick = utils.removeContactPrompt;
+            document.getElementById('setStatusButton').onclick = utils.statusPrompt;
+            document.getElementById('reconnectButton').onclick = function () {
                 antiprism.reconnect();
                 $('#serverLost').modal('hide');
-            });
+            };
         },
         rememberMePrompt: function () {
             if (utils.rememberMe()) {
@@ -890,7 +889,7 @@ var helper = {
 };
 
 //Probably just available on chrome
-var debug = function (firstFunction, secondFunction, repeat) {
+var debug = function (firstFunction, secondFunction, repeat) { //repeat: number of repititions - default is 10000
     repeat = repeat || 10000;
     var func = function (call) {
         for (var i = 0; i < repeat; i++) call(i);
@@ -904,12 +903,14 @@ var debug = function (firstFunction, secondFunction, repeat) {
     console.group("Testing results");
     console.log("First function needed " + first + "ms to perform " + repeat + " calls. Second function needed " + second + "ms.");
     if (first > second) {
-        console.log("First function took " + (first - second) + "ms longer than Second function.");
-        console.log("Second function is " + (first / second) + " times faster than first function.");
+        console.log("The first function took " + (first - second) + "ms longer than the second function.");
+        console.log("The second function is " + (first / second) + " times faster than the first function.");
+        console.log("Mean saved time for one call by the second function: ~" + (first - second) / repeat + "ms.");
     }
     else {
-        console.log("Second function took " + (second - first) + "ms longer than first function.");
-        console.log("First function is " + (second / first) + " times faster than pure Second function.");
+        console.log("The second function took " + (second - first) + "ms longer than the first function.");
+        console.log("The first function is " + (second / first) + " times faster than the second function.");
+        console.log("Mean saved time for one call by the first function: ~" + (second - first) / repeat + "ms.");
     }
     console.groupEnd("Testing results");
 };
