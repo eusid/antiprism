@@ -8,41 +8,6 @@
  */
 
 // TODO: modularize. AMDs, seriously.
-RSAKey.prototype.getPrivate = function(b64enc, hex2a) {
-	var self = this;
-	return b64enc("d,p,q,dmp1,dmq1,coeff"
-		.split(",")
-		.map(function(x){
-			return hex2a(self[x].toString(16));
-		}).join(""));
-}
-
-RSAKey.prototype.getPublic = function(b64enc, hex2a) {
-	var self = this;
-	return b64enc("n,e"
-		.split(",")
-		.map(function(x){
-			return hex2a(self[x].toString(16));
-		}).join(""));
-}
-
-RSAKey.prototype.loadPublic = function(pubkey, bits, b64dec, a2hex) {
-	var hex = a2hex(b64dec(pubkey)),
-		length = bits/4;
-	this.setPublic(hex.substr(0,length),hex.substr(length));
-}
-
-RSAKey.prototype.loadPrivate = function (pubkey, privkey, bits, b64dec, a2hex) {
-	this.loadPublic(pubkey, bits, b64dec, a2hex); 
-	var hex = a2hex(b64dec(privkey)),
-		length = bits/4,
-		params = [this.n.toString(16),this.e.toString(16),hex.substr(0,length)];
-	hex = hex.substr(length);
-	length = hex.length / 5;
-	for(var i=0; i < 5; i++)
-		params.push(hex.substr(i*length,length));
-	this.setPrivateEx.apply(this,params);
-}
 
 var Antiprism = function(host,debugFlag) {
 	// define all the methods!!11
@@ -93,18 +58,18 @@ var Antiprism = function(host,debugFlag) {
 				return String.fromCharCode.apply(null, new Uint8Array(hash));
 			},
 			generateKeypair: function() {
-				var rsa = new RSAKey();
+				var rsa = new RSA();
 				rsa.generate(2048,"10001");
 				return {pubkey: rsa.getPublic(btoa,utils.hex2a), privkey: rsa.getPrivate(btoa,utils.hex2a)};
 			},
 			encryptRSA: function(plain, pubkey) {
-				var rsa = new RSAKey();
+				var rsa = new RSA();
 				rsa.loadPublic(pubkey, 2048, atob, utils.a2hex);
 				return btoa(utils.hex2a(rsa.encrypt(plain)));
 			},
 			decryptRSA: function(cipher, pubkey, privkey) {
 				console.time("decryptRSA");
-				var rsa = new RSAKey();
+				var rsa = new RSA();
  				rsa.loadPrivate(pubkey, privkey, 2048, atob, utils.a2hex);
 				var plain = rsa.decrypt(utils.a2hex(atob(cipher)));
 				console.timeEnd("decryptRSA");
