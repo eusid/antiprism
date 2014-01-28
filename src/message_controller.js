@@ -22,7 +22,7 @@ var helpers = {
 				},
 				b642hex = function(str) {
 					return new Buffer(str,'base64').toString('hex');
-				}
+				},
 				rsa = new (require('node-bignumber').Key)(),
 				hex = b642hex(pubkey),
 				length = bits/4;
