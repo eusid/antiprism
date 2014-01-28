@@ -48,9 +48,8 @@ var antiprism,
 
                 time = time === 0 ? time : time || 1000;
                 $login.toggle(time);
-                $('#chat').toggle(time);
-                $('#settings').toggle(time);
-                $('#dummy').toggle(time);
+                $('#chat').fadeToggle(time);
+                $('#settings').fadeToggle(time);
             }
         },
         changeButton: function () {
@@ -132,24 +131,23 @@ var antiprism,
         },
         rememberMe: function () {
             return $('#rememberMe').prop('checked');
-        },
-        setOnClickEvents: function () {
-            $('#registration').click(utils.changeButton);
-            $('#rememberMe').click(utils.rememberMePrompt);
-            $('#signInButton').click(function () {
+        }, setOnClickEvents: function () {
+            document.getElementById('registration').onclick = utils.changeButton;
+            document.getElementById('rememberMe').onclick = utils.rememberMePrompt;
+            document.getElementById('signInButton').onclick = function () {
                 client.login();
-            });
-            $('#addFriendButton').click(client.addFriend);
-            $('#sendButton').click(client.sendMessage);
-            $('#logout').click(client.logout);
-            $('#savePassButton').click(client.changePass);
-            $('#updateContactsButton').click(client.getContacts);
-            $('#removeContactButton').click(utils.removeContactPrompt);
-            $('#setStatusButton').click(utils.statusPrompt);
-            $('#reconnectButton').click(function () {
+            };
+            document.getElementById('addFriendButton').onclick = client.addFriend;
+            document.getElementById('sendButton').onclick = client.sendMessage;
+            document.getElementById('logout').onclick = client.logout;
+            document.getElementById('savePassButton').onclick = client.changePass;
+            document.getElementById('updateContactsButton').onclick = client.getContacts;
+            document.getElementById('removeContactButton').onclick = utils.removeContactPrompt;
+            document.getElementById('setStatusButton').onclick = utils.statusPrompt;
+            document.getElementById('reconnectButton').onclick = function () {
                 antiprism.reconnect();
                 $('#serverLost').modal('hide');
-            });
+            };
         },
         rememberMePrompt: function () {
             if (utils.rememberMe()) {
@@ -601,8 +599,8 @@ var antiprism,
             sessionStorage.setObject(contactname, userObj);
         },
         displayOnline: function (msg) {
-            var $usericon = $('#' + msg.user).children();
-            if ($usericon.length > 0) {
+            var userIcon = document.getElementById(msg.user).children;
+            if (userIcon.length > 0) {
                 var className = "glyphicon ";
                 if (msg.confirmed === false) {
                     className += "glyphicon-time";
@@ -615,7 +613,7 @@ var antiprism,
                         className += "glyphicon-user";
 
                 }
-                $usericon[0].className = className;
+                userIcon[0].className = className;
             }
         },
         displayMessages: function (msg, contactName, moreMessages) {
@@ -888,4 +886,31 @@ var helper = {
     glyphicon: function (name) {
         return helper.div("glyphicon glyphicon-" + name);
     }
+};
+
+//Probably just available on chrome
+var debug = function (firstFunction, secondFunction, repeat) { //repeat: number of repititions - default is 10000
+    repeat = repeat || 10000;
+    var func = function (call) {
+        for (var i = 0; i < repeat; i++) call(i);
+    };
+    var start = window.performance.now();
+    func(firstFunction);
+    var first = window.performance.now() - start;
+    start = window.performance.now();
+    func(secondFunction);
+    var second = window.performance.now() - start;
+    console.group("Testing results");
+    console.log("First function needed " + first + "ms to perform " + repeat + " calls. Second function needed " + second + "ms.");
+    if (first > second) {
+        console.log("The first function took " + (first - second) + "ms longer than the second function.");
+        console.log("The second function is " + (first / second) + " times faster than the first function.");
+        console.log("Mean saved time for one call by the second function: ~" + (first - second) / repeat + "ms.");
+    }
+    else {
+        console.log("The second function took " + (second - first) + "ms longer than the first function.");
+        console.log("The first function is " + (second / first) + " times faster than the second function.");
+        console.log("Mean saved time for one call by the first function: ~" + (second - first) / repeat + "ms.");
+    }
+    console.groupEnd("Testing results");
 };

@@ -163,25 +163,33 @@
     <!-- /.modal-dialog -->
 </div>
 <!-- /.modal -->
-
-<script src="libs/jquery.js"></script>
-<script src="libs/sdk/crypto/aes.js"></script>
-<script src="libs/sdk/crypto/CryptoJS.js"></script>
-<script src="libs/sdk/crypto/scrypt.js"></script>
-<script src="libs/sdk/crypto/sha256.js"></script>
-<script src="libs/sdk/crypto/jsbn.min.js"></script>
-<script src="libs/bootstrap.min.js"></script>
-<script src="libs/bootbox.min.js"></script>
-<script src="libs/typeahead.js"></script>
-<script src="libs/sdk/antiprism.js"></script>
-<script src="client.js"></script>
 <script>
+    (function(){
+        var script = function(src) {
+            var tag = document.createElement("script");
+            tag.type = "text/javascript";
+            tag.src = src;
+            document.body.appendChild(tag);
+        }
+        var scripts = ["libs/jquery.js",
+            "libs/sdk/crypto/aes.js",
+            "libs/sdk/crypto/CryptoJS.js",
+            "libs/sdk/crypto/scrypt.js",
+            "libs/sdk/crypto/sha256.js",
+            "libs/sdk/crypto/jsbn.min.js",
+            "libs/bootstrap.min.js",
+            "libs/bootbox.min.js",
+            "libs/typeahead.js",
+            "libs/sdk/antiprism.js",
+            "client.js"];
+        scripts.forEach(script);
+    })();
     var title = "#ANTiPRiSM";
     var headline = "AntiPrism";
     (function () {
-        $(window).focus(function () {
-            $('title').text(title);
-        })
+        window.onfocus = function () {
+            document.title = title;
+        };
     })();
 </script>
 </body>
