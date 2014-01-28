@@ -11,10 +11,6 @@
  *
  *    - error handling
  *
- *    - keep logged in (localstorage)
- *          - remember me button -> onchange listener: confirmbox that you really want to do this
- *          - save in localstorage
- *
  *    - (port to firefox)
  *
  */
@@ -740,7 +736,7 @@ var client = {
         antiprism = new Antiprism(host, true); // params: host,[debugFlag]
         var callback = function (msg) {
             if (msg) {
-                utils.switchToChat(true);
+                utils.switchToChat(true, restored ? 400 : undefined);
                 client.getContacts();
                 antiprism.getStatus(function (msg) {
                     utils.setHeadline(msg);
