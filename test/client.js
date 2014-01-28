@@ -600,8 +600,8 @@ var antiprism,
             sessionStorage.setObject(contactname, userObj);
         },
         displayOnline: function (msg) {
-            var $usericon = $('#' + msg.user).children();
-            if ($usericon.length > 0) {
+            var userIcon = document.getElementById(msg.user).children;
+            if (userIcon.length > 0) {
                 var className = "glyphicon ";
                 if (msg.confirmed === false) {
                     className += "glyphicon-time";
@@ -614,7 +614,7 @@ var antiprism,
                         className += "glyphicon-user";
 
                 }
-                $usericon[0].className = className;
+                userIcon[0].className = className;
             }
         },
         displayMessages: function (msg, contactName, moreMessages) {
@@ -887,4 +887,29 @@ var helper = {
     glyphicon: function (name) {
         return helper.div("glyphicon glyphicon-" + name);
     }
+};
+
+//Probably just available on chrome
+var debug = function (firstFunction, secondFunction, repeat) {
+    repeat = repeat || 10000;
+    var func = function (call) {
+        for (var i = 0; i < repeat; i++) call(i);
+    };
+    var start = window.performance.now();
+    func(firstFunction);
+    var first = window.performance.now() - start;
+    start = window.performance.now();
+    func(secondFunction);
+    var second = window.performance.now() - start;
+    console.group("Testing results");
+    console.log("First function needed " + first + "ms to perform " + repeat + " calls. Second function needed " + second + "ms.");
+    if (first > second) {
+        console.log("First function took " + (first - second) + "ms longer than Second function.");
+        console.log("Second function is " + (first / second) + " times faster than first function.");
+    }
+    else {
+        console.log("Second function took " + (second - first) + "ms longer than first function.");
+        console.log("First function is " + (second / first) + " times faster than pure Second function.");
+    }
+    console.groupEnd("Testing results");
 };
