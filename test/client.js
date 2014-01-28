@@ -48,9 +48,8 @@ var antiprism,
 
                 time = time === 0 ? time : time || 1000;
                 $login.toggle(time);
-                $('#chat').toggle(time);
-                $('#settings').toggle(time);
-                $('#dummy').toggle(time);
+                $('#chat').fadeToggle(time);
+                $('#settings').fadeToggle(time);
             }
         },
         changeButton: function () {
