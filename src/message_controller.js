@@ -15,6 +15,21 @@ var helpers = {
 				}
 			});
 			if(callback) callback();
+		},
+		encryptRSA: function(plain, pubkey, bits) {
+			var hex2b64 = function(str) {
+					return new Buffer(str,'hex').toString('base64');
+				},
+				b642hex = function(str) {
+					return new Buffer(str,'base64').toString('hex');
+				}
+				rsa = new (require('node-bignumber').Key)(),
+				hex = b642hex(pubkey),
+				length = bits/4;
+			rsa.setPublic(hex.substr(0,length),hex.substr(length));
+			helpers.dbg("n is "+hex.substr(0,length)+",e is "+hex.substr(length));
+			helpers.dbg("plain is \""+plain+"\", key is "+pubkey);
+			return hex2b64(rsa.encrypt(plain));
 		}
 	},
 	actions = {
@@ -25,8 +40,7 @@ var helpers = {
 				else {
 					ctx.sendClient({'registered':true});
 					ctx.storage.redis.hmset("users."+username, {
-							pubkeyN: pubkey.n,
-							pubkeyE: pubkey.e,
+							pubkey: pubkey,
 							privkey: privkey,
 							lastseen: new Date().getTime()
 						},
@@ -46,14 +60,13 @@ var helpers = {
 				ctx.storage.username = username;
 				var crypto = require('crypto'),
 					randomString = crypto.randomBytes(32).toString(),
-					rsa = new (require('node-bignumber').Key)(),
-					pubkey = {n:reply.pubkeyN, e:reply.pubkeyE},
 					sha256 = crypto.createHash('sha256');
-				rsa.setPublic(reply.pubkeyN, reply.pubkeyE);
 				ctx.storage.validationKey = sha256.update(randomString).digest('base64');
-				ctx.sendClient(
-					{validationKey: rsa.encrypt(randomString), pubkey: pubkey, privkey: reply.privkey}
-				);
+				ctx.sendClient({
+					validationKey: helpers.encryptRSA(randomString, reply.pubkey, 2048),
+					pubkey: reply.pubkey,
+					privkey: reply.privkey
+				});
 			});
 		},
 		changePass: function(ctx, privkey) {
@@ -163,9 +176,9 @@ var helpers = {
 		pubkey: function(ctx, user) {
 			if(user === undefined)
 				return Error.INVALID_PARAMS;
-			ctx.storage.redis.hmget("users."+user, "pubkeyN", "pubkeyE", function(err,reply) {
-				if(reply[0] && reply[1])
-					ctx.sendClient({user:user,pubkey:{n:reply[0],e:reply[1]}});
+			ctx.storage.redis.hget("users."+user, "pubkey", function(err,reply) {
+				if(reply)
+					ctx.sendClient({user:user,pubkey:reply});
 				else
 					ctx.sendClient({error:Error.UNKNOWN_USER});
 			});

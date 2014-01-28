@@ -7,12 +7,50 @@
  * check antiprismSDK.md for more infos
  */
 
+// TODO: modularize. AMDs, seriously.
+RSAKey.prototype.getPrivate = function(b64enc, hex2a) {
+	var self = this;
+	return b64enc("d,p,q,dmp1,dmq1,coeff"
+		.split(",")
+		.map(function(x){
+			return hex2a(self[x].toString(16));
+		}).join(""));
+}
+
+RSAKey.prototype.getPublic = function(b64enc, hex2a) {
+	var self = this;
+	return b64enc("n,e"
+		.split(",")
+		.map(function(x){
+			return hex2a(self[x].toString(16));
+		}).join(""));
+}
+
+RSAKey.prototype.loadPublic = function(pubkey, bits, b64dec, a2hex) {
+	var hex = a2hex(b64dec(pubkey)),
+		length = bits/4;
+	this.setPublic(hex.substr(0,length),hex.substr(length));
+}
+
+RSAKey.prototype.loadPrivate = function (pubkey, privkey, bits, b64dec, a2hex) {
+	this.loadPublic(pubkey, bits, b64dec, a2hex); 
+	var hex = a2hex(b64dec(privkey)),
+		length = bits/4,
+		params = [this.n.toString(16),this.e.toString(16),hex.substr(0,length)];
+	hex = hex.substr(length);
+	length = hex.length / 5;
+	for(var i=0; i < 5; i++)
+		params.push(hex.substr(i*length,length));
+	this.setPrivateEx.apply(this,params);
+}
+
 var Antiprism = function(host,debugFlag) {
 	// define all the methods!!11
 	var retries,
 		seq = 0,
 		utils = {
 			hex2a: function(hex) {
+				hex = (hex.length%2) ? '0'+hex : hex;
 				var str = '';
 				for (var i = 0; i < hex.length; i += 2)
 					str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
@@ -20,8 +58,10 @@ var Antiprism = function(host,debugFlag) {
 			},
 			a2hex: function(bin) {
 				var ret = "";
-				for(var i = 0; i < bin.length; i++)
-					ret+= bin.charCodeAt(i).toString(16);
+				for(var i = 0; i < bin.length; i++) {
+					var chr = bin.charCodeAt(i).toString(16);
+					ret += (chr.length < 2) ? '0'+chr : chr;
+				}
 				return ret;
 			},
 			parseLatin: function(string) {
@@ -55,21 +95,18 @@ var Antiprism = function(host,debugFlag) {
 			generateKeypair: function() {
 				var rsa = new RSAKey();
 				rsa.generate(2048,"10001");
-				var pubkey = {};
-				pubkey.n = rsa.n.toString(16);
-				pubkey.e = rsa.e.toString(16);
-				return {pubkey: pubkey, privkey: rsa.d.toString(16)};
+				return {pubkey: rsa.getPublic(btoa,utils.hex2a), privkey: rsa.getPrivate(btoa,utils.hex2a)};
 			},
 			encryptRSA: function(plain, pubkey) {
 				var rsa = new RSAKey();
-				rsa.setPublic(pubkey.n, pubkey.e);
-				return rsa.encrypt(plain);
+				rsa.loadPublic(pubkey, 2048, atob, utils.a2hex);
+				return btoa(utils.hex2a(rsa.encrypt(plain)));
 			},
 			decryptRSA: function(cipher, pubkey, privkey) {
 				console.time("decryptRSA");
 				var rsa = new RSAKey();
- 				rsa.setPrivate(pubkey.n, pubkey.e, privkey);
-				var plain = rsa.decrypt(cipher);
+ 				rsa.loadPrivate(pubkey, privkey, 2048, atob, utils.a2hex);
+				var plain = rsa.decrypt(utils.a2hex(atob(cipher)));
 				console.timeEnd("decryptRSA");
 				return plain;
 			}
@@ -162,7 +199,7 @@ var Antiprism = function(host,debugFlag) {
 				ws.callServer("login", [session.user], function(response) {
 					session.pubkey = response.pubkey;
 					try {
-						var privkey = utils.decryptAES(response.privkey,session.pass.enc);
+						var privkey = btoa(utils.decryptAES(response.privkey,session.pass.enc));
 						session.privkey = privkey;
 						var validationKey = utils.decryptRSA(response.validationKey, response.pubkey, privkey),
 							hash = CryptoJS.SHA256(utils.parseLatin(validationKey)).toString(CryptoJS.enc.Base64);
@@ -179,7 +216,8 @@ var Antiprism = function(host,debugFlag) {
 					session.pass.enc = utils.buildAESKey(password);
 				}
 				var keypair = utils.generateKeypair();
-				keypair.crypt = utils.encryptAES(keypair.privkey, session.pass.enc);
+				debug(keypair);
+				keypair.crypt = utils.encryptAES(atob(keypair.privkey), session.pass.enc);
 				ws.callServer("register", [session.user, keypair.pubkey, keypair.crypt], callback);
 			},
 			changePassword: function(newpass, callback) {
