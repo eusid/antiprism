@@ -163,28 +163,34 @@
     <!-- /.modal-dialog -->
 </div>
 <!-- /.modal -->
-<script>
-    (function(){
-        var script = function(src) {
-            var tag = document.createElement("script");
-            tag.type = "text/javascript";
-            tag.src = src;
-            document.body.appendChild(tag);
-        }
-        var scripts = ["libs/jquery.js",
-            "libs/sdk/crypto/aes.js",
-            "libs/sdk/crypto/CryptoJS.js",
-            "libs/sdk/crypto/scrypt.js",
-            "libs/sdk/crypto/prng4.js",
-            "libs/sdk/crypto/rng.js",
-            "libs/sdk/crypto/sha256.js",
-            "libs/sdk/crypto/jsbn.min.js",
-            "libs/bootstrap.min.js",
-            "libs/bootbox.min.js",
-            "libs/typeahead.js",
-            "libs/sdk/antiprism.js",
-            "client.js"];
-        scripts.forEach(script);
+<script type="text/javascript">
+    (function () {
+        var newRequire = function () {
+            var script = function (src) {
+                var tag = document.createElement("script");
+                tag.type = "text/javascript";
+                tag.src = src;
+                return tag;
+            };
+            var scripts = ["libs/jquery.js",
+                "libs/sdk/crypto/aes.js",
+                "libs/sdk/crypto/CryptoJS.js",
+                "libs/sdk/crypto/scrypt.js",
+                "libs/sdk/crypto/prng4.js",
+                "libs/sdk/crypto/rng.js",
+                "libs/sdk/crypto/sha256.js",
+                "libs/sdk/crypto/jsbn.min.js",
+                "libs/bootstrap.min.js",
+                "libs/bootbox.min.js",
+                "libs/typeahead.js",
+                "libs/sdk/antiprism.js",
+                "client.js"];
+            var fragment = document.createDocumentFragment();
+            for (var i = 0; scripts.length > i; i++)
+                fragment.appendChild(script(scripts[i]));
+            document.body.appendChild(fragment.cloneNode(true));
+        };
+        newRequire();
     })();
     var title = "#ANTiPRiSM";
     var headline = "AntiPrism";
