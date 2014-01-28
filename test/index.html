@@ -8,141 +8,161 @@
  -->
 <html>
 <head>
-	<meta http-equiv="content-type" content="text/html; charset=UTF-8">
-	<title>#ANTiPRiSM</title>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <title>#ANTiPRiSM</title>
 
-	<link rel="stylesheet" href="css/bootstrap.min.css">
-	<link rel="stylesheet" href="css/style.css">
-	<link rel="stylesheet" href="css/typeahead.css">
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/typeahead.css">
 </head>
 
 <body>
 
 <div class="container">
 
-	<div class="row headline">
-		<div id="headline" class="col-md-9">
-			<h1>AntiPrism</h1>
-		</div>
-		<div id="settings" class="btn-group btn-group-sm row col-md-3" style="display: none;">
-			<div class="btn-group">
-				<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
-					Settings <span class="caret"></span>
-				</button>
-				<ul class="dropdown-menu" role="menu">
-					<li><a href="#" id="setStatusButton">Set Status</a></li>
-					<li><a href="#" id="updateContactsButton">Update Contact List</a></li>
-					<li><a href="#" id="changePassButton" data-toggle="modal" data-target="#changePass">Change Password</a></li>
-					<li><a href="#" id="removeContactButton">Remove Contact</a></li>
-					<li class="divider"></li>
-					<li><a href="#" id="logout">Logout</a></li>
-				</ul>
-			</div>
-		</div>
-	</div>
+    <div class="row headline">
+        <div id="headline" class="col-md-9">
+            <h1>AntiPrism</h1>
+        </div>
+        <div id="settings" class="btn-group btn-group-sm row col-md-3" style="display: none;">
+            <div class="btn-group">
+                <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                    Settings <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu" role="menu">
+                    <li><a href="#" id="setStatusButton">Set Status</a></li>
+                    <li><a href="#" id="updateContactsButton">Update Contact List</a></li>
+                    <li><a href="#" id="changePassButton" data-toggle="modal" data-target="#changePass">Change
+                        Password</a></li>
+                    <li><a href="#" id="removeContactButton">Remove Contact</a></li>
+                    <li class="divider"></li>
+                    <li><a href="#" id="logout">Logout</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
 
-	<div class="row">
-		<div class="col-md-4 col-md-offset-3">
-			<form id="login" role="form" class="">
-				<img src="antiprism.png" class="img-responsive"></img>
-				<div class="form-group">
-					<input type="username" class="form-control" placeholder="Username" id="username" autofocus>
-				</div>
-				<div class="form-group">
-					<input type="password" class="form-control" placeholder="Password" id="password">
-				</div>
-				<div id="loginAlert" class="alert alert-danger alert-dismissable" style='display:none;'>
-					<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-					Wrong <strong>username</strong> or <strong>password</strong>. Please try again.
-				</div>
-				<div class="checkbox col-md-6 col-md-offset-1">
-					<label>
-						<input class="login" type="checkbox" id="registration"></span> Registration
-					</label>
-				</div>
+    <div class="row">
+        <div class="col-md-4 col-md-offset-3">
+            <form id="login" class="">
+                <img src="antiprism.png" class="img-responsive" alt="antiprism">
 
-				<button type="submit" class="btn btn-default login pull-right" id="signInButton">Sign In</button>
-			</form>
-		</div>
+                <div class="form-group">
+                    <input type="text" class="form-control" placeholder="Username" id="username" autofocus>
+                </div>
+                <div class="form-group">
+                    <input type="password" class="form-control" placeholder="Password" id="password">
+                </div>
+                <div id="loginAlert" class="alert alert-danger alert-dismissable" style='display:none;'>
+                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                    Wrong <strong>username</strong> or <strong>password</strong>. Please try again.
+                </div>
+                <div>
+                    <div class="col-xs-10">
+                        <div class="checkbox-inline">
+                            <label>
+                                <span><input class="login" type="checkbox" id="registration"> Registration </span>
+                            </label>
+                        </div>
+                        <div class="checkbox-inline">
+                            <label>
+                                <span><input class="login" type="checkbox" id="rememberMe"> Remember Me </span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-xs-2">
+                        <button type="submit" class="btn btn-default login pull-right" id="signInButton">Sign In
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
 
-		<div id="chat" class="col-md-12" style="display: none;">
-			<div class="row height-minus-controls">
-				<div id="friendList" class="col-md-3 scrollbar">
-					<form role="form">
-						<select class="form-control full-height">
-						</select>
-					</form>
-				</div>
-				<div id="messages" class="col-md-9 scrollbar"><img src="antiprism.png" class="img-responsive"></img></div>
-			</div>
-			<div class="row controls">
-				<div class="col-md-3">
-					<div id="addFriend" class="input-group">
-						<input type="text" class="form-control" id="addFriendField"
-							   placeholder="Username">
+        <div id="chat" class="col-md-12" style="display: none;">
+            <div class="row height-minus-controls">
+                <div id="friendList" class="col-md-3 scrollbar">
+                    <form role="form">
+                        <select class="form-control full-height">
+                        </select>
+                    </form>
+                </div>
+                <div id="messages" class="col-md-9 scrollbar"><img src="antiprism.png" class="img-responsive"
+                                                                   alt="antiprism">
+                </div>
+            </div>
+            <div class="row controls">
+                <div class="col-md-3">
+                    <div id="addFriend" class="input-group">
+                        <input type="text" class="form-control" id="addFriendField"
+                               placeholder="Username">
 						<span class="input-group-btn">
 							<input type="submit" id="addFriendButton" class="btn btn-primary" value="Add">
 						</span>
-					</div>
-				</div>
-				<div class="col-md-9">
-					<div class="input-group">
-						<input type="text" class="form-control" id="messageField" placeholder="Enter message">
+                    </div>
+                </div>
+                <div class="col-md-9">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="messageField" placeholder="Enter message">
 						<span class="input-group-btn">
 							<input type="submit" id="sendButton" class="btn btn-success btn-group" value="Send">
 						</span>
-					</div>
-				</div>
-			</div>
+                    </div>
+                </div>
+            </div>
 
-		</div>
-	</div>
+        </div>
+    </div>
 </div>
 
 <!-- Modal -->
 <div class="modal fade" id="changePass" role="dialog" aria-labelledby="changePassLabel" aria-hidden="true">
-	<div class="modal-dialog">
-		<div class="modal-content">
-			<form id="changepass" role="form">
-	  		<div class="modal-header">
-				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-				<h4 class="modal-title" id="changePassLabel">Change Password</h4>
-	  		</div>
-	  		<div class="modal-body" id="changePassContainer">
-				<div class="form-group">
-					<input type="password" class="form-control" placeholder="Type new password" id="newPassField" autofocus>
-				</div>
-				<div class="form-group">
-					<input type="password" class="form-control" placeholder="Retype please" id="newPassFieldCheck">
-				</div>
-			</div>
-			<div class="modal-footer">
-				<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-				<button type="submit" class="btn btn-primary" id="savePassButton" disabled>Change Password</button>
-			</div>
-		</form>
-		</div>
-	</div>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="changePassForm" role="form">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                    <h4 class="modal-title" id="changePassLabel">Change Password</h4>
+                </div>
+                <div class="modal-body" id="changePassContainer">
+                    <div class="form-group">
+                        <input type="password" class="form-control" placeholder="Type new password" id="newPassField"
+                               autofocus>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" class="form-control" placeholder="Retype please" id="newPassFieldCheck">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary" id="savePassButton" disabled>Change Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <!-- Modal -->
-<div class="modal fade" id="serverLost" tabindex="-1" role="dialog" aria-labelledby="serverLostLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-        <h4 class="modal-title" id="serverLostLabel">Server Connection Lost</h4>
-      </div>
-      <div class="modal-body">
-        The connection to the server is lost. Reconnect?
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal">abort</button>
-        <button type="button" class="btn btn-primary" id="reconnectButton">reconnect</button>
-      </div>
-    </div><!-- /.modal-content -->
-  </div><!-- /.modal-dialog -->
-</div><!-- /.modal -->
+<div class="modal fade" id="serverLost" tabindex="-1" role="dialog" aria-labelledby="serverLostLabel"
+     aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title" id="serverLostLabel">Server Connection Lost</h4>
+            </div>
+            <div class="modal-body">
+                The connection to the server is lost. Reconnect?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">abort</button>
+                <button type="button" class="btn btn-primary" id="reconnectButton">reconnect</button>
+            </div>
+        </div>
+        <!-- /.modal-content -->
+    </div>
+    <!-- /.modal-dialog -->
+</div>
+<!-- /.modal -->
 
 <script src="libs/jquery.js"></script>
 <script src="libs/sdk/crypto/jsbn.js"></script>
@@ -162,13 +182,13 @@
 <script src="libs/sdk/antiprism.js"></script>
 <script src="client.js"></script>
 <script>
-	var title = "#ANTiPRiSM";
-	var headline = "AntiPrism";
-	(function() {
-		$(window).focus(function(){
-			$('title').text(title);
-		})
-	})();
+    var title = "#ANTiPRiSM";
+    var headline = "AntiPrism";
+    (function () {
+        $(window).focus(function () {
+            $('title').text(title);
+        })
+    })();
 </script>
 </body>
 </html>
