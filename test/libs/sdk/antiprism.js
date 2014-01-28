@@ -190,11 +190,13 @@ var Antiprism = function(host,debugFlag) {
 					return "unknown event";
 				clientEvents[event] = callback;
 			},
-			login: function(user,password,callback) {
+			login: function(user,password,callback) { // give {hash:'<bytes>'} for raw hash login
 				if(session.user === undefined) {
 					session.user = user;
-					session.pass.plain = password;
-					session.pass.enc = utils.buildAESKey(password);
+					if(typeof password === 'string')
+						session.pass.enc = utils.buildAESKey(password);
+					else
+						session.pass.enc = password.hash;
 				}
 				ws.callServer("login", [session.user], function(response) {
 					session.pubkey = response.pubkey;
@@ -208,11 +210,11 @@ var Antiprism = function(host,debugFlag) {
 						debug("wrong password", true, e);
 					}
 				});
+				return session.pass.enc;
 			},
 			register: function(user,password,callback) {
 				if(session.user === undefined) {
 					session.user = user;
-					session.pass.plain = password;
 					session.pass.enc = utils.buildAESKey(password);
 				}
 				var keypair = utils.generateKeypair();
