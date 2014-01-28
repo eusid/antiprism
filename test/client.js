@@ -21,13 +21,9 @@
 
 $(document).ready(function () {
     helper.addStorageObjectFunctions();
-    if (sessionStorage.getObject("rememberUser")) {
-        utils.displayContacts({contacts: [], requests: [""]});
-        utils.switchToChat(true, 0);
-        console.time("client.login");
-        client.login(sessionStorage.username, sessionStorage.password);
-        console.timeEnd("client.login");
-    } else
+    if (sessionStorage.getObject("rememberUser"))
+        client.login(sessionStorage.username, sessionStorage.password, true);
+    else
         sessionStorage.clear();
     client.init();
     $('form').submit(function (e) {
@@ -53,10 +49,12 @@ var antiprism,
             var $login = $('#login'),
                 chatActive = $login.attr("style") && $login.attr("style").indexOf("display: none;") != -1;
             if ((chatActive !== !!showChat) && showChat !== undefined) {
-                $login.toggle(time || 1000);
-                $('#chat').toggle(time || 1000);
-                $('#settings').toggle(time || 1000);
-                $('#dummy').toggle(time || 1000);
+
+                time = time === 0 ? time : time || 1000;
+                $login.toggle(time);
+                $('#chat').toggle(time);
+                $('#settings').toggle(time);
+                $('#dummy').toggle(time);
             }
         },
         changeButton: function () {
@@ -167,13 +165,13 @@ var antiprism,
                         success: {
                             label: "Yes, I am.",
                             className: "btn-success",
-                            callback: function() {
+                            callback: function () {
                             }
                         },
                         danger: {
                             label: "No, I am not.",
                             className: "btn-danger",
-                            callback: function() {
+                            callback: function () {
                                 $('#rememberMe').prop("checked", false);
                             }
                         }
@@ -734,7 +732,7 @@ var client = {
                 utils.displayError({error: "Did not initiate conversation with <b>" + utils.htmlEncode(friend) + "</b>. You may already added him or he may not exist."});
         });
     },
-    login: function (username, password) {
+    login: function (username, password, restored) {
         username = username || utils.getUsername();
         password = password || utils.getPassword();
         var registration = utils.register(),
@@ -761,16 +759,20 @@ var client = {
             }
             $('#password').val("");
         };
+        var login = function () {
+            if (restored)
+                return antiprism.login(username, {hash: sessionStorage.password}, callback);
+            var passhash = antiprism.login(username, password, callback);
+            if (utils.rememberMe())
+                sessionStorage.password = passhash;
+        }
         if (registration)
-            antiprism.register(username, password, function () {
-                antiprism.login(username, password, callback)
-            });
+            antiprism.register(username, password, login);
         else
-            antiprism.login(username, password, callback);
+            login();
         if (utils.rememberMe()) {
             sessionStorage.setObject("rememberUser", true);
             sessionStorage.username = username;
-            sessionStorage.password = password;
         }
         antiprism.addEventListener("msg", utils.onMessage);
         antiprism.addEventListener("closed", client.lostConnection);
