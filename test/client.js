@@ -12,6 +12,8 @@
  *    - error handling
  *
  *    - keep logged in (localstorage)
+ *          - remember me button -> onchange listener: confirmbox that you really want to do this
+ *          - save in localstorage
  *
  *    - (port to firefox)
  *
@@ -19,6 +21,14 @@
 
 $(document).ready(function () {
     helper.addStorageObjectFunctions();
+    if (sessionStorage.getObject("rememberUser")) {
+        utils.displayContacts({contacts: [], requests: [""]});
+        utils.switchToChat(true, 0);
+        console.time("client.login");
+        client.login(sessionStorage.username, sessionStorage.password);
+        console.timeEnd("client.login");
+    } else
+        sessionStorage.clear();
     client.init();
     $('form').submit(function (e) {
         e.preventDefault();
@@ -27,7 +37,6 @@ $(document).ready(function () {
 
 var antiprism,
     utils = {
-        firstLogin: false,
         setHeadline: function (msg) {
             var $h1 = $('h1');
             var statusMsg = helper.small();
@@ -40,14 +49,18 @@ var antiprism,
             $('#statusMsg').text(msg.status).html();
 
         },
-        switchChatLogin: function () {
-            $('#login').toggle(1000);
-            $('#chat').toggle(1000);
-            $('#settings').toggle(1000);
-            $('#dummy').toggle(1000);
+        switchToChat: function (showChat, time) { //showChat - boolean true if chat shall be shown
+            var $login = $('#login'),
+                chatActive = $login.attr("style") && $login.attr("style").indexOf("display: none;") != -1;
+            if ((chatActive !== !!showChat) && showChat !== undefined) {
+                $login.toggle(time || 1000);
+                $('#chat').toggle(time || 1000);
+                $('#settings').toggle(time || 1000);
+                $('#dummy').toggle(time || 1000);
+            }
         },
         changeButton: function () {
-            if ($('#registration').prop('checked')) {
+            if (utils.register()) {
                 $('#signInButton').text("Sign Up");
             } else {
                 $('#signInButton').text("Sign In");
@@ -112,10 +125,10 @@ var antiprism,
             return $('<div/>').text(value).html();
         },
         getUsername: function () {
-            return $('#username').val();
+            return sessionStorage.username || $('#username').val();
         },
         getPassword: function () {
-            return $('#password').val();
+            return sessionStorage.password || $('#password').val();
         },
         messageDisplay: function () {
             return $('#messages');
@@ -123,9 +136,15 @@ var antiprism,
         register: function () {
             return $('#registration').prop('checked');
         },
+        rememberMe: function () {
+            return $('#rememberMe').prop('checked');
+        },
         setOnClickEvents: function () {
             $('#registration').click(utils.changeButton);
-            $('#signInButton').click(client.login);
+            $('#rememberMe').click(utils.rememberMePrompt);
+            $('#signInButton').click(function () {
+                client.login();
+            });
             $('#addFriendButton').click(client.addFriend);
             $('#sendButton').click(client.sendMessage);
             $('#logout').click(client.logout);
@@ -137,6 +156,30 @@ var antiprism,
                 antiprism.reconnect();
                 $('#serverLost').modal('hide');
             });
+        },
+        rememberMePrompt: function () {
+            if (utils.rememberMe()) {
+                bootbox.dialog({
+                    message: "Only check this when you are completely sure that no one else is using this computer.\n" +
+                        "Are you the only one with access to this browser?",
+                    title: "Attention",
+                    buttons: {
+                        success: {
+                            label: "Yes, I am.",
+                            className: "btn-success",
+                            callback: function() {
+                            }
+                        },
+                        danger: {
+                            label: "No, I am not.",
+                            className: "btn-danger",
+                            callback: function() {
+                                $('#rememberMe').prop("checked", false);
+                            }
+                        }
+                    }
+                });
+            }
         },
         statusPrompt: function () {
             bootbox.prompt("What's up?", utils.statusPromptCallback);
@@ -331,7 +374,7 @@ var antiprism,
                 $('#' + formerSelectedContact).addClass("active");
             if (msg.requests === undefined)
                 msg.requests = [];
-            utils.addFriendsPopover(Object.keys(msg.contacts).length + Object.keys(msg.requests).length);
+            utils.addFriendsPopover(Object.keys(msg.contacts).length + msg.requests.length);
         },
         displayRetrieveMoreMessagesButton: function (contactName) {
             console.log("displaying retrieveMoreMessagesButton...");
@@ -396,9 +439,8 @@ var antiprism,
                 $addFriendField.focusout(function () {
                     $addFriendField.popover("show")
                 });
-                utils.firstLogin = true;
             }
-            else if (utils.firstLogin) {
+            else {
                 $('#addFriendField').unbind("focus").unbind("focusout");
             }
         },
@@ -604,8 +646,6 @@ var client = {
         utils.setOnClickEvents();
         utils.setMuteTooltip();
         utils.setMuteButton();
-        if (!antiprism) //TODO not good enough
-            sessionStorage.clear();
         window.addEventListener("storage", function (storageEvent) {
             console.log(storageEvent);
             if (storageEvent.key == "muted" && storageEvent.url == document.URL)
@@ -694,20 +734,24 @@ var client = {
                 utils.displayError({error: "Did not initiate conversation with <b>" + utils.htmlEncode(friend) + "</b>. You may already added him or he may not exist."});
         });
     },
-    login: function () {
-        var username = utils.getUsername(),
-            password = utils.getPassword(),
-            registration = utils.register(),
-
+    login: function (username, password) {
+        username = username || utils.getUsername();
+        password = password || utils.getPassword();
+        var registration = utils.register(),
             host = location.origin.replace(/^http/, 'ws');
         antiprism = new Antiprism(host, true); // params: host,[debugFlag]
         var callback = function (msg) {
             if (msg) {
-                utils.switchChatLogin();
+                utils.switchToChat(true);
                 client.getContacts();
                 antiprism.getStatus(function (msg) {
                     utils.setHeadline(msg);
                 });
+                //Ask before user leaves the page
+                /*$(window).bind("beforeunload", function (msg) {
+                 console.log(msg);
+                 return "If you didn't set the \"Remember Me\"-option or close the tab you will be logged out.";
+                 });*/
             } else {
                 $('#loginAlert').fadeIn(1000, function () {
                     setTimeout(function () {
@@ -723,6 +767,11 @@ var client = {
             });
         else
             antiprism.login(username, password, callback);
+        if (utils.rememberMe()) {
+            sessionStorage.setObject("rememberUser", true);
+            sessionStorage.username = username;
+            sessionStorage.password = password;
+        }
         antiprism.addEventListener("msg", utils.onMessage);
         antiprism.addEventListener("closed", client.lostConnection);
         antiprism.addEventListener("error", utils.displayError);
@@ -733,7 +782,7 @@ var client = {
         antiprism.close();
         $('h1').text(headline);
         utils.messageDisplay().text("");
-        utils.switchChatLogin();
+        utils.switchToChat(false);
         sessionStorage.clear();
     }
 };
@@ -746,7 +795,12 @@ var helper = {
 
         Storage.prototype.getObject = function (key) {
             var value = this.getItem(key);
-            return value && JSON.parse(value);
+            try {
+                value = JSON.parse(value);
+            }
+            catch (e) {
+            }
+            return value;
         }
     },
     lineBreak: function () {
