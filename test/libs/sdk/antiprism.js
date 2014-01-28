@@ -208,6 +208,7 @@ var Antiprism = function(host,debugFlag) {
 						ws.callServer("auth", [hash], callback); 
 					} catch (e) {
 						debug("wrong password", true, e);
+                        callback(false);
 					}
 				});
 				return session.pass.enc;
