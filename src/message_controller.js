@@ -17,26 +17,22 @@ var helpers = {
 			if(callback) callback();
 		},
 		encryptRSA: function(plain, pubkey, bits) {
-			var hex2b64 = function(str) {
-					return new Buffer(str,'hex').toString('base64');
-				},
-				b642hex = function(str) {
-					return new Buffer(str,'base64').toString('hex');
-				},
-				rsa = new (require('node-bignumber').Key)(),
-				hex = b642hex(pubkey),
+			var rsa = new (require('node-bignumber').Key)(),
+				hex = new Buffer(pubkey,'base64').toString('hex'),
 				length = bits/4;
-			rsa.setPublic(hex.substr(0,length),hex.substr(length));
-			helpers.dbg("n is "+hex.substr(0,length)+",e is "+hex.substr(length));
-			helpers.dbg("plain is \""+plain+"\", key is "+pubkey);
-			return hex2b64(rsa.encrypt(plain));
+			try {
+				rsa.setPublic(hex.substr(0,length),hex.substr(length));
+			} catch(e) {
+				return ctx.sendClient({error:Error.UNKNOWN_PUBKEY});
+			};
+			return new Buffer(rsa.encrypt(plain),'hex').toString('base64');
 		}
 	},
 	actions = {
 		register: function(ctx, username, pubkey, privkey) {
-			ctx.storage.redis.hexists("users."+username,"privkey",function(e,res) {
-				if(res)
-					ctx.sendClient({'registered':false});
+			ctx.storage.redis.exists("users."+username,function(err,reply) {
+				if(reply)
+					return ctx.sendClient({'registered':false});
 				else {
 					ctx.sendClient({'registered':true});
 					ctx.storage.redis.hmset("users."+username, {

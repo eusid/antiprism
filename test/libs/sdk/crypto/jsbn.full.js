@@ -1720,58 +1720,46 @@ var bnpFromNumberAsync = function (a,b,c,callback) {
 };
 BigInteger.prototype.fromNumberAsync = bnpFromNumberAsync;
 
-})();(function() {
-	var hex2a = function(hex) {
-		hex = (hex.length%2) ? '0'+hex : hex;
-		var str = '';
-		for (var i = 0; i < hex.length; i += 2)
-			str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
-		return str;
-	},
-	a2hex = function(bin) {
-		var ret = "";
-		for(var i = 0; i < bin.length; i++) {
-			var chr = bin.charCodeAt(i).toString(16);
-			ret += (chr.length < 2) ? '0'+chr : chr;
-		}
-		return ret;
-	};
+})();
 
-RSAKey.prototype.getPrivate = function(b64enc) {
-	var self = this;
-	return b64enc("d,p,q,dmp1,dmq1,coeff"
-		.split(",")
-		.map(function(x){
-			return hex2a(self[x].toString(16));
-		}).join(""));
+(function() {
+RSAKey.prototype.getPrivate = function() {
+	var params = ["d","p","q","dmp1","dmq1","coeff"],
+      val;
+	for(var x in params) {
+    val = this[params[x]].toString(16);
+    params[x] = (val.length % 2) ? '0'+val : val;
+  }
+  return new Buffer(params.join(""),'hex').toString('base64');
 }
 
-RSAKey.prototype.getPublic = function(b64enc) {
-	var self = this;
-	return b64enc("n,e"
-		.split(",")
-		.map(function(x){
-			return hex2a(self[x].toString(16));
-		}).join(""));
+RSAKey.prototype.getPublic = function() {
+	var params = ["n","e"], val;
+  for(var x in params) {
+    val = this[params[x]].toString(16);
+    params[x] = (val.length % 2) ? '0'+val : val;
+  }
+  return new Buffer(params.join(""),'hex').toString('base64');
 }
 
-RSAKey.prototype.loadPublic = function(pubkey, bits, b64dec) {
-	var hex = a2hex(b64dec(pubkey)),
-		length = bits/4;
+RSAKey.prototype.loadPublic = function(pubkey, bits) {
+	var hex = new Buffer(pubkey,'base64').toString('hex'),
+      length = bits/4;
 	this.setPublic(hex.substr(0,length),hex.substr(length));
 }
 
-RSAKey.prototype.loadPrivate = function (pubkey, privkey, bits, b64dec) {
-	this.loadPublic(pubkey, bits, b64dec); 
-	var hex = a2hex(b64dec(privkey)),
+RSAKey.prototype.loadPrivate = function (pubkey, privkey, bits) {
+	this.loadPublic(pubkey, bits);
+	var hex = new Buffer(privkey,'base64').toString('hex'),
 		length = bits/4,
-		params = [this.n.toString(16),this.e.toString(16),hex.substr(0,length)];
-	hex = hex.substr(length);
-	length = hex.length / 5;
+		params = [this.n.toString(16),this.e.toString(16),hex.substr(0,length)],
+	  hex = hex.substr(length),
+    length = hex.length / 5;
 	for(var i=0; i < 5; i++)
-		params.push(hex.substr(i*length,length));
+    params.push(hex.substr(i*length,length));
 	this.setPrivateEx.apply(this,params);
 }})();
+
 var b64map="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 var b64pad="=";
 

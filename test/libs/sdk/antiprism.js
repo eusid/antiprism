@@ -14,29 +14,8 @@ var Antiprism = function(host,debugFlag) {
 	var retries,
 		seq = 0,
 		utils = {
-			hex2a: function(hex) {
-				hex = (hex.length%2) ? '0'+hex : hex;
-				var str = '';
-				for (var i = 0; i < hex.length; i += 2)
-					str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
-				return str;
-			},
-			a2hex: function(bin) {
-				var ret = "";
-				for(var i = 0; i < bin.length; i++) {
-					var chr = bin.charCodeAt(i).toString(16);
-					ret += (chr.length < 2) ? '0'+chr : chr;
-				}
-				return ret;
-			},
 			parseLatin: function(string) {
 				return CryptoJS.enc.Latin1.parse(string);
-			},
-			utf8_b64enc: function(string) {
-				return CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(string));
-			},
-			utf8_b64dec: function(string) {
-				return CryptoJS.enc.Utf8.stringify(CryptoJS.enc.Base64.parse(string));
 			},
 			decryptAES: function(cipher, key) {
 				cipher = atob(cipher);
@@ -50,7 +29,7 @@ var Antiprism = function(host,debugFlag) {
 				key = utils.parseLatin(key);
 				var iv = utils.parseLatin(rng_get_string(16));
 				var cipher = CryptoJS.AES.encrypt(string, key, { iv: iv });
-				return btoa(utils.hex2a(cipher.iv+cipher.ciphertext));
+				return new Buffer(cipher.iv+cipher.ciphertext,'hex').toString('base64');
 			},
 			buildAESKey: function(password) {
 				var salt = "i_iz_static_salt";
@@ -60,18 +39,18 @@ var Antiprism = function(host,debugFlag) {
 			generateKeypair: function() {
 				var rsa = new RSA();
 				rsa.generate(2048,"10001");
-				return {pubkey: rsa.getPublic(btoa,utils.hex2a), privkey: rsa.getPrivate(btoa,utils.hex2a)};
+				return {pubkey: rsa.getPublic(), privkey: rsa.getPrivate()};
 			},
 			encryptRSA: function(plain, pubkey) {
 				var rsa = new RSA();
-				rsa.loadPublic(pubkey, 2048, atob, utils.a2hex);
-				return btoa(utils.hex2a(rsa.encrypt(plain)));
+				rsa.loadPublic(pubkey, 2048);
+				return new Buffer(rsa.encrypt(plain),'hex').toString('base64');
 			},
 			decryptRSA: function(cipher, pubkey, privkey) {
 				console.time("decryptRSA");
 				var rsa = new RSA();
- 				rsa.loadPrivate(pubkey, privkey, 2048, atob, utils.a2hex);
-				var plain = rsa.decrypt(utils.a2hex(atob(cipher)));
+ 				rsa.loadPrivate(pubkey, privkey, 2048);
+				var plain = rsa.decrypt(new Buffer(cipher,'base64').toString('hex'));
 				console.timeEnd("decryptRSA");
 				return plain;
 			}
