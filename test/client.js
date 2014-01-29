@@ -17,10 +17,11 @@
 
 $(document).ready(function () {
     helper.addStorageObjectFunctions();
-    if (sessionStorage.getObject("rememberUser"))
-        client.login(sessionStorage.username, sessionStorage.password, true);
-    else
-        sessionStorage.clear();
+    if (localStorage.getObject("rememberUser"))
+        client.login(localStorage.username, localStorage.password, true);
+    else {
+        helper.clearStorageUserdata();
+    }
     client.init();
     $('form').submit(function (e) {
         e.preventDefault();
@@ -118,10 +119,10 @@ var antiprism,
             return $('<div/>').text(value).html();
         },
         getUsername: function () {
-            return sessionStorage.username || $('#username').val();
+            return localStorage.username || $('#username').val();
         },
         getPassword: function () {
-            return sessionStorage.password || $('#password').val();
+            return localStorage.password || $('#password').val();
         },
         messageDisplay: function () {
             return $('#messages');
@@ -130,7 +131,7 @@ var antiprism,
             return $('#registration').prop('checked');
         },
         rememberMe: function () {
-            return $('#rememberMe').prop('checked');
+            return localStorage.getObject("rememberUser") || $('#rememberMe').prop('checked');
         }, setOnClickEvents: function () {
             document.getElementById('registration').onclick = utils.changeButton;
             document.getElementById('rememberMe').onclick = utils.rememberMePrompt;
@@ -755,18 +756,18 @@ var client = {
         };
         var login = function () {
             if (restored)
-                return antiprism.login(username, {hash: sessionStorage.password}, callback);
+                return antiprism.login(username, {hash: localStorage.password}, callback);
             var passhash = antiprism.login(username, password, callback);
             if (utils.rememberMe())
-                sessionStorage.password = passhash;
+                localStorage.password = passhash;
         }
         if (registration)
             antiprism.register(username, password, login);
         else
             login();
         if (utils.rememberMe()) {
-            sessionStorage.setObject("rememberUser", true);
-            sessionStorage.username = username;
+            localStorage.setObject("rememberUser", true);
+            localStorage.username = username;
         }
         antiprism.addEventListener("msg", utils.onMessage);
         antiprism.addEventListener("closed", client.lostConnection);
@@ -779,11 +780,17 @@ var client = {
         $('h1').text(headline);
         utils.messageDisplay().text("");
         utils.switchToChat(false);
-        sessionStorage.clear();
+        helper.clearStorageUserdata();
     }
 };
 
 var helper = {
+    clearStorageUserdata: function () {
+        var muted = localStorage.getObject("muted");
+        sessionStorage.clear();
+        localStorage.clear();
+        localStorage.setObject("muted", muted);
+    },
     addStorageObjectFunctions: function () {
         Storage.prototype.setObject = function (key, value) {
             this.setItem(key, JSON.stringify(value));
@@ -889,7 +896,7 @@ var helper = {
 };
 
 //Probably just available on chrome
-var debug = function (firstFunction, secondFunction, repeat) { //repeat: number of repititions - default is 10000
+var testTwoFunctions = function (firstFunction, secondFunction, repeat) { //repeat: number of repititions - default is 10000
     repeat = repeat || 10000;
     var func = function (call) {
         for (var i = 0; i < repeat; i++) call(i);
