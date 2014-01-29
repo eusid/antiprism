@@ -171,7 +171,7 @@
 			var tag = document.createElement("script");
 			tag.type = "text/javascript";
 			tag.src = src;
-			document.body.appendChild(tag);
+			return tag;
 		}
 		var scripts = ["libs/jquery.js",
 			/*
@@ -183,17 +183,17 @@
 			"libs/sdk/crypto/sha256.js",
 			"libs/sdk/crypto/buffer.js",
 			"libs/sdk/crypto/jsbn.full.js",
-		 	*/
+			*/
 			"libs/sdk/crypto.min.js",
 			"libs/bootstrap.min.js",
 			"libs/bootbox.min.js",
 			"libs/typeahead.js",
 			"libs/sdk/antiprism.js",
-			"client.js"];
-		scripts.forEach(script);
-		window.onfocus = function () {
-			document.title = title;
-		};
+			"client.js"],
+			fragment = document.createDocumentFragment();
+		for (var i = 0; scripts.length > i; i++)
+			fragment.appendChild(script(scripts[i]));
+		document.body.appendChild(fragment.cloneNode(true));
 	})();
 </script>
 </body>
