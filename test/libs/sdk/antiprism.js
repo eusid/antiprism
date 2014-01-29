@@ -127,7 +127,7 @@ var Antiprism = function(host,debugFlag) {
 		},
 		actions = {
 			/* initial callbacks:
-				[on]: error, msg, online, added
+				[on]: msg, online, added
 			*/
 			addEventListener: function(event,callback) {
 				if(Object.keys(clientEvents).indexOf(event) === -1)
@@ -296,7 +296,7 @@ var Antiprism = function(host,debugFlag) {
 				console.log(msg);
 			console.groupEnd();
 		},
-		clientEvents = {online:debug,msg:debug,error:debug,added:debug};
+		clientEvents = {online:debug,msg:debug,added:debug};
 	debug("created new websocket");
 	helpers.registerWsCallbacks();
 	events.msg = function(msg) {
