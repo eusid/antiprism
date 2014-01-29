@@ -336,8 +336,8 @@ var antiprism,
             }
         },
         displayContacts: function (msg) {
-            if (msg.error)
-                errorHandler(0, 0, msg.error.errorCode);
+            if (msg && msg.error)
+                errorHandler(0, 0, msg.error);
             console.log(msg);
             var $friendList = $('#friendList'),
                 contactList = helper.div("list-group"),
@@ -439,8 +439,8 @@ var antiprism,
                 // this querying-global is the dirtiest piece of shit ever
                 // time to fix the loop-bug that occurs without it!
                 antiprism.countMessages(contactName, function (msg) {
-                    if (msg.error)
-                        errorHandler(0, 0, msg.error.errorCode);
+                    if (msg && msg.error)
+                        errorHandler(0, 0, msg.error);
                     utils.updateContactObject(contactName, callback, msg.msgcount);
                 });
                 return;
@@ -487,8 +487,8 @@ var antiprism,
             return message;
         },
         onMessage: function (msg) {
-            if (msg.error)
-                errorHandler(0, 0, msg.error.errorCode);
+            if (msg && msg.error)
+                errorHandler(0, 0, msg.error);
             var userObj = sessionStorage.getObject(msg.from);
             if (!userObj) {
                 utils.updateContactObject(msg.from, function () {
@@ -562,7 +562,7 @@ var antiprism,
                 confirmButton = helper.button("Confirm " + utils.htmlEncode(contactName), "btn btn-success", function () {
                     antiprism.confirm(contactName, function (ack) {
                         if (ack.error)
-                            errorHandler(0, 0, msg.error.errorCode);
+                            errorHandler(0, 0, msg.error);
                         if (ack) {
                             utils.messageDisplay().empty();
                             client.getContacts();
@@ -575,7 +575,7 @@ var antiprism,
                         if (confirmed)
                             antiprism.deny(contactName, function (ack) {
                                 if (ack.error)
-                                    errorHandler(0, 0, msg.error.errorCode);
+                                    errorHandler(0, 0, msg.error);
                                 if (ack) {
                                     utils.messageDisplay().empty();
                                     client.getContacts();
@@ -604,8 +604,8 @@ var antiprism,
             sessionStorage.setObject(contactname, userObj);
         },
         displayOnline: function (msg) {
-            if (msg.error)
-                errorHandler(0, 0, msg.error.errorCode);
+            if (msg && msg.error)
+                errorHandler(0, 0, msg.error);
             var userIcon = document.getElementById(msg.user).children;
             if (userIcon.length > 0) {
                 var className = "glyphicon ";
@@ -653,7 +653,7 @@ var client = {
     },
     lostConnection: function (reconnected) {
         if (reconnected.error)
-            errorHandler(0, 0, msg.error.errorCode);
+            errorHandler(0, 0, msg.error);
         if (reconnected)
             for (var userObj in sessionStorage) {
                 try {
@@ -668,26 +668,26 @@ var client = {
             $('#serverLost').modal();
     },
     getContacts: function (msg) {
-        if (msg.error)
-            errorHandler(0, 0, msg.error.errorCode);
+        if (msg && msg.error)
+            errorHandler(0, 0, msg.error);
         antiprism.getContacts(utils.displayContacts);
     },
     getMessages: function (contactName, start, end) {
         var userObj = sessionStorage.getObject(contactName) || {msglist: 0};
-        if (userObj.msglist.length >= 10) {
+        if (!userObj) {
+            console.log("getMessages was called and it has no sessionstorage[\"" + contactName + "\"]!");
+            utils.updateContactObject(contactName, function() {utils.getMessages(contactName, start, end)});
+            return;
+        } else if (userObj.msglist.length >= 10) {
             utils.displayMessages(userObj, contactName);
             console.log("displayed messages from sessionstorage");
             return;
         }
-        else {
-            console.log("getMessages was called and it has no sessionstorage[\"" + contactName + "\"]!");
-            utils.updateContactObject(contactName);
-        }
         start = (start === undefined) ? -10 : start;
         end = (end === undefined) ? -1 : end;
         antiprism.getMessages(contactName, start, end, function (msg) {
-            if (msg.error)
-                errorHandler(0, 0, msg.error.errorCode);
+            if (msg && msg.error)
+                errorHandler(0, 0, msg.error);
             utils.addMessagesToStorage(contactName, msg.msglist);
             utils.displayMessages(msg, contactName);
         });
@@ -704,8 +704,8 @@ var client = {
         $messageField.val('');
         if (to)
             antiprism.sendMessage(to, message, function (msg) {
-                if (msg.error)
-                    errorHandler(0, 0, msg.error.errorCode);
+                if (msg && msg.error)
+                    errorHandler(0, 0, msg.error);
                 var sentMessage = {to: to, ts: msg.ts, msg: message};
                 utils.pushOneMessageToStorage(to, sentMessage);
                 utils.displayMessage(sentMessage, to);
@@ -725,8 +725,8 @@ var client = {
     },
     setStatus: function (statusMsg) {
         antiprism.setStatus(statusMsg, function (msg) {
-            if (msg.error)
-                errorHandler(0, 0, msg.error.errorCode);
+            if (msg && msg.error)
+                errorHandler(0, 0, msg.error);
             utils.setHeadline({status: statusMsg});
         });
     },
@@ -736,8 +736,8 @@ var client = {
         if (!friend)
             return;
         antiprism.initConversation(friend, function (msg) {
-            if (msg.error)
-                errorHandler(0, 0, msg.error.errorCode);
+            if (msg && msg.error)
+                errorHandler(0, 0, msg.error);
             $friendField.val("");
             if (msg.initiated)
                 client.getContacts();
@@ -756,13 +756,13 @@ var client = {
         antiprism = new Antiprism(host, true); // params: host,[debugFlag]
         var callback = function (msg) {
             if (msg) {
-                if (msg.error)
-                    errorHandler(0, 0, msg.error.errorCode);
+                if (msg && msg.error)
+                    errorHandler(0, 0, msg.error);
                 utils.switchToChat(true, restored ? 400 : undefined);
                 client.getContacts();
                 antiprism.getStatus(function (msg) {
-                    if (msg.error)
-                        errorHandler(0, 0, msg.error.errorCode);
+                    if (msg && msg.error)
+                        errorHandler(0, 0, msg.error);
                     utils.setHeadline(msg);
                 });
                 //Ask before user leaves the page
@@ -786,8 +786,8 @@ var client = {
             localStorage.password = passhash;
         if (registration)
             antiprism.register(username, password, function (msg) {
-                if (msg.error)
-                    errorHandler(0, 0, msg.error.errorCode);
+                if (msg && msg.error)
+                    errorHandler(0, 0, msg.error);
                 antiprism.login(username, password, callback);
             });
         else
