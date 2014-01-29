@@ -27,7 +27,7 @@ var Antiprism = function(host,debugFlag) {
 			},
 			encryptAES: function(string, key) {
 				key = utils.parseLatin(key);
-				var iv = utils.parseLatin(rng_get_string(16));
+				var iv = utils.parseLatin(new SecureRandom().getString(16));
 				var cipher = CryptoJS.AES.encrypt(string, key, { iv: iv });
 				return new Buffer(cipher.iv+cipher.ciphertext,'hex').toString('base64');
 			},
@@ -193,7 +193,7 @@ var Antiprism = function(host,debugFlag) {
 			},
 			initConversation: function(user,callback) {
 				ws.callServer("pubkey", [user], function(msg) { // request pubkey first
-					var convkey = rng_get_string(32), keys = [];
+					var convkey = new SecureRandom().getString(32), keys = [];
 					session.conversations[user] = convkey;
 					keys.push(utils.encryptRSA(convkey, session.pubkey));
 					keys.push(utils.encryptRSA(convkey, msg.pubkey));

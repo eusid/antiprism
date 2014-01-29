@@ -63,3 +63,8 @@ function rng_get_bytes(ba) {
 function SecureRandom() {}
 
 SecureRandom.prototype.nextBytes = rng_get_bytes;
+SecureRandom.prototype.getString = function (length) {
+     var x = Array(length);
+     rng_get_bytes(x);
+     return String.fromCharCode.apply(null, new Uint16Array(x));
+}

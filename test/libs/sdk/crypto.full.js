@@ -2137,6 +2137,11 @@ function rng_get_bytes(ba) {
 function SecureRandom() {}
 
 SecureRandom.prototype.nextBytes = rng_get_bytes;
+SecureRandom.prototype.getString = function (length) {
+     var x = Array(length);
+     rng_get_bytes(x);
+     return String.fromCharCode.apply(null, new Uint16Array(x));
+}
 /*
 CryptoJS v3.1.2
 code.google.com/p/crypto-js
@@ -3993,4 +3998,5 @@ exports.RSA = RSAKey;
 exports.Buffer = Buffer;
 exports.CryptoJS = CryptoJS;
 exports.scrypt = scrypt;
+exports.SecureRandom = SecureRandom;
 })(exports);

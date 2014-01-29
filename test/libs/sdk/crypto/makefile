@@ -38,6 +38,7 @@ js: ${files}
 	@echo "exports.Buffer = Buffer;" >> ${filename}.full.js
 	@echo "exports.CryptoJS = CryptoJS;" >> ${filename}.full.js
 	@echo "exports.scrypt = scrypt;" >> ${filename}.full.js
+	@echo "exports.SecureRandom = SecureRandom;" >> ${filename}.full.js
 	#/END
 	@echo "})(exports);" >> ${filename}.full.js
 	@echo "Generating compressed ${filename}.min.js file"
