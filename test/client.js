@@ -28,6 +28,63 @@ $(document).ready(function () {
     });
 });
 
+var errorHandler = function (errorType, errorMsg, errorCode) { //You can call it with errorType and errorMessage or with an errorcode
+    var error = {type: errorType || "Error", msg: errorMsg || "An error occurred"},
+        getErrorByCode = function (errorCode) { //TODO change errortext
+            var error = {type: "Error", msg: ""};
+            switch (errorCode) {
+                case 0:
+                    error.msg = "Missing action parameter.";
+                    break;
+                case 1:
+                    error.msg = "Action does not exist.";
+                    break;
+                case 2:
+                    error.msg = "Invalid action parameters.";
+                    break;
+                case 3:
+                    error.msg = "JSON parse error.";
+                    break;
+                case 4:
+                    error.msg = "Invalid authentication-key";
+                    break;
+                case 5:
+                    error.msg = "Tried to access unknown user.";
+                    break;
+                case 6:
+                    error.msg = "Requested pubkey does not exist.";
+                    break;
+                case 7:
+                    error.msg = "Requested action is not permitted.";
+                    break;
+                default:
+                    error.msg = "Unknown Error.";
+                    break;
+            }
+
+            return error;
+        },
+        displayError = function (error) {
+            var errorContainer = helper.div("alert alert-danger fade in"),
+                closeButton = helper.button("x", "close"),
+                headline = helper.h4(error.type),
+                errorMessage = helper.p(error.msg);
+            closeButton.setAttribute("data-dismiss", "alert");
+            closeButton.setAttribute("aria-hidden", true);
+            errorContainer.appendChild(closeButton);
+            errorContainer.appendChild(headline);
+            errorContainer.appendChild(errorMessage);
+            errorContainer.id = "alertError";
+            $('#headline').append(errorContainer);
+            $('#alertError').hide().slideDown(200).delay(3000).fadeOut(1000, function () {
+                $('#alertError').remove()
+            });
+        };
+    if (!isNaN(errorCode))
+        getErrorByCode(errorCode);
+    displayError(error);
+};
+
 var antiprism,
     utils = {
         setHeadline: function (msg) {
@@ -253,68 +310,6 @@ var antiprism,
             });
             $('.tt-hint').remove();
         },
-        getErrorByCode: function (errorCode) {
-            var error;
-
-            var Error = {
-                "JSON": -1,
-                "MISSING_ACTION": 1,
-                "INVALID_NAME": 2,
-                "INVALID_ACTION": 3,
-                "INVALID_PARAMS": 4,
-                "UNKNOWN_USER": 5,
-                "INVALID_AUTH": 6,
-                "UNKNOWN_PUBKEY": 7,
-                "NOT_ALLOWED": 8
-            };
-            if (!isNaN(errorCode.error))
-                switch (errorCode.error) {
-                    case Error.MISSING_ACTION:
-                        error = "Missing action parameter.";
-                        break;
-                    case Error.INVALID_ACTION:
-                        error = "Action does not exist.";
-                        break;
-                    case Error.INVALID_PARAMS:
-                        error = "Invalid action parameters.";
-                        break;
-                    case Error.JSON:
-                        error = "JSON parse error.";
-                        break;
-                    case Error.INVALID_AUTH:
-                        error = "Invalid authentication-key";
-                        break;
-                    case Error.UNKNOWN_USER:
-                        error = "Tried to access unknown user.";
-                        break;
-                    case Error.UNKNOWN_PUBKEY:
-                        error = "Requested pubkey does not exist.";
-                        break;
-                    case Error.NOT_ALLOWED:
-                        error = "Requested action is not permitted.";
-                        break;
-                    default:
-                        error = "Unknown Error.";
-                        break;
-                }
-            else
-                error = errorCode.error;
-
-            return error;
-        },
-        displayError: function (errorCode) {
-            var errorContainer = helper.div("alert alert-danger fade in");
-            var closeButton = helper.button("x", "close");
-            closeButton.setAttribute("data-dismiss", "alert");
-            closeButton.setAttribute("aria-hidden", true);
-            errorContainer.appendChild(closeButton);
-            errorContainer.innerHTML += "<h4>Error</h4><p>" + utils.getErrorByCode(errorCode) + "</p>";
-            errorContainer.id = "alertError";
-            $('#headline').append(errorContainer);
-            $('#alertError').hide().slideDown(200).delay(2000).fadeOut(1000, function () {
-                $('#alertError').remove()
-            });
-        },
         createContactElement: function (contact, msg) {
             var contactElement = helper.jsLink("");
             var icon = helper.span("online");
@@ -341,6 +336,8 @@ var antiprism,
             }
         },
         displayContacts: function (msg) {
+            if (msg.error)
+                errorHandler(0, 0, msg.error.errorCode);
             console.log(msg);
             var $friendList = $('#friendList'),
                 contactList = helper.div("list-group"),
@@ -442,6 +439,8 @@ var antiprism,
                 // this querying-global is the dirtiest piece of shit ever
                 // time to fix the loop-bug that occurs without it!
                 antiprism.countMessages(contactName, function (msg) {
+                    if (msg.error)
+                        errorHandler(0, 0, msg.error.errorCode);
                     utils.updateContactObject(contactName, callback, msg.msgcount);
                 });
                 return;
@@ -488,7 +487,8 @@ var antiprism,
             return message;
         },
         onMessage: function (msg) {
-            console.log("onMessage is called!");
+            if (msg.error)
+                errorHandler(0, 0, msg.error.errorCode);
             var userObj = sessionStorage.getObject(msg.from);
             if (!userObj) {
                 utils.updateContactObject(msg.from, function () {
@@ -561,6 +561,8 @@ var antiprism,
             var buttonDiv = helper.div("col-md-12"),
                 confirmButton = helper.button("Confirm " + utils.htmlEncode(contactName), "btn btn-success", function () {
                     antiprism.confirm(contactName, function (ack) {
+                        if (ack.error)
+                            errorHandler(0, 0, msg.error.errorCode);
                         if (ack) {
                             utils.messageDisplay().empty();
                             client.getContacts();
@@ -572,6 +574,8 @@ var antiprism,
                         "? You can send a new Request if you want to add him later, though.", function (confirmed) {
                         if (confirmed)
                             antiprism.deny(contactName, function (ack) {
+                                if (ack.error)
+                                    errorHandler(0, 0, msg.error.errorCode);
                                 if (ack) {
                                     utils.messageDisplay().empty();
                                     client.getContacts();
@@ -600,6 +604,8 @@ var antiprism,
             sessionStorage.setObject(contactname, userObj);
         },
         displayOnline: function (msg) {
+            if (msg.error)
+                errorHandler(0, 0, msg.error.errorCode);
             var userIcon = document.getElementById(msg.user).children;
             if (userIcon.length > 0) {
                 var className = "glyphicon ";
@@ -646,6 +652,8 @@ var client = {
         }, true);
     },
     lostConnection: function (reconnected) {
+        if (reconnected.error)
+            errorHandler(0, 0, msg.error.errorCode);
         if (reconnected)
             for (var userObj in sessionStorage) {
                 try {
@@ -659,7 +667,9 @@ var client = {
         else
             $('#serverLost').modal();
     },
-    getContacts: function () {
+    getContacts: function (msg) {
+        if (msg.error)
+            errorHandler(0, 0, msg.error.errorCode);
         antiprism.getContacts(utils.displayContacts);
     },
     getMessages: function (contactName, start, end) {
@@ -676,6 +686,8 @@ var client = {
         start = (start === undefined) ? -10 : start;
         end = (end === undefined) ? -1 : end;
         antiprism.getMessages(contactName, start, end, function (msg) {
+            if (msg.error)
+                errorHandler(0, 0, msg.error.errorCode);
             utils.addMessagesToStorage(contactName, msg.msglist);
             utils.displayMessages(msg, contactName);
         });
@@ -692,6 +704,8 @@ var client = {
         $messageField.val('');
         if (to)
             antiprism.sendMessage(to, message, function (msg) {
+                if (msg.error)
+                    errorHandler(0, 0, msg.error.errorCode);
                 var sentMessage = {to: to, ts: msg.ts, msg: message};
                 utils.pushOneMessageToStorage(to, sentMessage);
                 utils.displayMessage(sentMessage, to);
@@ -710,7 +724,9 @@ var client = {
         }
     },
     setStatus: function (statusMsg) {
-        antiprism.setStatus(statusMsg, function () {
+        antiprism.setStatus(statusMsg, function (msg) {
+            if (msg.error)
+                errorHandler(0, 0, msg.error.errorCode);
             utils.setHeadline({status: statusMsg});
         });
     },
@@ -720,11 +736,16 @@ var client = {
         if (!friend)
             return;
         antiprism.initConversation(friend, function (msg) {
+            if (msg.error)
+                errorHandler(0, 0, msg.error.errorCode);
             $friendField.val("");
             if (msg.initiated)
                 client.getContacts();
-            else
-                utils.displayError({error: "Did not initiate conversation with <b>" + utils.htmlEncode(friend) + "</b>. You may already added him or he may not exist."});
+            else {
+                var errorType = "Contact Error",
+                    errorMsg = "Did not initiate conversation with " + utils.htmlEncode(friend) + ". You may already added him or he may not exist.";
+                errorHandler(errorType, errorMsg);
+            }
         });
     },
     login: function (username, password, restored) {
@@ -735,9 +756,13 @@ var client = {
         antiprism = new Antiprism(host, true); // params: host,[debugFlag]
         var callback = function (msg) {
             if (msg) {
+                if (msg.error)
+                    errorHandler(0, 0, msg.error.errorCode);
                 utils.switchToChat(true, restored ? 400 : undefined);
                 client.getContacts();
                 antiprism.getStatus(function (msg) {
+                    if (msg.error)
+                        errorHandler(0, 0, msg.error.errorCode);
                     utils.setHeadline(msg);
                 });
                 //Ask before user leaves the page
@@ -754,15 +779,17 @@ var client = {
             }
             $('#password').val("");
         };
-        var login = function () {
-            if (restored)
-                return antiprism.login(username, {hash: localStorage.password}, callback);
-            var passhash = antiprism.login(username, password, callback);
-            if (utils.rememberMe())
-                localStorage.password = passhash;
-        }
+        if (restored)
+            return antiprism.login(username, {hash: localStorage.password}, callback);
+        var passhash = antiprism.login(username, password, callback);
+        if (utils.rememberMe())
+            localStorage.password = passhash;
         if (registration)
-            antiprism.register(username, password, login);
+            antiprism.register(username, password, function (msg) {
+                if (msg.error)
+                    errorHandler(0, 0, msg.error.errorCode);
+                antiprism.login(username, password, callback);
+            });
         else
             login();
         if (utils.rememberMe()) {
@@ -771,7 +798,7 @@ var client = {
         }
         antiprism.addEventListener("msg", utils.onMessage);
         antiprism.addEventListener("closed", client.lostConnection);
-        antiprism.addEventListener("error", utils.displayError);
+        antiprism.addEventListener("error", errorHandler); //TODO: use errorhandler
         antiprism.addEventListener("online", utils.displayOnline);
         antiprism.addEventListener("added", client.getContacts);
     },
@@ -808,6 +835,16 @@ var helper = {
     },
     lineBreak: function () {
         return document.createElement("br");
+    },
+    h4: function (headline) {
+        var h4 = document.createElement("h4");
+        h4.innerHTML = utils.htmlEncode(headline);
+        return h4;
+    },
+    p: function (text) {
+        var p = document.createElement("p");
+        p.innerHTML = utils.htmlEncode(text);
+        return p;
     },
     div: function (className) {
         var div = document.createElement("div");
