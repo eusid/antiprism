@@ -23,7 +23,7 @@ var helpers = {
 			try {
 				rsa.setPublic(hex.substr(0,length),hex.substr(length));
 			} catch(e) {
-				return ctx.sendClient({error:Error.UNKNOWN_PUBKEY});
+				return false;
 			};
 			return new Buffer(rsa.encrypt(plain),'hex').toString('base64');
 		}
@@ -52,14 +52,17 @@ var helpers = {
 				return Error.INVALID_PARAMS;
 			ctx.storage.redis.hgetall("users."+username, function(err,reply) {
 				if(!reply)
-					return ctx.sendClient({error:"unknown user"});
+					return ctx.sendClient({error:Error.UNKNOWN_USER});
 				ctx.storage.username = username;
 				var crypto = require('crypto'),
 					randomString = crypto.randomBytes(32).toString(),
-					sha256 = crypto.createHash('sha256');
+					sha256 = crypto.createHash('sha256'),
+					ret = helpers.encryptRSA(randomString, reply.pubkey, 2048);
+				if(!ret)
+					return ctx.sendClient({error:UNKNOWN_PUBKEY});
 				ctx.storage.validationKey = sha256.update(randomString).digest('base64');
 				ctx.sendClient({
-					validationKey: helpers.encryptRSA(randomString, reply.pubkey, 2048),
+					validationKey: ret,
 					pubkey: reply.pubkey,
 					privkey: reply.privkey
 				});
