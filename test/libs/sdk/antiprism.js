@@ -64,7 +64,10 @@ var Antiprism = function(host,debugFlag) {
 				if(session.conversations[user])
 					return callback ? callback() : 0;
 				else if(session.cache.keys[user]) {
-					session.conversations[user] = utils.decryptRSA(session.cache.keys[user],session.pubkey,session.privkey);
+					var decrypted = utils.decryptRSA(session.cache.keys[user],session.pubkey,session.privkey);
+					if(decrypted === null)
+						return debug(session,true,"rsa decrypt for "+user+" failed, session:");
+					session.conversations[user] = decrypted;
 					delete session.cache.keys[user];
 					return callback ? callback() : 0;
 				}
@@ -167,7 +170,6 @@ var Antiprism = function(host,debugFlag) {
 					session.pass.enc = utils.buildAESKey(password);
 				}
 				var keypair = utils.generateKeypair();
-				debug(keypair);
 				keypair.crypt = utils.encryptAES(new Buffer((keypair.privkey),'base64').toString(), session.pass.enc);
 				ws.callServer("register", [session.user, keypair.pubkey, keypair.crypt], callback);
 			},
