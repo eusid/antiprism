@@ -676,9 +676,11 @@ var client = {
         var userObj = sessionStorage.getObject(contactName) || {msglist: 0};
         if (!userObj) {
             console.log("getMessages was called and it has no sessionstorage[\"" + contactName + "\"]!");
-            utils.updateContactObject(contactName, function() {utils.getMessages(contactName, start, end)});
+            utils.updateContactObject(contactName, function () {
+                client.getMessages(contactName, start, end)
+            });
             return;
-        } else if (userObj.msglist.length >= 10) {
+        } else if (userObj.msglist.length) {
             utils.displayMessages(userObj, contactName);
             console.log("displayed messages from sessionstorage");
             return;
