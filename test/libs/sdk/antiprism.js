@@ -264,9 +264,6 @@ var Antiprism = function(host,debugFlag) {
 				}
 			},
 			raw: function() {
-				var args = [];
-				for(var x in arguments)
-					args.push(arguments[x]);
 				ws.callServer.apply(this, arguments);
 			},
 			listEvents: function() {
