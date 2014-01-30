@@ -18,7 +18,7 @@ var Antiprism = function(host,debugFlag) {
 				return CryptoJS.enc.Latin1.parse(string);
 			},
 			decryptAES: function(cipher, key) {
-				cipher = atob(cipher);
+				cipher = new Buffer(cipher,'base64').toString();
 				var iv = utils.parseLatin(cipher.substring(0,16));
 				cipher = utils.parseLatin(cipher.substring(16));
 				key = utils.parseLatin(key);
@@ -149,7 +149,7 @@ var Antiprism = function(host,debugFlag) {
 				ws.callServer("login", [session.user], function(response) {
 					session.pubkey = response.pubkey;
 					try {
-						var privkey = btoa(utils.decryptAES(response.privkey,session.pass.enc));
+						var privkey = new Buffer(utils.decryptAES(response.privkey,session.pass.enc)).toString('base64');
 						session.privkey = privkey;
 						var validationKey = utils.decryptRSA(response.validationKey, response.pubkey, privkey),
 							hash = CryptoJS.SHA256(utils.parseLatin(validationKey)).toString(CryptoJS.enc.Base64);
@@ -168,7 +168,7 @@ var Antiprism = function(host,debugFlag) {
 				}
 				var keypair = utils.generateKeypair();
 				debug(keypair);
-				keypair.crypt = utils.encryptAES(atob(keypair.privkey), session.pass.enc);
+				keypair.crypt = utils.encryptAES(new Buffer((keypair.privkey),'base64').toString(), session.pass.enc);
 				ws.callServer("register", [session.user, keypair.pubkey, keypair.crypt], callback);
 			},
 			changePassword: function(newpass, callback) {
