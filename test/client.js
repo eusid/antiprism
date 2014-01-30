@@ -918,81 +918,78 @@ var helper = {
     }
 };
 
-//Probably just available on chrome
-var testTwoFunctions = function (firstFunction, secondFunction, calls) { //repeat: number of repititions - default is 10000
-    calls = calls || 10000;
-    var func = function (call) {
-        for (var i = 0; i < calls; i++) call(i);
-    };
-    var start = window.performance.now();
-    func(firstFunction);
-    var first = window.performance.now() - start;
-    start = window.performance.now();
-    func(secondFunction);
-    var second = window.performance.now() - start;
-    console.group("Testing results");
-    console.log("First function needed " + first + "ms to perform " + calls + " calls. Second function needed " + second + "ms.");
-    if (first > second) {
-        console.log("The first function took " + (first - second) + "ms longer than the second function.");
-        console.log("The second function is " + (first / second) + " times faster than the first function.");
-        console.log("Mean saved time for one call by the second function: ~" + (first - second) / calls + "ms.");
-    }
-    else {
-        console.log("The second function took " + (second - first) + "ms longer than the first function.");
-        console.log("The first function is " + (second / first) + " times faster than the second function.");
-        console.log("Mean saved time for one call by the first function: ~" + (second - first) / calls + "ms.");
-    }
-    console.groupEnd("Testing results");
-    return {calls: calls, first: first, second: second};
-};
-
-var testOneFunction = function (testFunc, calls, noLogs) {
-    calls = calls || 10000;
-    var func = function (call) {
-        for (var i = 0; i < calls; i++) call(i);
-    };
-    var start = window.performance.now();
-    func(testFunc);
-    var time = window.performance.now() - start;
-    if (!noLogs) {
-        console.group("Testing results");
-        console.log("The function needed " + time + "ms to perform " + calls + " calls.");
-        console.log("That means it took ~" + time / calls + "ms per call.");
-        console.log("If it runs constant the function can be called ~" + Math.floor(calls / time * 1000) + " times per second.");
-        console.groupEnd("Testing results");
-    }
-    return {time: time, calls: calls};
-};
-
-var determineCallsPerSecond = function (testFunc, calls) {  //calls - make calls bigger to make it more exactly.
-    var meanCalls = 1,                                      // But remember: it takes per call about a second
-        callTimes = [],
-        calcMean = function (arr) {
-            var sum = 0;
-            for (var i = 0; i < arr.length; i++) {
-                sum += parseInt(arr[i]);
-            }
-            return sum / arr.length;
-        },
-        calcMedian = function (arr) {
-            arr.sort(function (a, b) {
-                return a - b;
-            });
-
-            var half = Math.floor(arr.length / 2);
-
-            if (arr.length % 2)
-                return arr[half];
-            else
-                return Math.floor((arr[half - 1] + arr[half]) / 2.0);
+var debugHelper = {
+    //Probably just available on chrome
+    testTwoFunctions: function (firstFunction, secondFunction, calls) { //repeat: number of repititions - default is 10000
+        calls = calls || 10000;
+        var func = function (call) {
+            for (var i = 0; i < calls; i++) call(i);
         };
-    for (var i = 0; i < calls; i++) {
-        var res = testOneFunction(testFunc, meanCalls, true);
-        callTimes.push(Math.floor(res.calls / res.time * 1000));
-        meanCalls = calcMedian(callTimes);
+        var start = window.performance.now();
+        func(firstFunction);
+        var first = window.performance.now() - start;
+        start = window.performance.now();
+        func(secondFunction);
+        var second = window.performance.now() - start;
+        console.group("Testing results");
+        console.log("First function needed " + first + "ms to perform " + calls + " calls. Second function needed " + second + "ms.");
+        if (first > second) {
+            console.log("The first function took " + (first - second) + "ms longer than the second function.");
+            console.log("The second function is " + (first / second) + " times faster than the first function.");
+            console.log("Mean saved time for one call by the second function: ~" + (first - second) / calls + "ms.");
+        }
+        else {
+            console.log("The second function took " + (second - first) + "ms longer than the first function.");
+            console.log("The first function is " + (second / first) + " times faster than the second function.");
+            console.log("Mean saved time for one call by the first function: ~" + (second - first) / calls + "ms.");
+        }
+        console.groupEnd("Testing results");
+        return {calls: calls, first: first, second: second};
+    },
+    testOneFunction: function (testFunc, calls, noLogs) {
+        calls = calls || 10000;
+        var func = function (call) {
+            for (var i = 0; i < calls; i++) call(i);
+        };
+        var start = window.performance.now();
+        func(testFunc);
+        var time = window.performance.now() - start;
+        if (!noLogs) {
+            console.group("Testing results");
+            console.log("The function needed " + time + "ms to perform " + calls + " calls.");
+            console.log("That means it took ~" + time / calls + "ms per call.");
+            console.log("If it runs constant the function can be called ~" + Math.floor(calls / time * 1000) + " times per second.");
+            console.groupEnd("Testing results");
+        }
+        return {time: time, calls: calls};
+    },
+    determineCallsPerSecond: function (testFunc, calls) {  //calls - make calls bigger to make it more exactly.
+        var meanCalls = 1,                                      // But remember: it takes per call about a second
+            callTimes = [],
+            calcMean = function (arr) {
+                var sum = 0;
+                for (var i = 0; i < arr.length; i++)
+                    sum += parseInt(arr[i]);
+                return sum / arr.length;
+            },
+            calcMedian = function (arr) {
+                arr.sort(function (a, b) {
+                    return a - b;
+                });
+                var half = Math.floor(arr.length / 2);
+                if (arr.length % 2)
+                    return arr[half];
+                else
+                    return Math.floor((arr[half - 1] + arr[half]) / 2.0);
+            };
+        for (var i = 0; i < calls; i++) {
+            var res = debugHelper.testOneFunction(testFunc, meanCalls, true);
+            callTimes.push(Math.floor(res.calls / res.time * 1000));
+            meanCalls = calcMedian(callTimes);
+        }
+        console.log("Your Function can be called ~" + meanCalls + " times per second.");
+        return meanCalls;
     }
-    console.log("Your Function can be called ~" + meanCalls + " times per second.");
-    return meanCalls;
 };
 
 $(document).ready(function () {
