@@ -783,18 +783,18 @@ var client = {
         };
         if (restored)
             return antiprism.login(username, {hash: localStorage.password}, callback);
-        var passhash = antiprism.login(username, password, callback);
-        if (utils.rememberMe())
-            localStorage.password = passhash;
         if (registration)
             antiprism.register(username, password, function (msg) {
                 if (msg && msg.error)
                     errorHandler(0, 0, msg.error);
                 antiprism.login(username, password, callback);
             });
-        else
-            login();
-        if (utils.rememberMe()) {
+        else {
+            var passhash = antiprism.login(username, password, callback);
+            if (utils.rememberMe())
+                localStorage.password = passhash;
+        }
+        if (utils.rememberMe() && !localStorage.getObject("rememberUser")) {
             localStorage.setObject("rememberUser", true);
             localStorage.username = username;
         }
