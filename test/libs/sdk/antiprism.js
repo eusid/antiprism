@@ -43,7 +43,11 @@ var Antiprism = function(host,debugFlag) {
 			},
 			encryptRSA: function(plain, pubkey) {
 				var rsa = new RSA();
-				rsa.loadPublic(pubkey, 2048);
+				try {
+					rsa.loadPublic(pubkey, 2048);
+				} catch(e) {
+					return debug("invalid pubkey", true, e);
+				}
 				return new Buffer(rsa.encrypt(plain),'hex').toString('base64');
 			},
 			decryptRSA: function(cipher, pubkey, privkey) {
