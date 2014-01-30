@@ -176,23 +176,20 @@
             return tag;
         }
         var scripts = [
-                    /*
-                     "libs/sdk/crypto/aes.js",
-                     "libs/sdk/crypto/CryptoJS.js",
-                     "libs/sdk/crypto/scrypt.js",
-                     "libs/sdk/crypto/prng4.js",
-                     "libs/sdk/crypto/rng.js",
-                     "libs/sdk/crypto/sha256.js",
-                     "libs/sdk/crypto/buffer.js",
-                     "libs/sdk/crypto/jsbn.full.js",
-                     */
-                    "libs/sdk/crypto.min.js",
-                    "libs/sdk/antiprism.js",
-                    "libs/bootstrap.min.js",
-                    "libs/bootbox.min.js",
-                    "libs/typeahead.js",
-                    "client.js"],
-                fragment = document.createDocumentFragment();
+            "libs/sdk/crypto/aes.js",
+            "libs/sdk/crypto/CryptoJS.js",
+            "libs/sdk/crypto/scrypt.js",
+            "libs/sdk/crypto/prng4.js",
+            "libs/sdk/crypto/rng.js",
+            "libs/sdk/crypto/sha256.js",
+            "libs/sdk/crypto/buffer.js",
+            "libs/sdk/crypto/jsbn.full.js",
+            "libs/sdk/antiprism.js",
+            "libs/bootstrap.min.js",
+            "libs/bootbox.min.js",
+            "libs/typeahead.js",
+            "client.js"],
+            fragment = document.createDocumentFragment();
         for (var i = 0; scripts.length > i; i++)
             fragment.appendChild(script(scripts[i]));
         document.body.appendChild(fragment.cloneNode(true));
