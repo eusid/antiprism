@@ -13,183 +13,183 @@
 
 
 var helper = {
-	clearStorageUserdata:function() {
-		var muted = localStorage.getObject("muted");
-		sessionStorage.clear();
-		localStorage.clear();
-		localStorage.setObject("muted", muted);
-	},
-	addStorageObjectFunctions:function() {
-		Storage.prototype.setObject = function(key, value) {
-			this.setItem(key, JSON.stringify(value));
-		};
-
-		Storage.prototype.getObject = function(key) {
-			var value = this.getItem(key);
-			try {
-				value = JSON.parse(value);
-			} catch(e) {
-			}
-			return value;
-		};
-	},
-	lineBreak:function() {
-		return document.createElement("br");
-	},
-	h4:function(headline) {
-		var h4 = document.createElement("h4");
-		h4.innerHTML = utils.htmlEncode(headline);
-		return h4;
-	},
-	p:function(text) {
-		var p = document.createElement("p");
-		p.innerHTML = utils.htmlEncode(text);
-		return p;
-	},
-	div:function(className) {
-		var div = document.createElement("div");
-		div.className = className || "";
-		return div;
-	},
-	span:function(className, value) {
-		var span = document.createElement("span");
-		span.className = className || "";
-		span.innerHTML = value || "";
-		return span;
-	},
-	input:function(type, name) {
-		var input = document.createElement("input");
-		input.type = type;
-		input.className = "form-control";
-		input.id = name || "";
-		input.placeholder = name || "";
-		return input;
-	},
-	a:function(linkName, location) {
-		var a = document.createElement("a");
-		a.innerHTML = linkName;
-		a.href = location;
-		return a;
-	},
-	small:function(innerHTML) {
-		var small = document.createElement("small");
-		if(innerHTML === undefined)
-			innerHTML = "";
-		small.innerHTML = innerHTML;
-		return small;
-	},
-	button:function(value, className, clickEvent) {
-		var button = document.createElement("button");
-		button.className = className || "";
-		button.innerHTML = value || "";
-		button.type = "button";
-		if(clickEvent)
-			button.onclick = clickEvent;
-		return button;
-	},
-	ul:function(className) {
-		var ul = document.createElement("ul");
-		ul.className = className || "";
-		return ul;
-	},
-	li:function(className) {
-		var li = document.createElement("li");
-		li.className = className || "";
-		return li;
-	},
-	option:function(optionName) {
-		var option = document.createElement("option");
-		option.value = optionName;
-		option.innerHTML = optionName;
-		return option;
-	},
-	select:function(optionsArray) {
-		var select = document.createElement("select"), i, option;
-		select.className = "form-control";
-		for(i in optionsArray) {
-			if(optionsArray.hasOwnProperty(i)) {
-				option = helper.option(optionsArray[i]);
-				select.appendChild(option);
-			}
-		}
-		return select;
-	},
-	form:function(className) {
-		var form = document.createElement("form");
-		form.role = "form";
-		form.className = className || "";
-		return form;
-	},
-	jsLink:function(linkName, clickEvent) {
-		var jsLink = helper.a(linkName, "#");
-		if(clickEvent)
-			jsLink.onclick = clickEvent;
-		jsLink.className = "jsLink";
-		return jsLink;
-	},
-	glyphicon:function(name) {
-		return helper.div("glyphicon glyphicon-" + name);
-	}
-};
-
-var errorHandler = function(errorType, errorMsg, errorCode) { //You can call it with errorType and errorMessage or with an errorcode
-	var error = {type:errorType || "Error", msg:errorMsg || "An error occurred"},
-		getErrorByCode = function(errorCode) { //TODO change errortext
-			var error = {type:"Error", msg:""};
-			switch(errorCode) {
-				case 1:
-					error.msg = "Missing action parameter.";
-					break;
-				case 2:
-					error.msg = "Action does not exist.";
-					break;
-				case 3:
-					error.msg = "Invalid action parameters.";
-					break;
-				case 4:
-					error.msg = "JSON parse error.";
-					break;
-				case 5:
-					error.msg = "Invalid authentication-key";
-					break;
-				case 6:
-					error.msg = "Tried to access unknown user.";
-					break;
-				case 7:
-					error.msg = "Requested pubkey does not exist.";
-					break;
-				case 8:
-					error.msg = "Requested action is not permitted.";
-					break;
-				default:
-					error.msg = "Unknown Error.";
-					break;
-			}
-
-			return error;
+		clearStorageUserdata:function() {
+			var muted = localStorage.getObject("muted");
+			sessionStorage.clear();
+			localStorage.clear();
+			localStorage.setObject("muted", muted);
 		},
-		displayError = function(error) {
-			var errorContainer = helper.div("alert alert-danger fade in"),
-				closeButton = helper.button("x", "close"),
-				headline = helper.h4(error.type),
-				errorMessage = helper.p(error.msg);
-			closeButton.setAttribute("data-dismiss", "alert");
-			closeButton.setAttribute("aria-hidden", true);
-			errorContainer.appendChild(closeButton);
-			errorContainer.appendChild(headline);
-			errorContainer.appendChild(errorMessage);
-			errorContainer.id = "alertError";
-			$('#headline').append(errorContainer);
-			$('#alertError').hide().slideDown(200).delay(3000).fadeOut(1000, function() {
-				$('#alertError').remove()
-			});
-		};
-	if(!isNaN(errorCode))
-		getErrorByCode(errorCode);
-	displayError(error);
-};
+		addStorageObjectFunctions:function() {
+			Storage.prototype.setObject = function(key, value) {
+				this.setItem(key, JSON.stringify(value));
+			};
 
-var antiprism,
+			Storage.prototype.getObject = function(key) {
+				var value = this.getItem(key);
+				try {
+					value = JSON.parse(value);
+				} catch(e) {
+				}
+				return value;
+			};
+		},
+		lineBreak:function() {
+			return document.createElement("br");
+		},
+		h4:function(headline) {
+			var h4 = document.createElement("h4");
+			h4.innerHTML = utils.htmlEncode(headline);
+			return h4;
+		},
+		p:function(text) {
+			var p = document.createElement("p");
+			p.innerHTML = utils.htmlEncode(text);
+			return p;
+		},
+		div:function(className) {
+			var div = document.createElement("div");
+			div.className = className || "";
+			return div;
+		},
+		span:function(className, value) {
+			var span = document.createElement("span");
+			span.className = className || "";
+			span.innerHTML = value || "";
+			return span;
+		},
+		input:function(type, name) {
+			var input = document.createElement("input");
+			input.type = type;
+			input.className = "form-control";
+			input.id = name || "";
+			input.placeholder = name || "";
+			return input;
+		},
+		a:function(linkName, location) {
+			var a = document.createElement("a");
+			a.innerHTML = linkName;
+			a.href = location;
+			return a;
+		},
+		small:function(innerHTML) {
+			var small = document.createElement("small");
+			if(innerHTML === undefined)
+				innerHTML = "";
+			small.innerHTML = innerHTML;
+			return small;
+		},
+		button:function(value, className, clickEvent) {
+			var button = document.createElement("button");
+			button.className = className || "";
+			button.innerHTML = value || "";
+			button.type = "button";
+			if(clickEvent)
+				button.onclick = clickEvent;
+			return button;
+		},
+		ul:function(className) {
+			var ul = document.createElement("ul");
+			ul.className = className || "";
+			return ul;
+		},
+		li:function(className) {
+			var li = document.createElement("li");
+			li.className = className || "";
+			return li;
+		},
+		option:function(optionName) {
+			var option = document.createElement("option");
+			option.value = optionName;
+			option.innerHTML = optionName;
+			return option;
+		},
+		select:function(optionsArray) {
+			var select = document.createElement("select"), i, option;
+			select.className = "form-control";
+			for(i in optionsArray) {
+				if(optionsArray.hasOwnProperty(i)) {
+					option = helper.option(optionsArray[i]);
+					select.appendChild(option);
+				}
+			}
+			return select;
+		},
+		form:function(className) {
+			var form = document.createElement("form");
+			form.role = "form";
+			form.className = className || "";
+			return form;
+		},
+		jsLink:function(linkName, clickEvent) {
+			var jsLink = helper.a(linkName, "#");
+			if(clickEvent)
+				jsLink.onclick = clickEvent;
+			jsLink.className = "jsLink";
+			return jsLink;
+		},
+		glyphicon:function(name) {
+			return helper.div("glyphicon glyphicon-" + name);
+		}
+	},
+
+	errorHandler = function(errorType, errorMsg, errorCode) { //You can call it with errorType and errorMessage or with an errorcode
+		var error = {type:errorType || "Error", msg:errorMsg || "An error occurred"},
+			getErrorByCode = function(errorCode) { //TODO change errortext
+				var error = {type:"Error", msg:""};
+				switch(errorCode) {
+					case 1:
+						error.msg = "Missing action parameter.";
+						break;
+					case 2:
+						error.msg = "Action does not exist.";
+						break;
+					case 3:
+						error.msg = "Invalid action parameters.";
+						break;
+					case 4:
+						error.msg = "JSON parse error.";
+						break;
+					case 5:
+						error.msg = "Invalid authentication-key";
+						break;
+					case 6:
+						error.msg = "Tried to access unknown user.";
+						break;
+					case 7:
+						error.msg = "Requested pubkey does not exist.";
+						break;
+					case 8:
+						error.msg = "Requested action is not permitted.";
+						break;
+					default:
+						error.msg = "Unknown Error.";
+						break;
+				}
+
+				return error;
+			},
+			displayError = function(error) {
+				var errorContainer = helper.div("alert alert-danger fade in"),
+					closeButton = helper.button("x", "close"),
+					headline = helper.h4(error.type),
+					errorMessage = helper.p(error.msg);
+				closeButton.setAttribute("data-dismiss", "alert");
+				closeButton.setAttribute("aria-hidden", true);
+				errorContainer.appendChild(closeButton);
+				errorContainer.appendChild(headline);
+				errorContainer.appendChild(errorMessage);
+				errorContainer.id = "alertError";
+				$('#headline').append(errorContainer);
+				$('#alertError').hide().slideDown(200).delay(3000).fadeOut(1000, function() {
+					$('#alertError').remove();
+				});
+			};
+		if(!isNaN(errorCode))
+			getErrorByCode(errorCode);
+		displayError(error);
+	},
+
+	antiprism,
 	utils = {
 		setHeadline:function(msg) {
 			var $h1 = $('h1'),
@@ -426,8 +426,8 @@ var antiprism,
 				var contactName = ctx.target.id || ctx.target.parentNode.id;
 				utils.onContactSelect(contactName);
 			});
-			if(msg.contacts[contact])
-				(msg.contacts[contact].status !== null ) ? status.innerHTML = utils.htmlEncode(msg.contacts[contact].status) : status.innerHTML = "";
+			if(msg.contacts[contact] && msg.contacts[contact].status !== null)
+				status.innerHTML = utils.htmlEncode(msg.contacts[contact].status);
 			else
 				status.innerHTML = "";
 			contactElement.appendChild(status);
@@ -487,7 +487,7 @@ var antiprism,
 			var obj = {msglist:[]},
 				disableButton = function() {
 					obj = sessionStorage.getObject(contactName) || {msglist:[]};
-					$('#retrieveMoreMessagesButton')[0].disabled = !(obj.msglist.length < obj.numberOfMessages);
+					$('#retrieveMoreMessagesButton')[0].disabled = obj.msglist.length >= obj.numberOfMessages;
 				};
 			if(!sessionStorage[contactName]) {
 				console.log("disableRetrieveMoreMessagesButton is called and sessionStorage[\"" + contactName + "\"] does not exist");
@@ -741,255 +741,256 @@ var antiprism,
 			sound.src = sound.canPlayType("audio/mpeg") ? mp3 : console.log("BING - you have got a new message!"); //TODO fallback einrichten
 			sound.play();
 		}
-	};
+	},
 
-var client = {
-	init:function() {
-		utils.addKeyEvents();
-		utils.setOnClickEvents();
-		utils.setMuteTooltip();
-		utils.setMuteButton();
-		window.addEventListener("storage", function(storageEvent) {
-			console.log(storageEvent);
-			if(storageEvent.key == "muted" && storageEvent.url == document.URL)
-				utils.changeMuteButton(storageEvent.newValue);
-		}, true);
-	},
-	lostConnection:function(reconnected) {
-		if(reconnected.error)
-			errorHandler(0, 0, msg.error);
-		if(reconnected)
-			for(var userObj in sessionStorage) {
-				try {
-					var obj = sessionStorage.getObject(userObj);
-				} catch(e) {
-					continue;
+	client = {
+		init:function() {
+			utils.addKeyEvents();
+			utils.setOnClickEvents();
+			utils.setMuteTooltip();
+			utils.setMuteButton();
+			window.addEventListener("storage", function(storageEvent) {
+				console.log(storageEvent);
+				if(storageEvent.key == "muted" && storageEvent.url == document.URL)
+					utils.changeMuteButton(storageEvent.newValue);
+			}, true);
+		},
+		lostConnection:function(reconnected) {
+			if(reconnected.error)
+				errorHandler(0, 0, reconnected.error);
+			if(reconnected)
+				for(var userObj in sessionStorage) {
+					var obj;
+					try {
+						obj = sessionStorage.getObject(userObj);
+					} catch(e) {
+						continue;
+					}
+					obj.numberOfMessages = undefined;
+					sessionStorage.setObject(obj);
 				}
-				obj.numberOfMessages = undefined;
-				sessionStorage.setObject(obj);
-			}
-		else
-			$('#serverLost').modal();
-	},
-	getContacts:function(msg) {
-		if(msg && msg.error)
-			errorHandler(0, 0, msg.error);
-		antiprism.getContacts(utils.displayContacts);
-	},
-	getMessages:function(contactName, start, end) {
-		var userObj = sessionStorage.getObject(contactName) || {msglist:0};
-		if(!userObj) {
-			console.log("getMessages was called and it has no sessionstorage[\"" + contactName + "\"]!");
-			utils.updateContactObject(contactName, function() {
-				client.getMessages(contactName, start, end)
-			});
-			return;
-		} else if(userObj.msglist.length) {
-			utils.displayMessages(userObj, contactName);
-			console.log("displayed messages from sessionstorage");
-			return;
-		}
-		start = (start === undefined) ? -10 : start;
-		end = (end === undefined) ? -1 : end;
-		antiprism.getMessages(contactName, start, end, function(msg) {
+			else
+				$('#serverLost').modal();
+		},
+		getContacts:function(msg) {
 			if(msg && msg.error)
 				errorHandler(0, 0, msg.error);
-			utils.addMessagesToStorage(contactName, msg.msglist);
-			utils.displayMessages(msg, contactName);
-		});
-	},
-	sendMessage:function() {
-		var $messageField = $('#messageField');
-		var message = $messageField.val();
-		if(!message)
-			return;
-		var to = null;
-		var $active = $('.active');
-		if($active.length)
-			to = $active[0].id;
-		$messageField.val('');
-		if(to)
-			antiprism.sendMessage(to, message, function(msg) {
+			antiprism.getContacts(utils.displayContacts);
+		},
+		getMessages:function(contactName, start, end) {
+			var userObj = sessionStorage.getObject(contactName) || {msglist:0};
+			if(!userObj) {
+				console.log("getMessages was called and it has no sessionstorage[\"" + contactName + "\"]!");
+				utils.updateContactObject(contactName, function() {
+					client.getMessages(contactName, start, end);
+				});
+				return;
+			} else if(userObj.msglist.length) {
+				utils.displayMessages(userObj, contactName);
+				console.log("displayed messages from sessionstorage");
+				return;
+			}
+			start = (start === undefined) ? -10 : start;
+			end = (end === undefined) ? -1 : end;
+			antiprism.getMessages(contactName, start, end, function(msg) {
 				if(msg && msg.error)
 					errorHandler(0, 0, msg.error);
-				var sentMessage = {to:to, ts:msg.ts, msg:message};
-				utils.pushOneMessageToStorage(to, sentMessage);
-				utils.displayMessage(sentMessage, to);
+				utils.addMessagesToStorage(contactName, msg.msglist);
+				utils.displayMessages(msg, contactName);
 			});
-		else {
-			utils.displayMessage({to:null, ts:(new Date()).getTime(), msg:"You didn\'t choose a contact!"});
-		}
-	},
-	changePass:function() {
-		if(utils.changePasswordValidated()) {
-			var $passwordField = $('#newPassField');
-			antiprism.changePassword($passwordField.val());
-			$('#changePassContainer').removeClass("has-success");
-			$passwordField.unbind("keyup");
-			utils.hideChangePasswordDialog();
-		}
-	},
-	setStatus:function(statusMsg) {
-		antiprism.setStatus(statusMsg, function(msg) {
-			if(msg && msg.error)
-				errorHandler(0, 0, msg.error);
-			utils.setHeadline({status:statusMsg});
-		});
-	},
-	addFriend:function() {
-		var $friendField = $('#addFriendField'),
-			friend = $friendField.val();
-		if(!friend)
-			return;
-		antiprism.initConversation(friend, function(msg) {
-			if(msg && msg.error)
-				errorHandler(0, 0, msg.error);
-			$friendField.val("");
-			if(msg.initiated)
-				client.getContacts();
-			else {
-				var errorType = "Contact Error",
-					errorMsg = "Did not initiate conversation with " + utils.htmlEncode(friend) + ". You may already added him or he may not exist.";
-				errorHandler(errorType, errorMsg);
-			}
-		});
-	},
-	login:function(username, password, restored) {
-		username = username || utils.getUsername();
-		password = password || utils.getPassword();
-		var registration = utils.register(),
-			host = location.origin.replace(/^http/, 'ws');
-		antiprism = new Antiprism(host, true); // params: host,[debugFlag]
-		var callback = function(msg) {
-			if(msg) {
-				if(msg && msg.error)
-					errorHandler(0, 0, msg.error);
-				utils.switchToChat(true, restored ? 400 : undefined);
-				client.getContacts();
-				antiprism.getStatus(function(msg) {
+		},
+		sendMessage:function() {
+			var $messageField = $('#messageField');
+			var message = $messageField.val();
+			if(!message)
+				return;
+			var to = null;
+			var $active = $('.active');
+			if($active.length)
+				to = $active[0].id;
+			$messageField.val('');
+			if(to)
+				antiprism.sendMessage(to, message, function(msg) {
 					if(msg && msg.error)
 						errorHandler(0, 0, msg.error);
-					utils.setHeadline(msg);
+					var sentMessage = {to:to, ts:msg.ts, msg:message};
+					utils.pushOneMessageToStorage(to, sentMessage);
+					utils.displayMessage(sentMessage, to);
 				});
-				//Ask before user leaves the page
-				/*$(window).bind("beforeunload", function (msg) {
-				 console.log(msg);
-				 return "If you didn't set the \"Remember Me\"-option or close the tab you will be logged out.";
-				 });*/
-			} else {
-				$('#loginAlert').fadeIn(1000, function() {
-					setTimeout(function() {
-						$('#loginAlert').fadeOut()
-					}, 5000)
-				})
+			else {
+				utils.displayMessage({to:null, ts:(new Date()).getTime(), msg:"You didn\'t choose a contact!"});
 			}
-			$('#password').val("");
-		};
-		if(restored)
-			return antiprism.login(username, {hash:localStorage.password}, callback);
-		if(registration)
-			antiprism.register(username, password, function(msg) {
+		},
+		changePass:function() {
+			if(utils.changePasswordValidated()) {
+				var $passwordField = $('#newPassField');
+				antiprism.changePassword($passwordField.val());
+				$('#changePassContainer').removeClass("has-success");
+				$passwordField.unbind("keyup");
+				utils.hideChangePasswordDialog();
+			}
+		},
+		setStatus:function(statusMsg) {
+			antiprism.setStatus(statusMsg, function(msg) {
 				if(msg && msg.error)
 					errorHandler(0, 0, msg.error);
-				antiprism.login(username, password, callback);
+				utils.setHeadline({status:statusMsg});
 			});
-		else {
-			var passhash = antiprism.login(username, password, callback);
-			if(utils.rememberMe())
-				localStorage.password = passhash;
-		}
-		if(utils.rememberMe() && !localStorage.getObject("rememberUser")) {
-			localStorage.setObject("rememberUser", true);
-			localStorage.username = username;
-		}
-		antiprism.addEventListener("msg", utils.onMessage);
-		antiprism.addEventListener("closed", client.lostConnection);
-		antiprism.addEventListener("error", errorHandler);
-		antiprism.addEventListener("online", utils.displayOnline);
-		antiprism.addEventListener("added", client.getContacts);
-	},
-	logout:function() {
-		antiprism.close();
-		$('h1').text(headline);
-		utils.messageDisplay().text("");
-		utils.switchToChat(false);
-		helper.clearStorageUserdata();
-	}
-};
-
-var debugHelper = {
-	//Probably just available on chrome
-	testTwoFunctions:function(firstFunction, secondFunction, calls) { //repeat: number of repititions - default is 10000
-		calls = calls || 10000;
-		var func = function(call) {
-			for(var i = 0; i < calls; i++) call(i);
-		};
-		var start = window.performance.now();
-		func(firstFunction);
-		var first = window.performance.now() - start;
-		start = window.performance.now();
-		func(secondFunction);
-		var second = window.performance.now() - start;
-		console.group("Testing results");
-		console.log("First function needed " + first + "ms to perform " + calls + " calls. Second function needed " + second + "ms.");
-		if(first > second) {
-			console.log("The first function took " + (first - second) + "ms longer than the second function.");
-			console.log("The second function is " + (first / second) + " times faster than the first function.");
-			console.log("Mean saved time for one call by the second function: ~" + (first - second) / calls + "ms.");
-		}
-		else {
-			console.log("The second function took " + (second - first) + "ms longer than the first function.");
-			console.log("The first function is " + (second / first) + " times faster than the second function.");
-			console.log("Mean saved time for one call by the first function: ~" + (second - first) / calls + "ms.");
-		}
-		console.groupEnd("Testing results");
-		return {calls:calls, first:first, second:second};
-	},
-	testOneFunction:function(testFunc, calls, noLogs) {
-		calls = calls || 10000;
-		var func = function(call) {
-			for(var i = 0; i < calls; i++) call(i);
-		};
-		var start = window.performance.now();
-		func(testFunc);
-		var time = window.performance.now() - start;
-		if(!noLogs) {
-			console.group("Testing results");
-			console.log("The function needed " + time + "ms to perform " + calls + " calls.");
-			console.log("That means it took ~" + time / calls + "ms per call.");
-			console.log("If it runs constant the function can be called ~" + Math.floor(calls / time * 1000) + " times per second.");
-			console.groupEnd("Testing results");
-		}
-		return {time:time, calls:calls};
-	},
-	determineCallsPerSecond:function(testFunc, calls) {  //calls - make calls bigger to make it more exactly.
-		var meanCalls = 1,                                      // But remember: it takes per call about a second
-			callTimes = [],
-			calcMean = function(arr) {
-				var sum = 0;
-				for(var i = 0; i < arr.length; i++)
-					sum += parseInt(arr[i]);
-				return sum / arr.length;
-			},
-			calcMedian = function(arr) {
-				arr.sort(function(a, b) {
-					return a - b;
-				});
-				var half = Math.floor(arr.length / 2);
-				if(arr.length % 2)
-					return arr[half];
-				else
-					return Math.floor((arr[half - 1] + arr[half]) / 2.0);
+		},
+		addFriend:function() {
+			var $friendField = $('#addFriendField'),
+				friend = $friendField.val();
+			if(!friend)
+				return;
+			antiprism.initConversation(friend, function(msg) {
+				if(msg && msg.error)
+					errorHandler(0, 0, msg.error);
+				$friendField.val("");
+				if(msg.initiated)
+					client.getContacts();
+				else {
+					var errorType = "Contact Error",
+						errorMsg = "Did not initiate conversation with " + utils.htmlEncode(friend) + ". You may already added him or he may not exist.";
+					errorHandler(errorType, errorMsg);
+				}
+			});
+		},
+		login:function(username, password, restored) {
+			username = username || utils.getUsername();
+			password = password || utils.getPassword();
+			var registration = utils.register(),
+				host = location.origin.replace(/^http/, 'ws');
+			antiprism = new Antiprism(host, true); // params: host,[debugFlag]
+			var callback = function(msg) {
+				if(msg) {
+					if(msg && msg.error)
+						errorHandler(0, 0, msg.error);
+					utils.switchToChat(true, restored ? 400 : undefined);
+					client.getContacts();
+					antiprism.getStatus(function(msg) {
+						if(msg && msg.error)
+							errorHandler(0, 0, msg.error);
+						utils.setHeadline(msg);
+					});
+					//Ask before user leaves the page
+					/*$(window).bind("beforeunload", function (msg) {
+						console.log(msg);
+						return "If you didn't set the \"Remember Me\"-option or close the tab you will be logged out.";
+					});*/
+				} else {
+					$('#loginAlert').fadeIn(1000, function() {
+						setTimeout(function() {
+							$('#loginAlert').fadeOut();
+						}, 5000);
+					});
+				}
+				$('#password').val("");
 			};
-		for(var i = 0; i < calls; i++) {
-			var res = debugHelper.testOneFunction(testFunc, meanCalls, true);
-			callTimes.push(Math.floor(res.calls / res.time * 1000));
-			meanCalls = calcMedian(callTimes);
+			if(restored)
+				return antiprism.login(username, {hash:localStorage.password}, callback);
+			if(registration)
+				antiprism.register(username, password, function(msg) {
+					if(msg && msg.error)
+						errorHandler(0, 0, msg.error);
+					antiprism.login(username, password, callback);
+				});
+			else {
+				var passhash = antiprism.login(username, password, callback);
+				if(utils.rememberMe())
+					localStorage.password = passhash;
+			}
+			if(utils.rememberMe() && !localStorage.getObject("rememberUser")) {
+				localStorage.setObject("rememberUser", true);
+				localStorage.username = username;
+			}
+			antiprism.addEventListener("msg", utils.onMessage);
+			antiprism.addEventListener("closed", client.lostConnection);
+			antiprism.addEventListener("error", errorHandler);
+			antiprism.addEventListener("online", utils.displayOnline);
+			antiprism.addEventListener("added", client.getContacts);
+		},
+		logout:function() {
+			antiprism.close();
+			$('h1').text(headline);
+			utils.messageDisplay().text("");
+			utils.switchToChat(false);
+			helper.clearStorageUserdata();
 		}
-		console.log("Your Function can be called ~" + meanCalls + " times per second.");
-		return meanCalls;
-	}
-};
+	},
+
+	debugHelper = {
+		//Probably just available on chrome
+		testTwoFunctions:function(firstFunction, secondFunction, calls) { //repeat: number of repititions - default is 10000
+			calls = calls || 10000;
+			var func = function(call) {
+				for(var i = 0; i < calls; i++) call(i);
+			};
+			var start = window.performance.now();
+			func(firstFunction);
+			var first = window.performance.now() - start;
+			start = window.performance.now();
+			func(secondFunction);
+			var second = window.performance.now() - start;
+			console.group("Testing results");
+			console.log("First function needed " + first + "ms to perform " + calls + " calls. Second function needed " + second + "ms.");
+			if(first > second) {
+				console.log("The first function took " + (first - second) + "ms longer than the second function.");
+				console.log("The second function is " + (first / second) + " times faster than the first function.");
+				console.log("Mean saved time for one call by the second function: ~" + (first - second) / calls + "ms.");
+			}
+			else {
+				console.log("The second function took " + (second - first) + "ms longer than the first function.");
+				console.log("The first function is " + (second / first) + " times faster than the second function.");
+				console.log("Mean saved time for one call by the first function: ~" + (second - first) / calls + "ms.");
+			}
+			console.groupEnd("Testing results");
+			return {calls:calls, first:first, second:second};
+		},
+		testOneFunction:function(testFunc, calls, noLogs) {
+			calls = calls || 10000;
+			var func = function(call) {
+				for(var i = 0; i < calls; i++) call(i);
+			};
+			var start = window.performance.now();
+			func(testFunc);
+			var time = window.performance.now() - start;
+			if(!noLogs) {
+				console.group("Testing results");
+				console.log("The function needed " + time + "ms to perform " + calls + " calls.");
+				console.log("That means it took ~" + time / calls + "ms per call.");
+				console.log("If it runs constant the function can be called ~" + Math.floor(calls / time * 1000) + " times per second.");
+				console.groupEnd("Testing results");
+			}
+			return {time:time, calls:calls};
+		},
+		determineCallsPerSecond:function(testFunc, calls) {  //calls - make calls bigger to make it more exactly.
+			var meanCalls = 1,                                      // But remember: it takes per call about a second
+				callTimes = [],
+				calcMean = function(arr) {
+					var sum = 0;
+					for(var i = 0; i < arr.length; i++)
+						sum += parseInt(arr[i]);
+					return sum / arr.length;
+				},
+				calcMedian = function(arr) {
+					arr.sort(function(a, b) {
+						return a - b;
+					});
+					var half = Math.floor(arr.length / 2);
+					if(arr.length % 2)
+						return arr[half];
+					else
+						return Math.floor((arr[half - 1] + arr[half]) / 2.0);
+				};
+			for(var i = 0; i < calls; i++) {
+				var res = debugHelper.testOneFunction(testFunc, meanCalls, true);
+				callTimes.push(Math.floor(res.calls / res.time * 1000));
+				meanCalls = calcMedian(callTimes);
+			}
+			console.log("Your Function can be called ~" + meanCalls + " times per second.");
+			return meanCalls;
+		}
+	};
 
 $(document).ready(function() {
 	helper.addStorageObjectFunctions();
