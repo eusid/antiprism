@@ -951,11 +951,13 @@ var testTwoFunctions = function (firstFunction, secondFunction, repeat) { //repe
 
 $(document).ready(function () {
     helper.addStorageObjectFunctions();
-    if (localStorage.getObject("rememberUser"))
+    if (localStorage.getObject("rememberUser")) {
+        document.getElementById("username").value = localStorage.username;
+        document.getElementById("password").value = "password";
         client.login(localStorage.username, localStorage.password, true);
-    else {
-        helper.clearStorageUserdata();
     }
+    else
+        helper.clearStorageUserdata();
     client.init();
     $('form').submit(function (e) {
         e.preventDefault();
