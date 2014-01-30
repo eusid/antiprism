@@ -64,6 +64,10 @@ body {
 	padding: 1%;
 }
 
+#chat {
+    height: 100%;
+}
+
 #mute {
 	height: 34px;
 }
