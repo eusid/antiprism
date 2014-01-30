@@ -528,10 +528,10 @@ var helper = {
 				$addFriendField.popover({content:"Add some friends now!", trigger:"manual", placement:"top"});
 				$addFriendField.popover("show");
 				$addFriendField.focus(function() {
-					$addFriendField.popover("hide")
+					$addFriendField.popover("hide");
 				});
 				$addFriendField.focusout(function() {
-					$addFriendField.popover("show")
+					$addFriendField.popover("show");
 				});
 			}
 			else {
@@ -569,14 +569,14 @@ var helper = {
 			$contactNode.removeClass("newMessage");
 			utils.messageDisplay().empty();
 			utils.updateContactObject($contactNode[0].id, function() {
-				if(iconClass.indexOf("glyphicon-user") != -1) {
+				if(iconClass.indexOf("glyphicon-user") !== -1) {
 					utils.displayRetrieveMoreMessagesButton(contactName);
 					client.getMessages(contactName);
 				}
 			}, userObj ? userObj.numberOfMessages : undefined);
-			if(iconClass.indexOf("glyphicon-time") != -1) {
+			if(iconClass.indexOf("glyphicon-time") !== -1) {
 				utils.displayMessage({from:contactName, msg:"Waiting for confirmation by user.", ts:(new Date()).getTime()}, contactName, false);
-			} else if(iconClass.indexOf("glyphicon-question-sign") != -1)
+			} else if(iconClass.indexOf("glyphicon-question-sign") !== -1)
 				utils.displayMessage({from:contactName, msg:"This user sent you a friendrequest. To confirm please click the button below.", ts:(new Date()).getTime(), request:true}, contactName, false);
 		},
 		urlToLink:function(message) {
@@ -604,7 +604,7 @@ var helper = {
 				selected = null;
 			if($active.length)
 				selected = $active[0].id;
-			if(!msg.to && (msg.from != selected || !document.hasFocus())) {
+			if(!msg.to && (msg.from !== selected || !document.hasFocus())) {
 				if(!utils.muted())
 					utils.playSound("ios.mp3");
 			}
@@ -619,11 +619,11 @@ var helper = {
 				time = new Date(message.ts),
 				receivedMessage = utils.htmlEncode(message.msg);
 			panelContent.innerHTML = utils.urlToLink(receivedMessage);
-			if(time.toDateString() != (new Date()).toDateString())
+			if(time.toDateString() !== (new Date()).toDateString())
 				time = time.toDateString() + ", " + time.toLocaleTimeString();
 			else
 				time = "today, " + time.toLocaleTimeString();
-			if(username == utils.getUsername()) {
+			if(username === utils.getUsername()) {
 				panelContainer.className = "panel panel-success col-md-8 pull-right";
 				panelHeader.innerHTML = time + " | me";
 				panelContent.align = "right";
@@ -650,7 +650,7 @@ var helper = {
 				$('title').text("#AP - " + contactName + " just contacted you!");
 			if($active.length)
 				selectedContact = $active[0].id;
-			if(selectedContact == contactName) {
+			if(selectedContact === contactName) {
 				utils.displayMessageContent(message, contactName, moreMessages);
 				if(!chained)
 					utils.animateDisplay();
@@ -873,10 +873,10 @@ var helper = {
 						utils.setHeadline(msg);
 					});
 					//Ask before user leaves the page
-					/*$(window).bind("beforeunload", function (msg) {
-						console.log(msg);
-						return "If you didn't set the \"Remember Me\"-option or close the tab you will be logged out.";
-					});*/
+					if(!utils.rememberMe())
+						$(window).bind("beforeunload", function(msg) {
+							return "You will be logged out when you reload or close.";
+						});
 				} else {
 					$('#loginAlert').fadeIn(1000, function() {
 						setTimeout(function() {
@@ -899,7 +899,7 @@ var helper = {
 				if(utils.rememberMe())
 					localStorage.password = passhash;
 			}
-			if(utils.rememberMe() && !localStorage.getObject("rememberUser")) {
+			if(!localStorage.getObject("rememberUser") && utils.rememberMe()) {
 				localStorage.setObject("rememberUser", true);
 				localStorage.username = username;
 			}
@@ -994,7 +994,7 @@ var helper = {
 
 $(document).ready(function() {
 	helper.addStorageObjectFunctions();
-	if(localStorage.getObject("rememberUser")) {
+	if(utils.rememberMe()) {
 		document.getElementById("username").value = localStorage.username || "";
 		document.getElementById("password").value = document.getElementById("username").value && "password";
 		client.login(localStorage.username, localStorage.password, true);
