@@ -15,18 +15,6 @@
  *
  */
 
-$(document).ready(function () {
-    helper.addStorageObjectFunctions();
-    if (localStorage.getObject("rememberUser"))
-        client.login(localStorage.username, localStorage.password, true);
-    else {
-        helper.clearStorageUserdata();
-    }
-    client.init();
-    $('form').submit(function (e) {
-        e.preventDefault();
-    });
-});
 
 var errorHandler = function (errorType, errorMsg, errorCode) { //You can call it with errorType and errorMessage or with an errorcode
     var error = {type: errorType || "Error", msg: errorMsg || "An error occurred"},
@@ -800,7 +788,7 @@ var client = {
         }
         antiprism.addEventListener("msg", utils.onMessage);
         antiprism.addEventListener("closed", client.lostConnection);
-        antiprism.addEventListener("error", errorHandler); //TODO: use errorhandler
+        antiprism.addEventListener("error", errorHandler);
         antiprism.addEventListener("online", utils.displayOnline);
         antiprism.addEventListener("added", client.getContacts);
     },
@@ -960,3 +948,16 @@ var testTwoFunctions = function (firstFunction, secondFunction, repeat) { //repe
     }
     console.groupEnd("Testing results");
 };
+
+$(document).ready(function () {
+    helper.addStorageObjectFunctions();
+    if (localStorage.getObject("rememberUser"))
+        client.login(localStorage.username, localStorage.password, true);
+    else {
+        helper.clearStorageUserdata();
+    }
+    client.init();
+    $('form').submit(function (e) {
+        e.preventDefault();
+    });
+});
