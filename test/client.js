@@ -133,7 +133,7 @@ var helper = {
 	},
 
 	errorHandler = function(errorType, errorMsg, errorCode) { //You can call it with errorType and errorMessage or with an errorcode
-		var error = {type:errorType || "Error", msg:errorMsg || "An error occurred"},
+		var error = {type:errorType || "Error", msg:errorMsg || "Unknown Error."},
 			getErrorByCode = function(errorCode) { //TODO change errortext
 				var error = {type:"Error", msg:""};
 				switch(errorCode) {
@@ -185,7 +185,7 @@ var helper = {
 				});
 			};
 		if(!isNaN(errorCode))
-			getErrorByCode(errorCode);
+			error = getErrorByCode(errorCode);
 		displayError(error);
 	},
 
