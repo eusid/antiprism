@@ -21,7 +21,7 @@ var DEBUG = true, // change to your needs!
 	messageController = require("./message_controller.js"),
 	webSockets = {}, wscount = 1,
 	timeouts = {}, timeoutms = 35000, // 35s for safety
-	redis = require("redis").createClient();
+	redis = require("redis").createClient(12996,"pub-redis-12996.us-east-1-1.1.ec2.garantiadata.com",{auth_pass:"paran0iaInc0wnz"});
 
 console.log("Welcome 2 #ANTiPRiSM");
 dbg("Listening on port "+(process.env.PORT||9000)+"...");
