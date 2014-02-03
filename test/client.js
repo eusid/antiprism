@@ -886,6 +886,11 @@ var helper = {
 				}
 				$('#password').val("");
 			};
+			antiprism.addEventListener("msg", utils.onMessage);
+			antiprism.addEventListener("closed", client.lostConnection);
+			antiprism.addEventListener("error", errorHandler);
+			antiprism.addEventListener("online", utils.displayOnline);
+			antiprism.addEventListener("added", client.getContacts);
 			if(restored)
 				return antiprism.login(username, {hash:localStorage.password}, callback);
 			if(registration)
@@ -903,11 +908,6 @@ var helper = {
 				localStorage.setObject("rememberUser", true);
 				localStorage.username = username;
 			}
-			antiprism.addEventListener("msg", utils.onMessage);
-			antiprism.addEventListener("closed", client.lostConnection);
-			antiprism.addEventListener("error", errorHandler);
-			antiprism.addEventListener("online", utils.displayOnline);
-			antiprism.addEventListener("added", client.getContacts);
 		},
 		logout:function() {
 			antiprism.close();
