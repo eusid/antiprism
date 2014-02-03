@@ -59,8 +59,8 @@ var Antiprism = function(host,debugFlag) {
 				return plain;
 			}
 		},
-		helpers = {
-			getKey: function(user, callback) {
+		helpers = 
+{			getKey: function(user, callback) {
 				if(session.conversations[user])
 					return callback ? callback() : 0;
 				else if(session.cache.keys[user]) {
@@ -86,7 +86,7 @@ var Antiprism = function(host,debugFlag) {
 			registerWsCallbacks: function() {
 				ws.onmessage = function(msg) {
 					if(msg.data == "PONG") {
-						debug("got PONG!");
+						debug("got PONG, took "+(new Date().getTime()-session.pingstart)+"ms");
 						return pingfails = 3;
 					}
                     var response = JSON.parse(msg.data);
@@ -284,6 +284,7 @@ var Antiprism = function(host,debugFlag) {
 		events = {},
 		pingID = setInterval(function() {
 			debug("PiNGiNG, "+pingfails+" tries left");
+			session.pingstart = new Date().getTime();
 			if(pingfails--)
 				ws.send("PING");
 			else
