@@ -785,7 +785,7 @@ var helper = {
 					client.getMessages(contactName, start, end);
 				});
 				return;
-			} else if(userObj.msglist.length) {
+			} else if(userObj.msglist.length >= 10) {
 				utils.displayMessages(userObj, contactName);
 				console.log("displayed messages from sessionstorage");
 				return;
