@@ -18,36 +18,6 @@ try {
 		}
 	}
 
-	function uint6ToB64 (nUint6) {
-		return nUint6 < 26 ?
-				nUint6 + 65
-			: nUint6 < 52 ?
-				nUint6 + 71
-			: nUint6 < 62 ?
-				nUint6 - 4
-			: nUint6 === 62 ?
-				43
-			: nUint6 === 63 ?
-				47
-			:
-				65;
-	}
-
-	function b64ToUint6 (nChr) {
-		return nChr > 64 && nChr < 91 ?
-				nChr - 65
-			: nChr > 96 && nChr < 123 ?
-				nChr - 71
-			: nChr > 47 && nChr < 58 ?
-				nChr + 4
-			: nChr === 43 ?
-				62
-			: nChr === 47 ?
-				63
-			:
-				0;
-	}
-
 	Buffer.prototype.fromString = function(str) {
 		this.buf = new ArrayBuffer(str.length);
 		var view = new Uint8Array(this.buf);
@@ -117,7 +87,7 @@ try {
 	Buffer.prototype.toBase64 = function () {
 		var bytes = new Uint8Array(this.buf),
 			i, len = bytes.length, base64 = "";
-
+			
 		for (i = 0; i < len; i+=3) {
 			base64 += chars[bytes[i] >> 2];
 			base64 += chars[((bytes[i] & 3) << 4) | (bytes[i + 1] >> 4)];
