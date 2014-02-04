@@ -760,14 +760,16 @@ var helper = {
 				errorHandler(0, 0, reconnected.error);
 			if(reconnected)
 				for(var userObj in sessionStorage) {
-					var obj;
-					try {
-						obj = sessionStorage.getObject(userObj);
-					} catch(e) {
-						continue;
+					if(sessionStorage.hasOwnProperty(userObj)) {
+						var obj;
+						try {
+							obj = sessionStorage.getObject(userObj);
+						} catch(e) {
+							continue;
+						}
+						obj.numberOfMessages = undefined;
+						sessionStorage.setObject(userObj, obj);
 					}
-					obj.numberOfMessages = undefined;
-					sessionStorage.setObject(obj);
 				}
 			else
 				$('#serverLost').modal();
