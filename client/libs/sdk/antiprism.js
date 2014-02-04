@@ -105,7 +105,7 @@ var Antiprism = function(host,debugFlag) {
 					clearInterval(pingID);
 					var callback = clientEvents.closed || function(){};
 					debug("connection closed, retries: "+retries);
-					if(!retries--) {
+					if(retries-- < 1) {
 						callback(false);
 						return;
 					}
@@ -300,7 +300,7 @@ var Antiprism = function(host,debugFlag) {
 				console.log(msg);
 			console.groupEnd();
 		},
-		clientEvents = {online:debug,msg:debug,added:debug};
+		clientEvents = {online:debug,msg:debug,added:debug,closed:debug, error:debug};
 	debug("created new websocket");
 	helpers.registerWsCallbacks();
 	events.msg = function(msg) {
