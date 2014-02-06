@@ -888,7 +888,7 @@ var helper = {
 				}
 				$('#password').val("");
 			};
-			antiprism.addEventListener("msg", utils.onMessage);
+			antiprism.addEventListener("msg", callbackOnMessage);
 			antiprism.addEventListener("closed", client.lostConnection);
 			antiprism.addEventListener("error", errorHandler);
 			antiprism.addEventListener("online", utils.displayOnline);
