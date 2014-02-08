@@ -661,7 +661,7 @@ var enableWebRTC = false,
 				if(!chained)
 					utils.animateDisplay();
 			} else {
-				$('#' + contactName).addClass("newMessage");
+				$(document.getElementById(contactName)).addClass("newMessage");
 			}
 		},
 		animateDisplay:function() {
