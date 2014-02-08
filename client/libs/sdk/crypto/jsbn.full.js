@@ -1729,6 +1729,8 @@ RSAKey.prototype.getPrivate = function() {
 	for(var x in params) {
     val = this[params[x]].toString(16);
     params[x] = (val.length % 2) ? '0'+val : val;
+    if((params[x].length >> 1) % 2)
+      params[x] = '00'+params[x];
   }
   return new Buffer(params.join(""),'hex').toString('base64');
 }

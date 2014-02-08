@@ -189,16 +189,18 @@ var Antiprism = function(host,debugFlag) {
 						session.cache.keys[user] = msg.contacts[user].key;
 						delete msg.contacts[user].key;
 					}
-					for(user in msg.requests)
-						session.cache.keys[user] = msg.requests[user].key;
-					if(msg.requests)
-						msg.requests = Object.keys(msg.requests);
+					for(var type in msg.requests) {
+						for(var user in msg.requests[type])
+							session.cache.keys[user] = msg.requests[type][user].key;
+						msg.requests[type] = Object.keys(msg.requests[type]);
+					}
 					if(callback)
 						callback(msg);
 				});
 			},
 			initConversation: function(user,callback) {
 				ws.callServer("pubkey", [user], function(msg) { // request pubkey first
+					console.log(msg);
 					var convkey = new SecureRandom().getString(32), keys = [];
 					session.conversations[user] = convkey;
 					keys.push(utils.encryptRSA(convkey, session.pubkey));

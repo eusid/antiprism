@@ -3,10 +3,11 @@ try {
 } catch(e) { }
 (function(exports){
 "use strict"
-	var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+	var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",
+		hexchars = "0123456789abcdef";
 	function Buffer(input, format) {
 		if(!input)
-			return this.buf = new ArrayBuffer();
+			return this.buf = [];
 		this.format = format || typeof input;
 		switch(this.format) {
 			case 'base64':
@@ -19,10 +20,9 @@ try {
 	}
 
 	Buffer.prototype.fromString = function(str) {
-		this.buf = new ArrayBuffer(str.length);
-		var view = new Uint8Array(this.buf);
+		this.buf = new Array(str.length);
 		for(var i = 0; i < str.length; i++)
-			view[i] = str.charCodeAt(i);
+			this.buf[i] = str.charCodeAt(i);
 		return this;
 	}
 	Buffer.prototype.toString = function(format) {
@@ -32,29 +32,25 @@ try {
 			case 'hex':
 				return this.toHex();
 			default:
-				return String.fromCharCode.apply(this,new Uint8Array(this.buf));
+				return String.fromCharCode.apply(this,this.buf);
 		}
 	}
 	Buffer.prototype.fromHex = function (hex) {
 		if(hex.length % 2)
 			hex = '0'+hex;
-		this.buf = new ArrayBuffer(hex.length / 2);
-		var view = new Uint8Array(this.buf);
-
-		for (var i = 0; i < view.length; i++)
-			view[i] = parseInt(hex.substr(i*2, 2), 16);
+		this.buf = new Array(hex.length>>1);
+		for (var i = 0; i < hex.length; i+=2)
+			this.buf[i>>1] = ((hex[i]>'9'?((hex[i].charCodeAt(0)^96)+9):hex[i])<<4)
+							|((hex[i+1]>'9'?((hex[i+1].charCodeAt(0)^96)+9):hex[i+1])<<0);
 
 		return this;
 	};
 	Buffer.prototype.toHex = function () {
-		var view = new Uint8Array(this.buf),
-			hex = "",
-			chr;
+		var hex = "",
+			byte;
 		
-		for (var i = 0; i < view.length; i++) {
-			chr = view[i].toString(16);
-			hex += (chr.length < 2) ? '0'+chr : chr;
-		}
+		for (var i = 0; i < this.buf.length; i++)
+			hex += hexchars[this.buf[i]>>4]+hexchars[this.buf[i]%16];
 		return hex;
 	};
 	Buffer.prototype.fromBase64 = function(base64) {
@@ -68,31 +64,28 @@ try {
 				bufferLength--;
 		}
 
-		this.buf = new ArrayBuffer(bufferLength);
-		var bytes = new Uint8Array(this.buf);
+		this.buf = new Uint8Array(bufferLength);
 
 		for (i = 0; i < len; i+=4) {
 			encoded1 = chars.indexOf(base64[i]);
 			encoded2 = chars.indexOf(base64[i+1]);
 			encoded3 = chars.indexOf(base64[i+2]);
 			encoded4 = chars.indexOf(base64[i+3]);
-
-			bytes[p++] = (encoded1 << 2) | (encoded2 >> 4);
-			bytes[p++] = ((encoded2 & 15) << 4) | (encoded3 >> 2);
-			bytes[p++] = ((encoded3 & 3) << 6) | (encoded4 & 63);
+ 
+ 			this.buf[p++] = (encoded1 << 2) | (encoded2 >> 4);
+			this.buf[p++] = ((encoded2 & 15) << 4) | (encoded3 >> 2);
+			this.buf[p++] = ((encoded3 & 3) << 6) | (encoded4 & 63);
 		}
-
 		return this;
 	}
 	Buffer.prototype.toBase64 = function () {
-		var bytes = new Uint8Array(this.buf),
-			i, len = bytes.length, base64 = "";
+		var i, len = this.buf.length, base64 = "";
 			
 		for (i = 0; i < len; i+=3) {
-			base64 += chars[bytes[i] >> 2];
-			base64 += chars[((bytes[i] & 3) << 4) | (bytes[i + 1] >> 4)];
-			base64 += chars[((bytes[i + 1] & 15) << 2) | (bytes[i + 2] >> 6)];
-			base64 += chars[bytes[i + 2] & 63];
+			base64 += chars[this.buf[i] >> 2];
+			base64 += chars[((this.buf[i] & 3) << 4) | (this.buf[i + 1] >> 4)];
+			base64 += chars[((this.buf[i + 1] & 15) << 2) | (this.buf[i + 2] >> 6)];
+			base64 += chars[this.buf[i + 2] & 63];
 		}
 
 		if ((len % 3) === 2) {
