@@ -1038,6 +1038,7 @@ var enableWebRTC = false,
 				}
 			} catch(e) {
 				console.warn("Failed to parse Message for WebRTC!");
+				utils.onMessage(msg);
 			}
 
 		};
@@ -1125,7 +1126,7 @@ var enableWebRTC = false,
 			return btoa(JSON.stringify(msg));
 		};
 
-		document.getElementById('openConnection').onclick = openConnection;//TODO
+		//document.getElementById('openConnection').onclick = openConnection;//TODO
 	};
 
 $(document).ready(function() {
