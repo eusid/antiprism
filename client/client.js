@@ -469,7 +469,7 @@ var enableWebRTC = false,
 					utils.displayOnline({user:msg.requests[i], online:false, request:true});
 			}
 			if(formerSelectedContact)
-				$('#' + formerSelectedContact).addClass("active");
+				$(document.getElementById(formerSelectedContact)).addClass("active");
 			if(msg.requests === undefined)
 				msg.requests = [];
 			utils.addFriendsPopover(Object.keys(msg.contacts).length + msg.requests.length);
@@ -563,7 +563,7 @@ var enableWebRTC = false,
 				callback();
 		},
 		onContactSelect:function(contactName) {
-			var $contactNode = $('#' + contactName),
+			var $contactNode = $(document.getElementById(contactName)),
 				$active = $('.active'),
 				userObj = sessionStorage.getObject(contactName),
 				iconClass = $contactNode.children()[0].className;
