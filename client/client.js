@@ -712,7 +712,6 @@ var enableWebRTC = false,
 			sessionStorage.setObject(contactname, userObj);
 		},
 		displayOnline:function(msg) {
-			console.log("displayOnline msg: ", msg);
 			if(msg && msg.error)
 				errorHandler(0, 0, msg.error);
 			var userIcon = document.getElementById(msg.user);
