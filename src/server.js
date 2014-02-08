@@ -11,19 +11,21 @@ var DEBUG = true, // change to your needs!
 		if(DEBUG)
 			console.log("#AP @ "+(new Date()).toISOString()+" / "+text);
 	},
+	port = process.env.PORT||9000,
 	http = require('http'),
 	file = new(require('node-static').Server)('./client'),
 	webserver = http.createServer(function (req, res) {
 		file.serve(req,res);
-	}).listen(process.env.PORT||9000),
-	WebSocketServer = require("ws").Server,
-	webSocketServer = new WebSocketServer({server: webserver}),
+	}).listen(port),
+	webSocketServer = new (require("ws").Server)({server: webserver}),
 	messageController = require("./message_controller.js"),
 	webSockets = {}, wscount = 1,
+	serverSession = { clients: webSockets, remotes: {}, port: port },
 	timeouts = {}, timeoutms = 35000, // 35s for safety
 	//redis = require("redis").createClient(12996,"pub-redis-12996.us-east-1-1.1.ec2.garantiadata.com",{auth_pass:"paran0iaInc0wnz"});
-	redis = require("redis").createClient();
+	redis = require("redis").createClient(process.env.REDISPORT||undefined);
 
+serverSession.redis = redis;
 console.log("Welcome 2 #ANTiPRiSM");
 dbg("Listening on port "+(process.env.PORT||9000)+"...");
 
@@ -33,7 +35,7 @@ redis.keys("sess.*", function(err,reply) { // clear sessions
 });
 
 webSocketServer.on("connection", function(ws) {
-	webSockets[wscount] = {id: wscount, pingfail: 0, send: function(msg, seq){
+	webSockets[wscount] = {id: wscount, sockets: webSockets, pingfail: 0, send: function(msg, seq){
 		if(seq)
 			msg.seq = seq;
 		dbg("sending reply: "+JSON.stringify(msg));
@@ -44,27 +46,33 @@ webSocketServer.on("connection", function(ws) {
 	}};
 	var session = webSockets[wscount++],
         killSocket = function () {
+        	dbg("killing socket #"+session.id);
             ws.close();
         },
         addr = ws._socket.address(),
-		ip = ws.upgradeReq.headers['x-forwarded-for'] || addr.address,
-		connection = ip+':'+addr.port;
-	dbg("Got connection from "+ip);
-	timeouts[session.id] = setTimeout(killSocket, timeoutms);
-	session.sockets = webSockets;
+		connection = ws.upgradeReq.headers['x-forwarded-for'] || addr.address;
+
+	dbg("Got connection from "+connection);
+	//timeouts[session.id] = setTimeout(killSocket, timeoutms);
 	session.redis = redis;
 	session.dbg = dbg;
+	session.addr = connection;
+	session.socket = ws;
 	ws
 		.on("message", function(message) {
 			if(message == "PING") {
 				clearTimeout(timeouts[session.id]);
-				timeouts[session.id] = setTimeout(killSocket, timeoutms);
+				if(!session.isServer)
+					timeouts[session.id] = setTimeout(killSocket, timeoutms);
 				return ws.send("PONG");
             }
             messageController.handleMessage(message, session, {
 				response: session.send,
-				dbg: dbg
-			});
+				dbg: dbg,
+				clearPing: function() {
+					clearTimeout(timeouts[session.id]);
+				}
+			}, serverSession);
 		})
 		.on("error", function() {
 			dbg("ws-Error: "+arguments);
@@ -83,7 +91,7 @@ webSocketServer.on("connection", function(ws) {
 							});
 							session.redis.hgetall("convs."+session.username, function(err, contacts) {
 								for (var user in contacts)
-									messageController.helpers.broadcast(session, user, {online:false, user:session.username});
+									messageController.helpers.broadcast({storage: session}, user, {online:false, user:session.username});
 							});
 						}
 					});

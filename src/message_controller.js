@@ -4,14 +4,23 @@
  * message controller for the node-server from Project Antiprism
  * -------------------------------------------------------------
  */
-var helpers = {
-		broadcast: function(storage, user, msg, callback) {
-			storage.redis.smembers("sess."+user, function(err,reply) {
+var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], serverSession = undefined,
+	helpers = {
+		broadcast: function(ctx, user, msg, callback) {
+			console.log("broadcast called for "+user, msg);
+			if(user.indexOf("@") !== -1) {
+				helpers.forward(user, {push: msg, user: user.split("@")[0]}, ctx);
+				if(callback)
+					callback();
+				return;
+			}
+			ctx.storage.redis.smembers("sess."+user, function(err,reply) {
+				console.log(user+" has "+reply.length+" active session(s)");
 				if(err)
 					return helpers.dbg("redis-Error: "+err);
 				for(var id in reply) {
-					if(storage.sockets[reply[id]] !== undefined) // not sure if redis and node are in sync
-						storage.sockets[reply[id]].send(msg);
+					if(ctx.storage.sockets[reply[id]] !== undefined) // not sure if redis and node are in sync
+						ctx.storage.sockets[reply[id]].send(msg);
 				}
 			});
 			if(callback) callback();
@@ -26,9 +35,164 @@ var helpers = {
 				return false;
 			};
 			return new Buffer(rsa.encrypt(plain),'hex').toString('base64');
+		},
+		attachMsgHandler: function(ws, session) {
+			var pushActions = {
+					confirm: function(user) {
+						
+					}
+				},
+				storage = {
+					loggedIn: true,
+					redis: serverSession.redis,
+					sockets: serverSession.clients
+				};
+			return ws.onmessage = function(msg) {
+				console.log("got message: "+msg.data);
+				if(msg.data === "PING")
+					return ws.send("PONG");
+				else if(msg.data === "PONG")
+					return 0; // todo: some checking
+				var data = JSON.parse(msg.data);
+				if(data.push) {		
+					console.log("data: ",data);
+					data.push.user = data.push.user+'@'+session.name;
+					helpers.broadcast({storage: storage, isServer:true}, data.user, data.push);
+				}
+				else if(data.rseq) {
+					console.log("got something that looks like a reply, available callbacks:")
+					console.log(session.callbacks);
+					return session.callbacks[data.rseq] ? session.callbacks[data.rseq](data) : -1;
+				}
+				else
+					for(var action in RemoteAllowed)
+						if(Object.keys(data).indexOf(RemoteAllowed[action]) !== -1) {
+							console.log("got here! i shall call \""+RemoteAllowed[action]+"\", data:", data);
+							storage.username = data.remoteName+'@'+session.name // wtf
+							var ctx = {
+								sendClient: function(msg) {
+									msg.rseq = data.seq;
+									session.sendObject(msg);
+								},
+								isServer: true,
+								storage: storage
+							}
+							console.log(parseRequest(data, ctx, true));
+						}	
+			};
+		},
+		registerServer: function(host, init, callback) {
+			var hostinfo = host.split(":",2),
+				server = hostinfo[0],
+				port = hostinfo[1] || 80,
+				registerServer = this.registerServer;
+			console.log("got "+server+" and "+port);
+			if(!(require("net")).isIPv4(server))
+				return (require("dns")).lookup(server, 4, function(err,ip) {
+					console.log("looked up "+server+", got "+err||ip);
+					if(err == null)
+						registerServer([ip,port].join(":"), callback);
+				});
+			var ws = new (require("ws"))("ws://"+host),
+				pingID;
+			ws.outqueue = [];
+			ws
+			.on("open",function() {
+				if(init)
+					serverSession.remotes[host].sendObject({registerServer:[serverSession.port]});
+				if(callback)
+					callback(true);
+				pingID = setInterval(function() {
+					if(ws.readyState === ws.OPEN)
+						ws.send("PING");
+				}, 25000);
+				console.log("said hi to "+host);
+				console.log("working queue now");
+				while(ws.outqueue.length)
+					serverSession.remotes[host].sendObject(ws.outqueue.shift());
+			})
+			.on("close", function() {
+				clearInterval(pingID);
+				delete serverSession.remotes[host];
+			})
+			.on("error", function(e) {
+				delete serverSession.remotes[host];
+			});
+			serverSession.remotes[host] = {
+				seq: 0,
+				callbacks: {},
+				socket: ws,
+				name: host,
+				sendObject: function(msg, replyFlag) {
+					if(ws.readyState != ws.OPEN)
+						return ws.outqueue.push(msg);
+					ws.send(JSON.stringify(msg));
+				}
+			};
+			helpers.attachMsgHandler(ws, serverSession.remotes[host]);
+		},
+		forward: function(user, message, ctx) {
+			var forward = this.forward,
+				parts = user.split("@"),
+				username = parts[0],
+				host = parts[1],
+				remote = serverSession.remotes[host];
+			if(remote === undefined)
+				return helpers.registerServer(host, true, function(connected) {
+					if(connected)
+						forward(user, message, ctx);
+				});
+			if(!message.push) {
+				for (var field in message) {
+					var index = message[field].indexOf(user);
+					message[field][index] = username;
+				}
+				var seq = ++remote.seq;
+				message.seq = seq;
+				message.remoteName = ctx.storage.username;
+				remote.callbacks[seq] = function(msg) {
+					for(field in msg)
+						if(msg[field] === username) {
+							msg[field] = user;
+							break;
+						}
+					delete msg.rseq;
+					delete msg.remoteName;
+					ctx.sendClient(msg);
+				}
+			}
+			console.log("["+(seq||"PUSH")+"] sending to "+[username,host].join("@"),message);
+			remote.sendObject(message, seq);
 		}
 	},
 	actions = {
+		registerServer: function(ctx, port) {
+			var session = ctx.storage,
+				host = session.addr+':'+port;
+			serverSession.remotes[host] = {
+				storage: session,
+				socket: session.socket,
+				seq: 0,
+				name: host,
+				callbacks: {},
+				sendObject: ctx.sendClient
+			};
+			session.isServer = true;
+			helpers.clearPing();
+			helpers.attachMsgHandler(session.socket, serverSession.remotes[host]);
+		},
+		pubkey: function(ctx, user) {
+			if(user === undefined)
+				return Error.INVALID_PARAMS;
+			if(user.indexOf("@") !== -1)
+				return { forward: user };
+			ctx.storage.redis.hget("users."+user, "pubkey", function(err,reply) {
+				if(reply)
+					ctx.sendClient({user:user,pubkey:reply});
+				else
+					ctx.sendClient({error:Error.UNKNOWN_USER});
+			});
+		},
 		register: function(ctx, username, pubkey, privkey) {
 			ctx.storage.redis.exists("users."+username,function(err,reply) {
 				if(reply)
@@ -94,7 +258,7 @@ var helpers = {
 					if(parseInt(reply) == 1)
 						ctx.storage.redis.hgetall("convs."+ctx.storage.username, function(err, contacts) {
 							for (var user in contacts)
-								helpers.broadcast(ctx.storage, user, {online:true, user:ctx.storage.username});
+								helpers.broadcast(ctx, user, {online:true, user:ctx.storage.username});
 						});
 				});
 			});
@@ -133,54 +297,56 @@ var helpers = {
 				return Error.INVALID_AUTH;
 			ctx.storage.redis.multi()
 				.hgetall("convs."+ctx.storage.username)
-				.hgetall("reqs."+ctx.storage.username)
+				.hgetall("reqs.to."+ctx.storage.username)
+				.hgetall("reqs.from."+ctx.storage.username)
 				.exec(function(err,replies) {
 					var contacts = replies[0],
-						requests = replies[1];
+						requests = {to: replies[1] || {}, from: replies[2] || {}};
 					if(!contacts)
-						return ctx.sendClient({contacts:{}, requests:requests||[]});
+						return ctx.sendClient({contacts:{}, requests:requests});
 					var	multi = ctx.storage.redis.multi(),
-						users = Object.keys(contacts),
+						users = Object.keys(contacts).map(function (x) {
+							return {name: x, local: x.indexOf("@") === -1};
+						}),
 						opCount;
 					for(var i in users) {
+						if(!users[i].local)
+							continue;
 						multi
-							.scard("sess."+users[i])
-							.hmget("users."+users[i],"status","lastseen")
-							.hexists("convs."+users[i],ctx.storage.username)
-							.hexists("convs."+ctx.storage.username,users[i]);
+							.scard("sess."+users[i].name)
+							.hmget("users."+users[i].name,"status","lastseen")
+							.hexists("convs."+users[i].name,ctx.storage.username)
+							.hexists("convs."+ctx.storage.username,users[i].name);
 						if(opCount === undefined)
 							opCount = multi.queue.length - 1;
 					}
 					multi.exec(function(err,replies) {
-						var ret = {};
-						for(var i = 0; i < users.length; i++) {
+						var ret = {},
+							localUsers = users.filter(function(x){return x.local}),
+							remoteUsers = users.filter(function(x){return !x.local});
+						for(var i in localUsers) {
 							var redisIndex = i*opCount,
 								reply = [];
 							for(var j = 0; j < opCount; j++)
 								reply.push(replies[redisIndex+j]);
-							var friends = !!(reply[2]&&reply[3]);
-							ret[users[i]] = {
-								key: contacts[users[i]],
-								online: !!(reply[0]&&friends),
-								status: reply[1][0], // maybe priv8?
-								lastseen: friends ? reply[1][1] : 0,
-								confirmed: friends ? undefined : false 
+							ret[users[i].name] = {
+								key: contacts[users[i].name],
+								online: !!reply[0],
+								status: reply[1][0],
+								lastseen: reply[1][1],
 							};
 						}
+						for(var i in remoteUsers)
+							ret[users[i].name] = {
+								key: contacts[users[i].name],
+								online: false, // TODO: add "online"-set for each host and cache state
+								status: null, // no way to determine it yet, maybe let the client ask?
+								lastseen: 0 // not that easy at the moment :S
+							}
 						helpers.dbg("replying to contacts-request");
-						ctx.sendClient({contacts:ret,requests:requests||[]});
+						ctx.sendClient({contacts:ret,requests:requests});
 					});
 				});
-		},
-		pubkey: function(ctx, user) {
-			if(user === undefined)
-				return Error.INVALID_PARAMS;
-			ctx.storage.redis.hget("users."+user, "pubkey", function(err,reply) {
-				if(reply)
-					ctx.sendClient({user:user,pubkey:reply});
-				else
-					ctx.sendClient({error:Error.UNKNOWN_USER});
-			});
 		},
 		conversationKey: function(ctx, user) {
 			if(user === undefined)
@@ -196,50 +362,71 @@ var helpers = {
 				return Error.INVALID_PARAMS;
 			if(!ctx.storage.loggedIn)
 				return Error.INVALID_AUTH;
-			ctx.storage.redis.multi()
-				.hsetnx("convs."+ctx.storage.username,user,convkeys[0])
-				.hexists("reqs."+ctx.storage.username, user)
-				.exec(function(err,replies) {
-					if(err)
-						return helpers.dbg("redis-Error: "+err);
-					if(!replies[0]||replies[1])
-						return ctx.sendClient({initiated:false,with:user});
-					ctx.storage.redis.hsetnx("reqs."+user,ctx.storage.username,convkeys[1],function(err,reply) {
-						if(err)
-							return helpers.dbg("redis-Error: "+err);
-						if(!reply)
-							return ctx.sendClient({initiated:false,with:user});
-						ctx.sendClient({initiated:true,with:user});
-						helpers.broadcast(ctx.storage,user,{user:ctx.storage.username,convkey:convkeys[1],added:true});
-					});
-				});
+			var isRemoteUser = user.indexOf("@") !== -1,
+				multi = ctx.storage.redis.multi();
+			multi.hexists("convs."+user, ctx.storage.username)
+			if(!ctx.isServer)
+				multi.hsetnx("reqs.from."+ctx.storage.username,user,convkeys[0]);
+			if(!isRemoteUser)
+				multi.hsetnx("reqs.to."+user,ctx.storage.username, convkeys[1]);
+			multi.exec(function(err,replies) {
+				if(err)
+					return helpers.dbg("redis-Error: "+err);
+				if(replies[0] || !replies[1])
+					return ctx.sendClient({initiated:false,with:user});
+				ctx.sendClient({initiated:true,with:user});
+				helpers.broadcast(ctx,user,{user:ctx.storage.username,convkey:convkeys[1],added:true});
+			});
+			if (user.indexOf("@") !== -1)
+				return { forward: user };
 		},
 		confirm: function(ctx, user) {
 			if(user === undefined)
 				return Error.INVALID_PARAMS;
 			if(!ctx.storage.loggedIn)
 				return Error.INVALID_AUTH;
-			ctx.storage.redis.multi()
-				.hexists("convs."+ctx.storage.username,user)
-				.hget("reqs."+ctx.storage.username, user)
-				.hdel("reqs."+ctx.storage.username, user)
-				.exec(function(err,replies) {
-					if(err)
-						return helpers.dbg("redis-Error: "+err);
-					if(replies[0] || !replies[1])
-						return ctx.sendClient({ack:false});
-					ctx.storage.redis.hset("convs."+ctx.storage.username, user, replies[1], function(err,reply) {
-						helpers.broadcast(ctx.storage, user, {online:true, user:ctx.storage.username});
-						ctx.sendClient({ack:true});
-					});
-				});
+			var isRemoteUser = user.indexOf("@") !== -1;
+				multi = ctx.storage.redis.multi();
+			if(!ctx.isServer) {
+				multi
+					.hexists("convs."+ctx.storage.username, user)
+					.hget("reqs.to."+ctx.storage.username, user)
+					.hdel("reqs.to."+ctx.storage.username, user);
+				if(!isRemoteUser)
+					multi
+						.hget("reqs.from."+user, ctx.storage.username)
+						.hdel("reqs.from."+user, ctx.storage.username);
+			}
+			else {
+				multi
+					.hexists("convs."+user,ctx.storage.username)
+					.hget("reqs.from."+user, ctx.storage.username)
+					.hdel("reqs.from."+user, ctx.storage.username);
+			}
+			multi.exec(function(err,replies) {
+				if(err)
+					return helpers.dbg("redis-Error: "+err);
+				if(replies[0] || !replies[1])
+					return ctx.sendClient({ack:false});
+				if(!ctx.isServer) {
+					ctx.storage.redis.hset("convs."+ctx.storage.username, user, replies[1]);
+					if(!isRemoteUser)
+						ctx.storage.redis.hset("convs."+user, ctx.storage.username, replies[3]);
+				}
+				else
+					ctx.storage.redis.hset("convs."+user, ctx.storage.username, replies[1]);
+				ctx.sendClient({ack:true});
+			});
+			helpers.broadcast(ctx, user, {online:true, user:ctx.storage.username});
+			if(isRemoteUser && !ctx.isServer)
+				return { forward: user };
 		},
-		deny: function(ctx, user) {
+		deny: function(ctx, user) { //TODO: wont work at all right now :D
 			if(user === undefined)
 				return Error.INVALID_PARAMS;
 			if(!ctx.storage.loggedIn)
 				return Error.INVALID_AUTH;
-			ctx.storage.redis.hget("reqs."+ctx.storage.username, user, function(err, reply) {
+			ctx.storage.redis.hget("reqs.to."+ctx.storage.username, user, function(err, reply) {
 				if(err)
 						return helpers.dbg("redis-Error: "+err);
 				if(reply === null)
@@ -289,13 +476,16 @@ var helpers = {
 			if(!ctx.storage.loggedIn)
 				return Error.INVALID_AUTH;
 			var storeMsg = {ts:new Date().getTime(), from:ctx.storage.username, msg:msg},
-				storeMsgJSON = JSON.stringify(storeMsg);
+				storeMsgJSON = JSON.stringify(storeMsg),
+				isRemoteUser = user.indexOf("@") !== -1;
 			if(user < ctx.storage.username) // lawl-sort
 				var convid = user+'.'+ctx.storage.username;
 			else
 				var convid = ctx.storage.username+'.'+user;
 			var pushMessage = function() { 
-				helpers.broadcast(ctx.storage, user, storeMsg);
+				if(isRemoteUser)
+					return;
+				helpers.broadcast(ctx, user, storeMsg);
 				ctx.storage.redis.smembers("sess."+ctx.storage.username, function(err,reply) {
 					if(err)
 						return helpers.dbg("redis-Error: "+err);
@@ -314,19 +504,16 @@ var helpers = {
 				if(reply)
 					pushMessage();
 				else {
-					ctx.storage.redis.multi()
-						.hgetall("convs."+ctx.storage.username)
-						.hgetall("convs."+user)
-						.exec(function(err, replies){
-							if(replies[0] && replies[1]
-								&& Object.keys(replies[0]).indexOf(user) !== -1
-								&& Object.keys(replies[1]).indexOf(ctx.storage.username) !== -1)
-								ctx.storage.redis.rpush("msgs."+convid, storeMsgJSON, pushMessage);
-							else
-								ctx.sendClient({error:Error.NOT_ALLOWED});
-						});
+					ctx.storage.redis.hexists("convs."+ctx.storage.username, user, function(err, reply){
+						if(reply)
+							ctx.storage.redis.rpush("msgs."+convid, storeMsgJSON, pushMessage);
+						else
+							ctx.sendClient({error:Error.NOT_ALLOWED});
+					});
 				}
 			});
+			if(isRemoteUser && !ctx.isServer)
+				return { forward: user };
 		},
 		snapshot: function() {
 			require('heapdump').writeSnapshot();
@@ -345,23 +532,33 @@ var helpers = {
 		"NOT_ALLOWED": 8
 	},
 
-	parseRequest = function(data, ctx) {
+	parseRequest = function(data, ctx, isServerRequest) {
 		for(var actionName in data) {
+			if(actionName === 'seq')
+				continue; // dirteeeeeeeh
 			var action = actions[actionName];
-			if (!action || action.constructor.prototype[actionName])
+			if (!action || action.constructor.prototype[actionName]
+						|| (isServerRequest && RemoteAllowed.indexOf(actionName) == -1))
 				return Error.INVALID_ACTION;
 			if(Array.isArray(data[actionName]))
 				data[actionName].unshift(ctx);
 			else
 				data[actionName] = [ctx];
 			helpers.dbg("Calling: "+actionName+"("+data[actionName].slice(1)+")");
-			return action.apply(this, data[actionName]); // only one action for now
+			var ret = action.apply(this, data[actionName]); // only one action for now
+			if(typeof ret === 'object' && ret.forward) {
+				data[actionName].shift();
+				return helpers.forward(ret.forward, data, ctx);
+			}
+			return ret;
 		}
 	};
 
 exports.helpers = helpers;
-exports.handleMessage = function(message, storage, callbacks) {
+exports.handleMessage = function(message, storage, callbacks, session) {
 	helpers.dbg = callbacks.dbg;
+	helpers.clearPing = callbacks.clearPing;
+	serverSession = session;
 	var result,
 		data,
 		seq;
@@ -380,7 +577,7 @@ exports.handleMessage = function(message, storage, callbacks) {
 			}
 		});
 		if(!isNaN(result))
-			callbacks.response({error:result}, seq)
+			callbacks.response({error:result}, seq);
 	}
 	else
 		callbacks.response(Error.JSON);
