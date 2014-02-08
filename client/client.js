@@ -455,24 +455,26 @@ var enableWebRTC = false,
 			contactsHeadline.id = "contactsHeadline";
 			contactList.appendChild(contactsHeadline);
 			utils.appendContactElement(Object.keys(msg.contacts), msg, contactList);
-			utils.appendContactElement(msg.requests, msg, contactList);
+			utils.appendContactElement(msg.requests.to, msg, contactList);
+			utils.appendContactElement(msg.requests.from, msg, contactList);
 			if($active.length)
 				var formerSelectedContact = $active[0].id;
 			$friendList.text("");
 			$friendList.append(contactList);
 			for(var contact in msg.contacts) {
 				if(msg.contacts.hasOwnProperty(contact))
-					utils.displayOnline({user:contact, online:msg.contacts[contact].online, confirmed:msg.contacts[contact].confirmed});
+					utils.displayOnline({user:contact, online:msg.contacts[contact].online});
 			}
-			for(var i in msg.requests) {
-				if(msg.requests.hasOwnProperty(i))
-					utils.displayOnline({user:msg.requests[i], online:false, request:true});
+			for(var i in msg.requests.to) {
+					utils.displayOnline({user:msg.requests.to[i], online:false, request:true});
 			}
+			for(i in msg.requests.from)
+					utils.displayOnline({user:msg.requests.from[i], online:false, request:true, confirmed:false});
 			if(formerSelectedContact)
 				$(document.getElementById(formerSelectedContact)).addClass("active");
 			if(msg.requests === undefined)
 				msg.requests = [];
-			utils.addFriendsPopover(Object.keys(msg.contacts).length + msg.requests.length);
+			utils.addFriendsPopover(Object.keys(msg.contacts).length + msg.requests.from.length + msg.requests.to.length);
 		},
 		displayRetrieveMoreMessagesButton:function(contactName) {
 			console.log("displaying retrieveMoreMessagesButton...");
