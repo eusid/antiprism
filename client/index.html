@@ -12,19 +12,19 @@
 	<title>#ANTiPRiSM</title>
 
 	<link rel="stylesheet" href="css/bootstrap.min.css">
-	<link rel="stylesheet" href="css/style.css">
+	<link rel="stylesheet" href="css/main.css">
 	<link rel="stylesheet" href="css/typeahead.css">
 </head>
 
 <body>
 
-<div class="container">
+<div class="container-fluid">
 
-	<div class="row headline">
+	<div class="row headline" id="headlineContainer">
 		<div id="headline" class="col-md-9">
 			<h1>AntiPrism</h1>
 		</div>
-		<div id="settings" class="btn-group btn-group-sm row col-md-3" style="display: none;">
+		<div id="settings" class="btn-group btn-group-sm col-md-3" style="display: none;">
 			<div class="btn-group">
 				<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
 					Settings <span class="caret"></span>
@@ -79,8 +79,8 @@
 			</form>
 		</div>
 
-		<div id="chat" class="col-md-12" style="display: none;">
-			<div class="row height-minus-controls">
+		<div id="chat" class="container-fluid col-md-12" style="display: none;">
+			<div class="row" id="friendlistAndMessagesContainer">
 				<div id="friendList" class="col-md-3 scrollbar">
 					<div class="list-group">
 						<a href="#" class="list-group-item" id="contactsHeadline">
@@ -92,11 +92,10 @@
 					<img src="antiprism.png" class="img-responsive" alt="antiprism">
 				</div>
 			</div>
-			<div class="row controls">
+			<div class="row" id="addFriendAndSendMessageContainer">
 				<div class="col-md-3">
 					<div id="addFriend" class="input-group">
-						<input type="text" class="form-control" id="addFriendField"
-							   placeholder="Username">
+						<input type="text" class="form-control" id="addFriendField" placeholder="Username">
 						<span class="input-group-btn">
 							<input type="submit" id="addFriendButton" class="btn btn-primary" value="Add">
 						</span>
@@ -173,7 +172,6 @@
 <script type="text/javascript">
 	var title = "#ANTiPRiSM",
 			headline = "AntiPrism";
-	document.getElementById('containerWithoutHeadline').style.cssText = "height: " + ((document.body.clientHeight - 69)*100/document.body.clientHeight) + "%;";
 	(function() {
 		var script = function(src) {
 					var tag = document.createElement("script");
@@ -194,8 +192,8 @@
 					"libs/bootstrap.min.js",
 					"libs/bootbox.min.js",
 					"libs/typeahead.js",
-					"client.js",
-					"webrtc.js"],
+					"client.js"
+				],
 				fragment = document.createDocumentFragment();
 		for(var i = 0; scripts.length > i; i++)
 			fragment.appendChild(script(scripts[i]));

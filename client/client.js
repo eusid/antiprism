@@ -12,7 +12,8 @@
  */
 
 
-var helper = {
+var enableWebRTC = false,
+	helper = {
 		clearStorageUserdata:function() {
 			var muted = localStorage.getObject("muted");
 			sessionStorage.clear();
@@ -238,7 +239,8 @@ var helper = {
 			$('#mute').tooltip().attr("title", msg);
 		},
 		setMuteButton:function() {
-			var button = helper.button("", "btn btn-default", function() {
+			var container = helper.div("btn-group"),
+				button = helper.button("", "btn btn-default", function() {
 					utils.changeMuteButton();
 				}),
 				on = "volume-up",
@@ -246,8 +248,10 @@ var helper = {
 				glyphicon = helper.glyphicon(utils.muted() ? off : on);
 			glyphicon.id = "muteIcon";
 			button.id = "mute";
+			button.innerHTML = "mute ";
 			button.appendChild(glyphicon);
-			$('#settings').append(button);
+			container.appendChild(button);
+			$('#settings').append(container);
 		},
 		changeMuteButton:function(newValue) {
 			var $muteIcon = $('#muteIcon'),
@@ -612,7 +616,7 @@ var helper = {
 			utils.displayMessage(msg, msg.from);
 		},
 		displayMessageContent:function(message, contactName, moreMessages) {
-			var panelContainer = helper.div(),
+			var panelContainer = helper.div("panel col-md-8"),
 				panelHeader = helper.div("panel panel-heading"),
 				panelContent = helper.div("panel panel-body"),
 				username = message.from || utils.getUsername(),
@@ -624,12 +628,12 @@ var helper = {
 			else
 				time = "today, " + time.toLocaleTimeString();
 			if(username === utils.getUsername()) {
-				panelContainer.className = "panel panel-success col-md-8 pull-right";
+				panelContainer.className += " panel-success pull-right";
 				panelHeader.innerHTML = time + " | me";
 				panelContent.align = "right";
 				panelHeader.align = "right";
 			} else {
-				panelContainer.className = "panel panel-info col-md-8";
+				panelContainer.className += " panel-info";
 				panelHeader.innerHTML = username + " | " + time;
 			}
 			panelContainer.appendChild(panelHeader);
@@ -708,23 +712,27 @@ var helper = {
 			sessionStorage.setObject(contactname, userObj);
 		},
 		displayOnline:function(msg) {
+			console.log("displayOnline msg: ", msg);
 			if(msg && msg.error)
 				errorHandler(0, 0, msg.error);
-			var userIcon = document.getElementById(msg.user).children;
-			if(userIcon.length > 0) {
-				var className = "glyphicon ";
-				if(msg.confirmed === false) {
-					className += "glyphicon-time";
-				} else {
-					if(msg.request)
-						className += "glyphicon-question-sign";
-					else if(msg.online)
-						className += "glyphicon-user online";
-					else
-						className += "glyphicon-user";
+			var userIcon = document.getElementById(msg.user);
+			if(userIcon) {
+				userIcon = userIcon.children;
+				if(userIcon.length > 0) {
+					var className = "glyphicon ";
+					if(msg.confirmed === false) {
+						className += "glyphicon-time";
+					} else {
+						if(msg.request)
+							className += "glyphicon-question-sign";
+						else if(msg.online)
+							className += "glyphicon-user online";
+						else
+							className += "glyphicon-user";
 
+					}
+					userIcon[0].className = className;
 				}
-				userIcon[0].className = className;
 			}
 		},
 		displayMessages:function(msg, contactName, moreMessages) {
@@ -747,8 +755,8 @@ var helper = {
 		init:function() {
 			utils.addKeyEvents();
 			utils.setOnClickEvents();
-			utils.setMuteTooltip();
 			utils.setMuteButton();
+			utils.setMuteTooltip();
 			window.addEventListener("storage", function(storageEvent) {
 				console.log(storageEvent);
 				if(storageEvent.key == "muted" && storageEvent.url == document.URL)
@@ -771,7 +779,7 @@ var helper = {
 						sessionStorage.setObject(userObj, obj);
 					}
 				}
-			else
+			else if(antiprism)
 				$('#serverLost').modal();
 		},
 		getContacts:function(msg) {
@@ -888,7 +896,12 @@ var helper = {
 				}
 				$('#password').val("");
 			};
-			antiprism.addEventListener("msg", callbackOnMessage);
+			var messageCallback = utils.onMessage;
+			if(enableWebRTC) {
+				var webRTC = new WebRTC(antiprism);
+				messageCallback = webRTC.onMessage;
+			}
+			antiprism.addEventListener("msg", messageCallback);
 			antiprism.addEventListener("closed", client.lostConnection);
 			antiprism.addEventListener("error", errorHandler);
 			antiprism.addEventListener("online", utils.displayOnline);
@@ -913,6 +926,7 @@ var helper = {
 		},
 		logout:function() {
 			antiprism.close();
+			antiprism = undefined;
 			$('h1').text(headline);
 			utils.messageDisplay().text("");
 			utils.switchToChat(false);
@@ -992,6 +1006,125 @@ var helper = {
 			console.log("Your Function can be called ~" + meanCalls + " times per second.");
 			return meanCalls;
 		}
+	},
+	WebRTC = function(antiprism) {
+		var connection = null;
+
+		// Handle messages received from the server
+		this.onMessage = function(msg) {
+			try {
+				var message = JSON.parse(msg.msg);
+				switch(message.type) {
+					// Respond to an offer
+					case 'offer':
+						connection.setRemoteDescription(new RTCSessionDescription(message));
+						connection.createAnswer(function(sessionDescription) {
+							connection.setLocalDescription(sessionDescription);
+							antiprism.sendMessage(msg.from, JSON.stringify(sessionDescription));
+						});
+						break;
+					// Respond to an answer
+					case 'answer':
+						connection.setRemoteDescription(new RTCSessionDescription(message));
+						break;
+					// Respond to an ice candidate
+					case 'candidate':
+						connection.addIceCandidate(new RTCIceCandidate({
+							sdpMLineIndex:message.label,
+							candidate:message.candidate
+						}));
+						break;
+				}
+			} catch(e) {
+				console.warn("Failed to parse Message for WebRTC!");
+			}
+
+		};
+
+		//change STUN server if you don't trust google for requesting your public ip:port ;)
+		//source: apprtc.appspot.com
+		var cfg = {
+			'iceServers':[
+				{'url':'stun:stun.l.google.com:19302'},
+				{'url':'turn:192.158.29.39:3478?transport=udp',
+					'credential':'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
+					'username':'28224511:1379330808'
+				},
+				{'url':'turn:192.158.29.39:3478?transport=tcp',
+					'credential':'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
+					'username':'28224511:1379330808'
+				}
+			]
+		};
+
+		// Create the connection object
+		connection = new webkitRTCPeerConnection(cfg);
+
+		// Try out new ice candidates
+		connection.onicecandidate = function(event) {
+			if(event.candidate) {
+				var to = null,
+					$active = $('.active');
+				if($active.length)
+					to = $active[0].id;
+				antiprism.sendMessage(to, JSON.stringify({
+					type:'candidate',
+					label:event.candidate.sdpMLineIndex,
+					id:event.candidate.sdpMid,
+					candidate:event.candidate.candidate
+				}));
+			}
+		};
+
+		// Wire up the video stream once we get it
+		connection.onaddstream = function(event) {
+			//console.log("Stream added! ", this.encode(event.stream));
+			var video = document.createElement("video");
+			video.id = "remoteVideo";
+			video.src = URL.createObjectURL(event.stream);
+			video.autoplay = "autoplay";
+			video.controls = "true";
+			$('#messages').append(video);
+
+		};
+		this.requestMedia = function(callback) { // Ask for access to the video and audio devices
+			if(typeof callback !== "function") {
+				callback = function() {};
+			}
+			navigator.webkitGetUserMedia({
+				audio:true,
+				video:true
+			}, function(stream) {
+				connection.addStream(stream);
+				callback();
+			});
+		};
+
+		// Kick off the negotiation with an offer request
+		this.openConnection = function() {
+			if(!connection.getLocalStreams().length) {
+				this.requestMedia(this.openConnection);
+				return;
+			}
+			var to = null,
+				$active = $('.active');
+			if($active.length)
+				to = $active[0].id;
+			connection.createOffer(function(sessionDescription) {
+				connection.setLocalDescription(sessionDescription);
+				antiprism.sendMessage(to, JSON.stringify(sessionDescription));
+			});
+		};
+
+		this.decode = function(msg) {
+			return JSON.parse(atob(msg));
+		};
+
+		this.encode = function(msg) {
+			return btoa(JSON.stringify(msg));
+		};
+
+		document.getElementById('openConnection').onclick = openConnection;//TODO
 	};
 
 $(document).ready(function() {
