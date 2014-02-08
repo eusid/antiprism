@@ -5,6 +5,11 @@ body {
 	line-height: 1;
 }
 
+#superContainer {
+	height: 100%;
+	overflow: hidden;
+}
+
 #headlineContainer {
 	height: 10%;
 }
