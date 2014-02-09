@@ -36,6 +36,20 @@ body {
 	overflow: auto;
 }
 
+#remoteVideo {
+	position: fixed;
+	top: 10%;
+	left: 29%;
+	z-index: 99;
+}
+
+#localVideo {
+	position: fixed;
+	z-index: 99;
+	top: 10%;
+	left: 68%;
+}
+
 #addFriendAndSendMessageContainer {
 	height: 10%;
 }
