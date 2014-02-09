@@ -36,10 +36,14 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 			};
 			return new Buffer(rsa.encrypt(plain),'hex').toString('base64');
 		},
-		attachMsgHandler: function(ws, session) {
+		attachHandler: function(ws, session) {
 			var pushActions = {
-					confirm: function(user) {
-						
+					online: function(data) {
+						var parts = data.user.split("@");
+						if(data.online)
+							serverSession.redis.sadd("on."+parts[1],parts[0])
+						else
+							serverSession.redis.srem("on."+parts[1],parts[0])
 					}
 				},
 				storage = {
@@ -47,6 +51,16 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 					redis: serverSession.redis,
 					sockets: serverSession.clients
 				};
+			ws
+			.on("close", function() {
+				clearInterval(session.pingID);
+				console.log("onclosed called for "+session.name);
+				serverSession.redis.del("on."+session.name);
+				delete serverSession.remotes[session.name];
+			})
+			.on("error", function(e) {
+				delete serverSession.remotes[session.name];
+			});
 			return ws.onmessage = function(msg) {
 				console.log("got message: "+msg.data);
 				if(msg.data === "PING")
@@ -57,6 +71,9 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 				if(data.push) {		
 					console.log("data: ",data);
 					data.push.user = data.push.user+'@'+session.name;
+					for(var action in pushActions)
+						if(data.push[action])
+							pushActions[action](data.push);
 					helpers.broadcast({storage: storage, isServer:true}, data.user, data.push);
 				}
 				else if(data.rseq) {
@@ -93,8 +110,7 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 					if(err == null)
 						registerServer([ip,port].join(":"), callback);
 				});
-			var ws = new (require("ws"))("ws://"+host),
-				pingID;
+			var ws = new (require("ws"))("ws://"+host);
 			ws.outqueue = [];
 			ws
 			.on("open",function() {
@@ -102,7 +118,7 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 					serverSession.remotes[host].sendObject({registerServer:[serverSession.port]});
 				if(callback)
 					callback(true);
-				pingID = setInterval(function() {
+				serverSession.remotes[host].pingID = setInterval(function() {
 					if(ws.readyState === ws.OPEN)
 						ws.send("PING");
 				}, 25000);
@@ -110,13 +126,6 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 				console.log("working queue now");
 				while(ws.outqueue.length)
 					serverSession.remotes[host].sendObject(ws.outqueue.shift());
-			})
-			.on("close", function() {
-				clearInterval(pingID);
-				delete serverSession.remotes[host];
-			})
-			.on("error", function(e) {
-				delete serverSession.remotes[host];
 			});
 			serverSession.remotes[host] = {
 				seq: 0,
@@ -129,7 +138,7 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 					ws.send(JSON.stringify(msg));
 				}
 			};
-			helpers.attachMsgHandler(ws, serverSession.remotes[host]);
+			helpers.attachHandler(ws, serverSession.remotes[host]);
 		},
 		forward: function(user, message, ctx) {
 			var forward = this.forward,
@@ -150,7 +159,11 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 				var seq = ++remote.seq;
 				message.seq = seq;
 				message.remoteName = ctx.storage.username;
+				var timer = setTimeout(function() {
+					delete remote.callbacks[seq];
+				},10000);
 				remote.callbacks[seq] = function(msg) {
+					clearTimeout(timer);
 					for(field in msg)
 						if(msg[field] === username) {
 							msg[field] = user;
@@ -179,7 +192,7 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 			};
 			session.isServer = true;
 			helpers.clearPing();
-			helpers.attachMsgHandler(session.socket, serverSession.remotes[host]);
+			helpers.attachHandler(session.socket, serverSession.remotes[host]);
 		},
 		pubkey: function(ctx, user) {
 			if(user === undefined)
@@ -306,25 +319,27 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 						return ctx.sendClient({contacts:{}, requests:requests});
 					var	multi = ctx.storage.redis.multi(),
 						users = Object.keys(contacts).map(function (x) {
-							return {name: x, local: x.indexOf("@") === -1};
+							var ret = {name: x, local: x.indexOf("@") === -1};
+							if(!ret.local) {
+								var parts = x.split("@");
+								ret.username = parts[0];
+								ret.host = parts[1];
+							}
+							return ret;
 						}),
 						opCount;
 					for(var i in users) {
 						if(!users[i].local)
-							continue;
-						multi
-							.scard("sess."+users[i].name)
-							.hmget("users."+users[i].name,"status","lastseen")
-							.hexists("convs."+users[i].name,ctx.storage.username)
-							.hexists("convs."+ctx.storage.username,users[i].name);
+							multi.sismember("on."+users[i].host, users[i].username);
+						else
+							multi.scard("sess."+users[i].name);
+						multi.hmget("users."+users[i].name,"status","lastseen");
 						if(opCount === undefined)
 							opCount = multi.queue.length - 1;
 					}
 					multi.exec(function(err,replies) {
-						var ret = {},
-							localUsers = users.filter(function(x){return x.local}),
-							remoteUsers = users.filter(function(x){return !x.local});
-						for(var i in localUsers) {
+						var ret = {};
+						for(var i in users) {
 							var redisIndex = i*opCount,
 								reply = [];
 							for(var j = 0; j < opCount; j++)
@@ -332,17 +347,10 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 							ret[users[i].name] = {
 								key: contacts[users[i].name],
 								online: !!reply[0],
-								status: reply[1][0],
-								lastseen: reply[1][1],
+								status: users[i].local ? reply[1][0] : null,
+								lastseen: users[i].local ? reply[1][1] : 0,
 							};
 						}
-						for(var i in remoteUsers)
-							ret[users[i].name] = {
-								key: contacts[users[i].name],
-								online: false, // TODO: add "online"-set for each host and cache state
-								status: null, // no way to determine it yet, maybe let the client ask?
-								lastseen: 0 // not that easy at the moment :S
-							}
 						helpers.dbg("replying to contacts-request");
 						ctx.sendClient({contacts:ret,requests:requests});
 					});
@@ -504,12 +512,16 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 				if(reply)
 					pushMessage();
 				else {
-					ctx.storage.redis.hexists("convs."+ctx.storage.username, user, function(err, reply){
+					var rediscallback = function(err, reply){
 						if(reply)
 							ctx.storage.redis.rpush("msgs."+convid, storeMsgJSON, pushMessage);
 						else
 							ctx.sendClient({error:Error.NOT_ALLOWED});
-					});
+					};
+					if(!ctx.isServer)
+						ctx.storage.redis.hexists("convs."+ctx.storage.username, user, rediscallback)
+					else
+						ctx.storage.redis.hexists("convs."+user, ctx.storage.username, rediscallback);
 				}
 			});
 			if(isRemoteUser && !ctx.isServer)

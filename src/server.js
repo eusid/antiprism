@@ -29,10 +29,14 @@ serverSession.redis = redis;
 console.log("Welcome 2 #ANTiPRiSM");
 dbg("Listening on port "+(process.env.PORT||9000)+"...");
 
-redis.keys("sess.*", function(err,reply) { // clear sessions
-	for(var id in reply)
-		redis.del(reply[id], function(err,reply) {});
-});
+redis.multi()
+	.keys("sess.*")
+	.keys("on.*")
+	.exec(function(err,replies) { // clear sessions
+		for(reply in replies)
+			for(var key in replies[reply])
+				redis.del(replies[reply[key]]);
+	});
 
 webSocketServer.on("connection", function(ws) {
 	webSockets[wscount] = {id: wscount, sockets: webSockets, pingfail: 0, send: function(msg, seq){
