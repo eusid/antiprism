@@ -12,7 +12,7 @@
  */
 
 
-var enableWebRTC = false,
+var enableWebRTC = true,
 	helper = {
 		clearStorageUserdata:function() {
 			var muted = localStorage.getObject("muted");
@@ -466,10 +466,10 @@ var enableWebRTC = false,
 					utils.displayOnline({user:contact, online:msg.contacts[contact].online});
 			}
 			for(var i in msg.requests.to) {
-					utils.displayOnline({user:msg.requests.to[i], online:false, request:true});
+				utils.displayOnline({user:msg.requests.to[i], online:false, request:true});
 			}
 			for(i in msg.requests.from)
-					utils.displayOnline({user:msg.requests.from[i], online:false, request:true, confirmed:false});
+				utils.displayOnline({user:msg.requests.from[i], online:false, request:true, confirmed:false});
 			if(formerSelectedContact)
 				$(document.getElementById(formerSelectedContact)).addClass("active");
 			if(msg.requests === undefined)
@@ -897,10 +897,17 @@ var enableWebRTC = false,
 				}
 				$('#password').val("");
 			};
-			var messageCallback = utils.onMessage;
+			messageCallback = utils.onMessage;
 			if(enableWebRTC) {
-				var webRTC = new WebRTC(antiprism);
-				messageCallback = webRTC.onMessage;
+				webRTC = new WebRTC(antiprism);
+				messageCallback = function(msg) {
+					try {
+						webRTC.onMessage(msg);
+					} catch(e) {
+						utils.onMessage(msg);
+					}
+				};
+				$('#turnOnVideo').click(function(){webRTC.requestMedia(); $('#startVideoChat').show().click(function(){webRTC.openConnection();})});
 			}
 			antiprism.addEventListener("msg", messageCallback);
 			antiprism.addEventListener("closed", client.lostConnection);
@@ -1013,32 +1020,27 @@ var enableWebRTC = false,
 
 		// Handle messages received from the server
 		this.onMessage = function(msg) {
-			try {
-				var message = JSON.parse(msg.msg);
-				switch(message.type) {
-					// Respond to an offer
-					case 'offer':
-						connection.setRemoteDescription(new RTCSessionDescription(message));
-						connection.createAnswer(function(sessionDescription) {
-							connection.setLocalDescription(sessionDescription);
-							antiprism.sendMessage(msg.from, JSON.stringify(sessionDescription));
-						});
-						break;
-					// Respond to an answer
-					case 'answer':
-						connection.setRemoteDescription(new RTCSessionDescription(message));
-						break;
-					// Respond to an ice candidate
-					case 'candidate':
-						connection.addIceCandidate(new RTCIceCandidate({
-							sdpMLineIndex:message.label,
-							candidate:message.candidate
-						}));
-						break;
-				}
-			} catch(e) {
-				console.warn("Failed to parse Message for WebRTC!");
-				utils.onMessage(msg);
+			var message = JSON.parse(msg.msg);
+			switch(message.type) {
+				// Respond to an offer
+				case 'offer':
+					connection.setRemoteDescription(new RTCSessionDescription(message));
+					connection.createAnswer(function(sessionDescription) {
+						connection.setLocalDescription(sessionDescription);
+						antiprism.sendMessage(msg.from, JSON.stringify(sessionDescription));
+					});
+					break;
+				// Respond to an answer
+				case 'answer':
+					connection.setRemoteDescription(new RTCSessionDescription(message));
+					break;
+				// Respond to an ice candidate
+				case 'candidate':
+					connection.addIceCandidate(new RTCIceCandidate({
+						sdpMLineIndex:message.label,
+						candidate:message.candidate
+					}));
+					break;
 			}
 
 		};
@@ -1104,14 +1106,14 @@ var enableWebRTC = false,
 
 		// Kick off the negotiation with an offer request
 		this.openConnection = function() {
-			if(!connection.getLocalStreams().length) {
-				this.requestMedia(this.openConnection);
-				return;
-			}
 			var to = null,
 				$active = $('.active');
 			if($active.length)
 				to = $active[0].id;
+			if(!connection.getLocalStreams().length) {
+				this.requestMedia(this.openConnection);
+				return;
+			}
 			connection.createOffer(function(sessionDescription) {
 				connection.setLocalDescription(sessionDescription);
 				antiprism.sendMessage(to, JSON.stringify(sessionDescription));
@@ -1125,8 +1127,6 @@ var enableWebRTC = false,
 		this.encode = function(msg) {
 			return btoa(JSON.stringify(msg));
 		};
-
-		//document.getElementById('openConnection').onclick = openConnection;//TODO
 	};
 
 $(document).ready(function() {
