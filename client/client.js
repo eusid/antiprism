@@ -1127,6 +1127,16 @@ var enableWebRTC = true,
 			});
 		};
 
+		this.displayOwnVideo = function() {
+			var stream = connection.getLocalStreams()[0],
+				video = document.createElement("video");
+			video.src = URL.createObjectURL(stream);
+			video.height = 320;
+			video.width = 460;
+			video.play();
+			$('#messages').append(video);
+		};
+
 		this.decode = function(msg) {
 			return JSON.parse(atob(msg));
 		};
