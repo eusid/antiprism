@@ -907,7 +907,10 @@ var enableWebRTC = true,
 						utils.onMessage(msg);
 					}
 				};
-				$('#turnOnVideo').click(function(){webRTC.requestMedia(); $('#startVideoChat').show().click(function(){webRTC.openConnection();})});
+				$('#turnOnVideo').click(function() {
+					webRTC.requestMedia();
+					$('#startVideoChat').show().click(function() {webRTC.openConnection();})
+				});
 			}
 			antiprism.addEventListener("msg", messageCallback);
 			antiprism.addEventListener("closed", client.lostConnection);
@@ -1102,6 +1105,10 @@ var enableWebRTC = true,
 				connection.addStream(stream);
 				callback();
 			});
+		};
+
+		this.getRPCConnection = function() {
+			return connection;
 		};
 
 		// Kick off the negotiation with an offer request
