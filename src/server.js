@@ -22,8 +22,8 @@ var DEBUG = true, // change to your needs!
 	webSockets = {}, wscount = 1,
 	serverSession = { clients: webSockets, remotes: {}, port: port },
 	timeouts = {}, timeoutms = 35000, // 35s for safety
-	redis = require("redis").createClient(12996,"pub-redis-12996.us-east-1-1.1.ec2.garantiadata.com",{auth_pass:"paran0iaInc0wnz"});
-	//redis = require("redis").createClient(process.env.REDISPORT||undefined);
+	//redis = require("redis").createClient(12996,"pub-redis-12996.us-east-1-1.1.ec2.garantiadata.com",{auth_pass:"paran0iaInc0wnz"});
+	redis = require("redis").createClient(process.env.REDISPORT||undefined);
 
 serverSession.redis = redis;
 console.log("Welcome 2 #ANTiPRiSM");
