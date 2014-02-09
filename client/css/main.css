@@ -12,6 +12,8 @@ body {
 
 #headlineContainer {
 	height: 10%;
+	padding-left: 44px;
+	padding-bottom: 70px;
 }
 
 #containerWithoutHeadline {
@@ -20,6 +22,7 @@ body {
 
 #chat {
 	height: 100%;
+	padding-right: 30px;
 }
 
 #friendlistAndMessagesContainer {
@@ -34,6 +37,20 @@ body {
 #messages {
 	height: 100%;
 	overflow: auto;
+}
+
+#remoteVideo {
+	position: fixed;
+	top: 10%;
+	left: 29%;
+	z-index: 99;
+}
+
+#localVideo {
+	position: fixed;
+	z-index: 99;
+	top: 10%;
+	left: 68%;
 }
 
 #addFriendAndSendMessageContainer {
@@ -106,7 +123,7 @@ a {
 
 .popover-title {
 	width: 100%;
-	margin: 0px;
+	margin: 0;
 }
 
 ul {

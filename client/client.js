@@ -12,7 +12,7 @@
  */
 
 
-var enableWebRTC = true,
+var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 	helper = {
 		clearStorageUserdata:function() {
 			var muted = localStorage.getObject("muted");
@@ -909,7 +909,8 @@ var enableWebRTC = true,
 				};
 				$('#turnOnVideo').click(function() {
 					webRTC.requestMedia();
-					$('#startVideoChat').show().click(function() {webRTC.openConnection();})
+					$('#startVideoChat').show().click(function() {webRTC.openConnection();});
+					$('#displayOwnVideo').show().click(webRTC.displayOwnVideo);
 				});
 			}
 			antiprism.addEventListener("msg", messageCallback);
@@ -1133,6 +1134,7 @@ var enableWebRTC = true,
 			video.src = URL.createObjectURL(stream);
 			video.height = 320;
 			video.width = 460;
+			video.id = "localVideo";
 			video.play();
 			$('#messages').append(video);
 		};
