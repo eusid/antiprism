@@ -12,7 +12,7 @@
  */
 
 
-var enableWebRTC = true,
+var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 	helper = {
 		clearStorageUserdata:function() {
 			var muted = localStorage.getObject("muted");
