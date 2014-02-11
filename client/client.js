@@ -492,7 +492,9 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 		disableRetrieveMoreMessagesButton:function(contactName) {
 			var obj = {msglist:[]},
 				disableButton = function() {
-					obj = sessionStorage.getObject(contactName) || {msglist:[]};
+					obj = sessionStorage.getObject(contactName);
+					if(!obj.msglist)
+						obj.msglist = [];
 					$('#retrieveMoreMessagesButton')[0].disabled = obj.msglist.length >= obj.numberOfMessages;
 				};
 			if(!sessionStorage[contactName]) {
@@ -579,7 +581,7 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 					utils.displayRetrieveMoreMessagesButton(contactName);
 					client.getMessages(contactName);
 				}
-			}, userObj ? userObj.numberOfMessages : undefined);
+			});
 			if(iconClass.indexOf("glyphicon-time") !== -1) {
 				utils.displayMessage({from:contactName, msg:"Waiting for confirmation by user.", ts:(new Date()).getTime()}, contactName, false);
 			} else if(iconClass.indexOf("glyphicon-question-sign") !== -1)
@@ -789,14 +791,14 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 			antiprism.getContacts(utils.displayContacts);
 		},
 		getMessages:function(contactName, start, end) {
-			var userObj = sessionStorage.getObject(contactName) || {msglist:0};
+			var userObj = sessionStorage.getObject(contactName) || {msglist:[]};
 			if(!userObj) {
 				console.log("getMessages was called and it has no sessionstorage[\"" + contactName + "\"]!");
 				utils.updateContactObject(contactName, function() {
 					client.getMessages(contactName, start, end);
 				});
 				return;
-			} else if(userObj.msglist.length >= 10) {
+			} else if(userObj.msglist && userObj.msglist.length >= 10) {
 				utils.displayMessages(userObj, contactName);
 				console.log("displayed messages from sessionstorage");
 				return;
