@@ -205,9 +205,9 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 
 		},
 		switchToChat:function(showChat, time) { //showChat - boolean true if chat shall be shown
-			var $login = $('#login'),
+			var $login = $('#loginContainer'),
 				chatActive = $login.attr("style") && $login.attr("style").indexOf("display: none;") !== -1;
-			if((chatActive !== !!showChat) && showChat !== undefined) {
+			if((chatActive != showChat) && showChat !== undefined) {
 
 				time = time === 0 ? time : time || 1000;
 				$login.toggle(time);
@@ -907,7 +907,7 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 						utils.onMessage(msg);
 					}
 				};
-				$('#turnOnVideo').click(function() {
+				$('#turnOnVideo').show().click(function() {
 					webRTC.requestMedia();
 					$('#startVideoChat').show().click(function() {webRTC.openConnection();});
 					$('#displayOwnVideo').show().click(webRTC.displayOwnVideo);
@@ -951,14 +951,18 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 		testTwoFunctions:function(firstFunction, secondFunction, calls) { //repeat: number of repititions - default is 10000
 			calls = calls || 10000;
 			var func = function(call) {
-				for(var i = 0; i < calls; i++) call(i);
+				for(var i = 0; i < calls; i+=2) call(i);
 			};
 			var start = window.performance.now();
 			func(firstFunction);
 			var first = window.performance.now() - start;
 			start = window.performance.now();
 			func(secondFunction);
+			func(secondFunction);
 			var second = window.performance.now() - start;
+			start = window.performance.now();
+			func(firstFunction);
+			first += window.performance.now() - start;
 			console.group("Testing results");
 			console.log("First function needed " + first + "ms to perform " + calls + " calls. Second function needed " + second + "ms.");
 			if(first > second) {
