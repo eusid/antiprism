@@ -33,10 +33,10 @@ redis.multi()
 	.keys("sess.*")
 	.keys("on.*")
 	.exec(function(err,replies) { // clear sessions
-		for(reply in replies)
+		for(var reply in replies)
 			for(var key in replies[reply])
-				if(replies[reply[key]])
-					redis.del(replies[reply[key]]);
+				if(replies[reply][key])
+					redis.del(replies[reply][key]);
 	});
 
 webSocketServer.on("connection", function(ws) {
