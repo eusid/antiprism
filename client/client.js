@@ -951,7 +951,7 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 		testTwoFunctions:function(firstFunction, secondFunction, calls) { //repeat: number of repititions - default is 10000
 			calls = calls || 10000;
 			var func = function(call) {
-				for(var i = 0; i < calls; i+=2) call(i);
+				for(var i = 0; i < calls; i += 2) call(i);
 			};
 			var start = window.performance.now();
 			func(firstFunction);
@@ -1021,6 +1021,24 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 			}
 			console.log("Your Function can be called ~" + meanCalls + " times per second.");
 			return meanCalls;
+		},
+		locustJS:function(username, numberOfLogins) { //password "penis" : "LE1UWGqxaR8loRB9NiW9AsBIfQmyXSK10fIThG2tIq4="
+			var host = location.origin.replace(/^http/, 'ws'),
+				connections = [],
+				success = 0,
+				password = {hash:atob("LE1UWGqxaR8loRB9NiW9AsBIfQmyXSK10fIThG2tIq4=")},
+				i= 0,
+				loginCallback = function(msg) {
+					if(msg.loggedIn)
+						success++;
+					console.log("Successful logins: ", success);
+				};
+			for(; i < numberOfLogins; i++) {
+				var antiprism = new Antiprism(host, true);
+				antiprism.login(username, password, loginCallback);
+				connections.push(antiprism);
+			}
+
 		}
 	},
 	WebRTC = function(antiprism) {
