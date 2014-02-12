@@ -170,6 +170,7 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 				return error;
 			},
 			displayError = function(error) {
+				console.error("An error occured: ", error);
 				var errorContainer = helper.div("alert alert-danger fade in"),
 					closeButton = helper.button("x", "close"),
 					headline = helper.h4(error.type),
@@ -821,11 +822,11 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 			var $active = $('.active');
 			if($active.length)
 				to = $active[0].id;
-			$messageField.val('');
 			if(to)
 				antiprism.sendMessage(to, message, function(msg) {
 					if(msg && msg.error)
 						errorHandler(0, 0, msg.error);
+					$messageField.val('');
 					var sentMessage = {to:to, ts:msg.ts, msg:message};
 					utils.pushOneMessageToStorage(to, sentMessage);
 					utils.displayMessage(sentMessage, to);
