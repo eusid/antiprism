@@ -310,6 +310,8 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 			document.getElementById('savePassButton').onclick = client.changePass;
 			document.getElementById('updateContactsButton').onclick = client.getContacts;
 			document.getElementById('removeContactButton').onclick = utils.removeContactPrompt;
+			document.getElementById('createGroup').onclick = utils.createGroupPrompt;
+			document.getElementById('inviteToGroup').onclick = utils.groupInvitePrompt;
 			document.getElementById('setStatusButton').onclick = utils.statusPrompt;
 			document.getElementById('reconnectButton').onclick = function() {
 				antiprism.reconnect();
@@ -414,6 +416,46 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 
 			$('.typeahead').typeahead({
 				local:dataSource,
+				items:4,
+				minLength:1
+			});
+			$('.tt-hint').remove();
+		},
+		createGroupPrompt: function() {
+			bootbox.prompt("Type a name for your group", function(result) {
+				if(result !== null) {
+					antiprism.createGroup('$' + result, client.getContacts);
+				}
+			});
+		},
+		groupInvitePrompt:function() {
+			var dataSource = utils.getContactList(),
+				groups = [], contacts = [];
+			for(var i = 0; i < dataSource.length; i++) {
+				if(dataSource[i][0] === '$')
+					groups.push(dataSource[i].substring(1));
+				else
+					contacts.push(dataSource[i]);
+			}
+			bootbox.prompt("To which group shall the user been added?", function(result) {
+				if(result !== null) {
+					var groupName = result;
+					bootbox.prompt("Which contact do you want to add to " + utils.htmlEncode(result) + "?", function(result) {
+						if(result !== null)
+							antiprism.invite('$' + groupName, result, antiprism.debug());
+					});
+					$('.bootbox-input').addClass("typeahead").attr("placeholder", "Contactname");
+					$('.typeahead').typeahead({
+						local:contacts,
+						items:4,
+						minLength:1
+					});
+					$('.tt-hint').remove();
+				}
+			});
+			$('.bootbox-input').addClass("typeahead").attr("placeholder", "Groupname");
+			$('.typeahead').typeahead({
+				local:groups,
 				items:4,
 				minLength:1
 			});
