@@ -578,7 +578,7 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 			$contactNode.removeClass("newMessage");
 			utils.messageDisplay().empty();
 			utils.updateContactObject($contactNode[0].id, function() {
-				if(iconClass.indexOf("glyphicon-user") !== -1) {
+				if((iconClass.indexOf("glyphicon-user") !== -1) || (iconClass.indexOf("glyphicon-th") !== -1)) {
 					utils.displayRetrieveMoreMessagesButton(contactName);
 					client.getMessages(contactName);
 				}
@@ -600,11 +600,13 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 			return message;
 		},
 		onMessage:function(msg) {
+			var sender = msg.from || msg.to,
+				isGroup = msg.to && msg.to[0] === '$';
 			if(msg && msg.error)
 				errorHandler(0, 0, msg.error);
-			var userObj = sessionStorage.getObject(msg.from);
+			var userObj = sessionStorage.getObject(sender);
 			if(!userObj) {
-				utils.updateContactObject(msg.from, function() {
+				utils.updateContactObject(sender, function() {
 					utils.onMessage(msg);
 				});
 				return;
@@ -613,12 +615,12 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 				selected = null;
 			if($active.length)
 				selected = $active[0].id;
-			if(!msg.to && (msg.from !== selected || !document.hasFocus())) {
+			if(!msg.to && (sender !== selected || !document.hasFocus())) {
 				if(!utils.muted())
 					utils.playSound("ios.mp3");
 			}
-			utils.pushOneMessageToStorage(msg.from, msg);
-			utils.displayMessage(msg, msg.from);
+			utils.pushOneMessageToStorage(sender, msg);
+			utils.displayMessage(msg, isGroup ? msg.to : sender);
 		},
 		displayMessageContent:function(message, contactName, moreMessages) {
 			var panelContainer = helper.div("panel col-md-8"),
@@ -717,22 +719,26 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 			sessionStorage.setObject(contactname, userObj);
 		},
 		displayOnline:function(msg) {
+			console.log("displayOnline: msg = ", msg);
+			var isGroup = msg.user[0] === '$';
 			if(msg && msg.error)
 				errorHandler(0, 0, msg.error);
 			var userIcon = document.getElementById(msg.user);
 			if(userIcon) {
 				userIcon = userIcon.children;
 				if(userIcon.length > 0) {
-					var className = "glyphicon ";
-					if(msg.confirmed === false) {
-						className += "glyphicon-time";
+					var className = "glyphicon  glyphicon-";
+					if(isGroup) {
+						className += "th";
+					} else if(msg.confirmed === false) {
+						className += "time";
 					} else {
 						if(msg.request)
-							className += "glyphicon-question-sign";
+							className += "question-sign";
 						else if(msg.online)
-							className += "glyphicon-user online";
+							className += "user online";
 						else
-							className += "glyphicon-user";
+							className += "user";
 
 					}
 					userIcon[0].className = className;
@@ -1030,7 +1036,7 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 				connections = [],
 				success = 0,
 				password = {hash:atob("LE1UWGqxaR8loRB9NiW9AsBIfQmyXSK10fIThG2tIq4=")},
-				i= 0,
+				i = 0,
 				loginCallback = function(msg) {
 					if(msg.loggedIn)
 						success++;
