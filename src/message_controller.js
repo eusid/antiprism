@@ -16,8 +16,8 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 			}
 			else if(user.indexOf('$') !== -1) {
 				ctx.storage.redis.hgetall("convs."+user, function(err, reply) {
-					msg.source = ctx.storage.username;
 					console.log("broadcasting to group "+user+" from user "+msg.from+", message:", msg);
+					msg.to = user;
 					for(var member in reply)
 						if(member !== ctx.storage.username)
 							helpers.broadcast(ctx, member, msg);
@@ -543,12 +543,13 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 				ctx.storage.redis.smembers("sess."+ctx.storage.username, function(err,reply) {
 					if(err)
 						return helpers.dbg("redis-Error: "+err);
-					storeMsg.to = user;
-					delete storeMsg.from;
+					var pushMsg = Object.create(storeMsg);
+					pushMsg.to = user;
+					delete pushMsg.from;
 					for(var id in reply)
 						if(ctx.storage.sockets[reply[id]] !== undefined // not sure if redis and node are in sync
 							&& reply[id] != ctx.storage.id) // do not push back to sending session
-							ctx.storage.sockets[reply[id]].send(storeMsg);
+							ctx.storage.sockets[reply[id]].send(pushMsg);
 				});
 				ctx.sendClient({ts:storeMsg.ts, sent:true});
 			}
