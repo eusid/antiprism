@@ -59,8 +59,8 @@ var Antiprism = function(host,debugFlag) {
 				return plain;
 			}
 		},
-		helpers = 
-{			getKey: function(user, callback) {
+		helpers = {
+			getKey: function(user, callback) {
 				if(session.conversations[user])
 					return callback ? callback() : 0;
 				else if(session.cache.keys[user]) {
@@ -156,8 +156,8 @@ var Antiprism = function(host,debugFlag) {
 						session.privkey = privkey;
 						var validationKey = utils.decryptRSA(response.validationKey, response.pubkey, privkey),
 							hash = CryptoJS.SHA256(utils.parseLatin(validationKey)).toString(CryptoJS.enc.Base64);
-						ws.callServer("auth", [hash], callback); 
-					} catch (e) {
+						ws.callServer("auth", [hash], callback);
+ 					} catch (e) {
 						debug("wrong password", true, e);
                         callback(false);
 					}
@@ -239,13 +239,13 @@ var Antiprism = function(host,debugFlag) {
 				};
 				ws.callServer("retrieveMessages", [user, start, end], handleMessages);
 			},
-			sendMessage: function(user, message, callback) {
+			sendMessage: function(user, message, callback, isTemporary) {
 				if(!session.conversations[user])
 					return helpers.getKey(user, function() {
 						actions.sendMessage(user,message,callback);
 					});
 				var encrypted = utils.encryptAES(message, session.conversations[user]);
-				ws.callServer("storeMessage",[user,encrypted], callback);
+				ws.callServer("storeMessage", [user, encrypted, isTemporary], callback);
 			},
 			close: function() {
 				retries = 0;
@@ -257,6 +257,24 @@ var Antiprism = function(host,debugFlag) {
 				ws = new WebSocket(host);
 				helpers.registerWsCallbacks();
 				actions.login(session.user,session.pass); // todo: still not cool :S
+			},
+			createGroup: function(name, callback) {
+				var plainKey = new SecureRandom().getString(32),
+					key = utils.encryptRSA(plainKey, session.pubkey);
+				session.conversations[name] = plainKey;
+				ws.callServer("createGroup",[name, key], callback);
+			},
+			invite: function(group, user, callback) {
+				if(!session.conversations[group])
+					helpers.getKey(group, function() {
+						actions.invite(group, user, callback);
+					});
+				ws.callServer("pubkey",[user], function(msg) {
+					if(!msg.pubkey)
+						return;
+					var key = utils.encryptRSA(session.conversations[group],msg.pubkey);
+					ws.callServer("invite", [group, user, key], callback);
+				});
 			},
 			// <Developer-Mode>
 			debug: function() { // call to get benchmarked debug-func

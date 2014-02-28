@@ -14,6 +14,18 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 					callback();
 				return;
 			}
+			else if(user.indexOf('$') !== -1) {
+				ctx.storage.redis.hgetall("convs."+user, function(err, reply) {
+					msg.source = ctx.storage.username;
+					console.log("broadcasting to group "+user+" from user "+msg.from+", message:", msg);
+					for(var member in reply)
+						if(member !== ctx.storage.username)
+							helpers.broadcast(ctx, member, msg);
+					if(callback)
+						callback();
+				});
+				return;
+			}
 			ctx.storage.redis.smembers("sess."+user, function(err,reply) {
 				console.log(user+" has "+reply.length+" active session(s)");
 				if(err)
@@ -176,6 +188,14 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 			}
 			console.log("["+(seq||"PUSH")+"] sending to "+[username,host].join("@"),message);
 			remote.sendObject(message, seq);
+		},
+		getConvid: function(ctx, user) {
+			if(user.indexOf('$') !== -1)
+				return user;
+			else if(user < ctx.storage.username) // lawl-sort
+				return user+'.'+ctx.storage.username;
+			else
+				return ctx.storage.username+'.'+user;
 		}
 	},
 	actions = {
@@ -283,7 +303,7 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 				return Error.INVALID_PARAMS;
 			if(!ctx.storage.loggedIn)
 				return Error.INVALID_AUTH;
-			ctx.storage.redis.hmset("users."+ctx.storage.username,"status",status, function(err,reply) {
+			ctx.storage.redis.hset("users."+ctx.storage.username,"status",status, function(err,reply) {
 				if(err)
 					helpers.dbg("redis-Error: "+err);
 				ctx.sendClient({status:true});
@@ -374,9 +394,9 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 				multi = ctx.storage.redis.multi();
 			multi.hexists("convs."+user, ctx.storage.username)
 			if(!ctx.isServer)
-				multi.hsetnx("reqs.from."+ctx.storage.username,user,convkeys[0]);
+				multi.hsetnx("reqs.from."+ctx.storage.username, user, convkeys[0]);
 			if(!isRemoteUser)
-				multi.hsetnx("reqs.to."+user,ctx.storage.username, convkeys[1]);
+				multi.hsetnx("reqs.to."+user, ctx.storage.username, convkeys[1]);
 			multi.exec(function(err,replies) {
 				if(err)
 					return helpers.dbg("redis-Error: "+err);
@@ -436,7 +456,7 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 				return Error.INVALID_AUTH;
 			ctx.storage.redis.hget("reqs.to."+ctx.storage.username, user, function(err, reply) {
 				if(err)
-						return helpers.dbg("redis-Error: "+err);
+					return helpers.dbg("redis-Error: "+err);
 				if(reply === null)
 					return ctx.sendClient({ack:false, error:Error.UNKNOWN_USER});
 				ctx.storage.redis.multi()
@@ -447,15 +467,47 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 					});
 			});
 		},
-		countMessages: function(ctx, user) {
-			if(user === undefined)
+		createGroup: function(ctx, name, key) {
+			if(name === undefined || key === undefined || name[0] !== '$')
 				return Error.INVALID_PARAMS;
 			if(!ctx.storage.loggedIn)
 				return Error.INVALID_AUTH;
-			if(user < ctx.storage.username) // lawl-sort
-				var convid = user+'.'+ctx.storage.username;
-			else
-				var convid = ctx.storage.username+'.'+user;
+			ctx.storage.redis.exists("convs."+name, function(err, reply) {
+				if(err)
+					return helpers.dbg("redis-Error: "+err);
+				if(reply)
+					return ctx.sendClient({error: Error.NOT_ALLOWED});
+				ctx.storage.redis.multi()
+					.hset("convs."+name, ctx.storage.username, 0)
+					.hset("convs."+ctx.storage.username, name, key)
+					.exec();
+				ctx.sendClient({created:true});
+			});
+		},
+		invite: function(ctx, group, user, key) {
+			if(group === undefined || user === undefined || key === undefined || group[0] !== '$')
+				return Error.INVALID_PARAMS;
+			if(!ctx.storage.loggedIn)
+				return Error.INVALID_AUTH;
+			console.log("checking if "+ctx.storage.username+" is in convs."+group);
+			ctx.storage.redis.multi()
+				.hexists("convs."+group, ctx.storage.username)
+				.hexists("convs."+group, user)
+				.exec(function(err, replies) {
+					if(!replies[0] || replies[1])
+						return ctx.sendClient({error: Error.NOT_ALLOWED});
+					var orig = ctx.storage.username;
+					ctx.storage.username = group;
+					actions.initConversation(ctx, user, [0,key]);
+					ctx.storage.username = orig;
+				});
+		},
+		countMessages: function(ctx, user) {
+			if(user === undefined || user === null)
+				return Error.INVALID_PARAMS;
+			if(!ctx.storage.loggedIn)
+				return Error.INVALID_AUTH;
+			var convid = helpers.getConvid(ctx, user);
 			ctx.storage.redis.llen("msgs."+convid, function(err, reply) {
 				if(err)
 					return helpers.dbg("redis-Error: "+err);
@@ -470,15 +522,12 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 			var start = parseInt(start), end = parseInt(end);
 			if(isNaN(start) || isNaN(end))
 				return Error.INVALID_PARAMS;
-			if(user < ctx.storage.username) // lawl-sort
-				var convid = user+'.'+ctx.storage.username;
-			else
-				var convid = ctx.storage.username+'.'+user;
+			var convid = helpers.getConvid(ctx, user);
 			ctx.storage.redis.lrange("msgs."+convid, start, end, function(err, reply) {
 				ctx.sendClient({msglist:reply.map(JSON.parse)});
 			});
 		},
-		storeMessage: function(ctx, user, msg) {
+		storeMessage: function(ctx, user, msg, isTemporary) {
 			if(user === undefined || msg === undefined)
 				return Error.INVALID_PARAMS;
 			if(!ctx.storage.loggedIn)
@@ -486,10 +535,7 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 			var storeMsg = {ts:new Date().getTime(), from:ctx.storage.username, msg:msg},
 				storeMsgJSON = JSON.stringify(storeMsg),
 				isRemoteUser = user.indexOf("@") !== -1;
-			if(user < ctx.storage.username) // lawl-sort
-				var convid = user+'.'+ctx.storage.username;
-			else
-				var convid = ctx.storage.username+'.'+user;
+			var convid = helpers.getConvid(ctx, user);
 			var pushMessage = function() { 
 				if(isRemoteUser)
 					return;
@@ -506,24 +552,32 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 				});
 				ctx.sendClient({ts:storeMsg.ts, sent:true});
 			}
-			ctx.storage.redis.rpushx("msgs."+convid, storeMsgJSON, function(err, reply) {
-				if(err)
-					return helpers.dbg("redis-Error: "+err);
-				if(reply)
-					pushMessage();
-				else {
-					var rediscallback = function(err, reply){
-						if(reply)
-							ctx.storage.redis.rpush("msgs."+convid, storeMsgJSON, pushMessage);
+			if(!isTemporary)
+				ctx.storage.redis.rpushx("msgs."+convid, storeMsgJSON, function(err, reply) {
+					if(err)
+						return helpers.dbg("redis-Error: "+err);
+					if(reply)
+						pushMessage();
+					else {
+						var rediscallback = function(err, reply){
+							if(reply)
+								ctx.storage.redis.rpush("msgs."+convid, storeMsgJSON, pushMessage);
+							else
+								ctx.sendClient({error:Error.NOT_ALLOWED});
+						};
+						if(!ctx.isServer)
+							ctx.storage.redis.hexists("convs."+ctx.storage.username, user, rediscallback)
 						else
-							ctx.sendClient({error:Error.NOT_ALLOWED});
-					};
-					if(!ctx.isServer)
-						ctx.storage.redis.hexists("convs."+ctx.storage.username, user, rediscallback)
+							ctx.storage.redis.hexists("convs."+user, ctx.storage.username, rediscallback);
+					}
+				});
+			else
+				ctx.storage.redis.hexists("convs."+ctx.storage.username,user,function(err,reply) {
+					if(reply)
+						pushMessage();
 					else
-						ctx.storage.redis.hexists("convs."+user, ctx.storage.username, rediscallback);
-				}
-			});
+						ctx.sendClient({error:Error.NOT_ALLOWED});
+				});
 			if(isRemoteUser && !ctx.isServer)
 				return { forward: user };
 		},
