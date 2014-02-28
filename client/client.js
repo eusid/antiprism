@@ -170,6 +170,7 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 				return error;
 			},
 			displayError = function(error) {
+				console.error("An error occured: ", error);
 				var errorContainer = helper.div("alert alert-danger fade in"),
 					closeButton = helper.button("x", "close"),
 					headline = helper.h4(error.type),
@@ -492,7 +493,9 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 		disableRetrieveMoreMessagesButton:function(contactName) {
 			var obj = {msglist:[]},
 				disableButton = function() {
-					obj = sessionStorage.getObject(contactName) || {msglist:[]};
+					obj = sessionStorage.getObject(contactName);
+					if(!obj.msglist)
+						obj.msglist = [];
 					$('#retrieveMoreMessagesButton')[0].disabled = obj.msglist.length >= obj.numberOfMessages;
 				};
 			if(!sessionStorage[contactName]) {
@@ -579,7 +582,7 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 					utils.displayRetrieveMoreMessagesButton(contactName);
 					client.getMessages(contactName);
 				}
-			}, userObj ? userObj.numberOfMessages : undefined);
+			});
 			if(iconClass.indexOf("glyphicon-time") !== -1) {
 				utils.displayMessage({from:contactName, msg:"Waiting for confirmation by user.", ts:(new Date()).getTime()}, contactName, false);
 			} else if(iconClass.indexOf("glyphicon-question-sign") !== -1)
@@ -789,14 +792,14 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 			antiprism.getContacts(utils.displayContacts);
 		},
 		getMessages:function(contactName, start, end) {
-			var userObj = sessionStorage.getObject(contactName) || {msglist:0};
+			var userObj = sessionStorage.getObject(contactName) || {msglist:[]};
 			if(!userObj) {
 				console.log("getMessages was called and it has no sessionstorage[\"" + contactName + "\"]!");
 				utils.updateContactObject(contactName, function() {
 					client.getMessages(contactName, start, end);
 				});
 				return;
-			} else if(userObj.msglist.length >= 10) {
+			} else if(userObj.msglist && userObj.msglist.length >= 10) {
 				utils.displayMessages(userObj, contactName);
 				console.log("displayed messages from sessionstorage");
 				return;
@@ -819,11 +822,11 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 			var $active = $('.active');
 			if($active.length)
 				to = $active[0].id;
-			$messageField.val('');
 			if(to)
 				antiprism.sendMessage(to, message, function(msg) {
 					if(msg && msg.error)
 						errorHandler(0, 0, msg.error);
+					$messageField.val('');
 					var sentMessage = {to:to, ts:msg.ts, msg:message};
 					utils.pushOneMessageToStorage(to, sentMessage);
 					utils.displayMessage(sentMessage, to);
@@ -951,7 +954,7 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 		testTwoFunctions:function(firstFunction, secondFunction, calls) { //repeat: number of repititions - default is 10000
 			calls = calls || 10000;
 			var func = function(call) {
-				for(var i = 0; i < calls; i+=2) call(i);
+				for(var i = 0; i < calls; i += 2) call(i);
 			};
 			var start = window.performance.now();
 			func(firstFunction);
@@ -1021,6 +1024,24 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 			}
 			console.log("Your Function can be called ~" + meanCalls + " times per second.");
 			return meanCalls;
+		},
+		locustJS:function(username, numberOfLogins) { //password "penis" : "LE1UWGqxaR8loRB9NiW9AsBIfQmyXSK10fIThG2tIq4="
+			var host = location.origin.replace(/^http/, 'ws'),
+				connections = [],
+				success = 0,
+				password = {hash:atob("LE1UWGqxaR8loRB9NiW9AsBIfQmyXSK10fIThG2tIq4=")},
+				i= 0,
+				loginCallback = function(msg) {
+					if(msg.loggedIn)
+						success++;
+					console.log("Successful logins: ", success);
+				};
+			for(; i < numberOfLogins; i++) {
+				var antiprism = new Antiprism(host, true);
+				antiprism.login(username, password, loginCallback);
+				connections.push(antiprism);
+			}
+
 		}
 	},
 	WebRTC = function(antiprism) {
