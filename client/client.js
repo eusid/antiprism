@@ -668,22 +668,31 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 			var panelContainer = helper.div("panel col-md-8"),
 				panelHeader = helper.div("panel panel-heading"),
 				panelContent = helper.div("panel panel-body"),
+				img = document.createElement("img"),
 				username = message.from || utils.getUsername(),
 				time = new Date(message.ts),
 				receivedMessage = utils.htmlEncode(message.msg);
+			img.width = 18;
+			MonsterId.getAvatar(username,img);
 			panelContent.innerHTML = utils.urlToLink(receivedMessage);
 			if(time.toDateString() !== (new Date()).toDateString())
 				time = time.toDateString() + ", " + time.toLocaleTimeString();
 			else
 				time = "today, " + time.toLocaleTimeString();
 			if(username === utils.getUsername()) {
+				var text = document.createElement("span");
+				text.innerText = time + " | me ";
 				panelContainer.className += " panel-success pull-right";
-				panelHeader.innerHTML = time + " | me";
+				panelHeader.appendChild(text);
+				panelHeader.appendChild(img);
 				panelContent.align = "right";
 				panelHeader.align = "right";
 			} else {
+				var text = document.createElement("span");
+				text.innerText = " " + username + " | " + time;
 				panelContainer.className += " panel-info";
-				panelHeader.innerHTML = username + " | " + time;
+				panelHeader.appendChild(img);
+				panelHeader.appendChild(text);
 			}
 			panelContainer.appendChild(panelHeader);
 			panelContainer.appendChild(panelContent);
