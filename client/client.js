@@ -987,9 +987,10 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 					antiprism.login(username, password, callback);
 				});
 			else {
-				var passhash = antiprism.login(username, password, callback);
-				if(utils.rememberMe())
-					localStorage.password = passhash;
+				var storePass = function(hash) {
+					localStorage.password = hash;
+				}
+				antiprism.login(username, password, callback, utils.rememberMe() ? storePass : undefined);
 			}
 			if(!localStorage.getObject("rememberUser") && utils.rememberMe()) {
 				localStorage.setObject("rememberUser", true);

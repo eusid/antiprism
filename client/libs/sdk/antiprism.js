@@ -13,7 +13,16 @@ var Antiprism = function(host,debugFlag) {
 	// define all the methods!!11
 	var retries,
 		seq = 0,
+		bgworker = new Worker('libs/sdk/bgtasks.js'),
 		utils = {
+			runBackgroundTask: function(action, params, callback) {
+				var workerFinished = function(e) {
+					callback(e.data);
+					bgworker.removeEventListener('message', workerFinished);
+				};
+				bgworker.addEventListener('message', workerFinished, false);
+				bgworker.postMessage({action:action,params:params});
+			},
 			parseLatin: function(string) {
 				return CryptoJS.enc.Latin1.parse(string);
 			},
@@ -31,16 +40,6 @@ var Antiprism = function(host,debugFlag) {
 				var cipher = CryptoJS.AES.encrypt(string, key, { iv: iv });
 				return new Buffer(cipher.iv+cipher.ciphertext,'hex').toString('base64');
 			},
-			buildAESKey: function(password) {
-				var salt = "i_iz_static_salt";
-				var hash = scrypt.crypto_scrypt(scrypt.encode_utf8(password),scrypt.encode_utf8(salt), 16384, 8, 1, 32);
-				return String.fromCharCode.apply(null, new Uint8Array(hash));
-			},
-			generateKeypair: function() {
-				var rsa = new RSA();
-				rsa.generate(2048,"10001");
-				return {pubkey: rsa.getPublic(), privkey: rsa.getPrivate()};
-			},
 			encryptRSA: function(plain, pubkey) {
 				var rsa = new RSA();
 				try {
@@ -49,38 +48,34 @@ var Antiprism = function(host,debugFlag) {
 					return debug("invalid pubkey", true, e);
 				}
 				return new Buffer(rsa.encrypt(plain),'hex').toString('base64');
-			},
-			decryptRSA: function(cipher, pubkey, privkey) {
-				console.time("decryptRSA");
-				var rsa = new RSA();
- 				rsa.loadPrivate(pubkey, privkey, 2048);
-				var plain = rsa.decrypt(new Buffer(cipher,'base64').toString('hex'));
-				console.timeEnd("decryptRSA");
-				return plain;
 			}
 		},
 		helpers = {
 			getKey: function(user, callback) {
 				if(session.conversations[user])
 					return callback ? callback() : 0;
-				else if(session.cache.keys[user]) {
-					var decrypted = utils.decryptRSA(session.cache.keys[user],session.pubkey,session.privkey);
-					if(decrypted === null)
-						return debug(session,true,"rsa decrypt for "+user+" failed, session:");
-					session.conversations[user] = decrypted;
-					delete session.cache.keys[user];
-					return callback ? callback() : 0;
-				}
+				else if(session.cache.keys[user])
+					return utils.runBackgroundTask(
+					'decryptRSA', [session.cache.keys[user],session.pubkey,session.privkey], function(decrypted) {
+						if(decrypted === null)
+							return debug(session,true,"rsa decrypt for "+user+" failed, session:");
+						session.conversations[user] = decrypted;
+						delete session.cache.keys[user];
+						return callback ? callback() : 0;
+					});
 				ws.callServer("conversationKey",[user],function(msg) {
 					if(msg.convkey)
-						session.conversations[msg.user] = utils.decryptRSA(msg.convkey,session.pubkey,session.privkey);
+						utils.runBackgroundTask(
+						'decryptRSA',[msg.convkey,session.pubkey,session.privkey],function(decrypted) {
+							session.conversations[msg.user] = decrypted;
+							if(callback)
+								callback(msg);
+						});
 					else
-						return actions.initConversation(user,function(resp) {
+						actions.initConversation(user,function(resp) {
 							if(resp.initiated)
 								callback(msg);
 						});
-					if(callback)
-						callback(msg);
 				});
 			},
 			registerWsCallbacks: function() {
@@ -143,42 +138,61 @@ var Antiprism = function(host,debugFlag) {
 					return "unknown event";
 				clientEvents[event] = callback;
 			},
-			login: function(user,password,callback) { // give {hash:'<bytes>'} for raw hash login
+			login: function(user,password,callback,storePass) { // give {hash:'<bytes>'} for raw hash login
+				var doLogin = function() {
+					ws.callServer("login", [session.user], function(response) {
+						session.pubkey = response.pubkey;
+						try {
+							var privkey = new Buffer(utils.decryptAES(response.privkey,session.pass.enc)).toString('base64');
+							session.privkey = privkey;
+							utils.runBackgroundTask(
+							'decryptRSA',[response.validationKey, response.pubkey, privkey], function(validationKey) {
+								var hash = CryptoJS.SHA256(utils.parseLatin(validationKey)).toString(CryptoJS.enc.Base64);
+								ws.callServer("auth", [hash], callback);
+							});
+	 					} catch (e) {
+							debug("wrong password", true, e);
+	                        callback(false);
+						}
+					});
+				};
 				if(session.user === undefined) {
 					session.user = user;
 					if(typeof password === 'string')
-						session.pass.enc = utils.buildAESKey(password);
+						return utils.runBackgroundTask('buildAESKey',[password],function(hash) {
+							session.pass.enc = hash;
+							doLogin();
+							if(storePass)
+								storePass(hash);
+						});
 					else
 						session.pass.enc = password.hash;
 				}
-				ws.callServer("login", [session.user], function(response) {
-					session.pubkey = response.pubkey;
-					try {
-						var privkey = new Buffer(utils.decryptAES(response.privkey,session.pass.enc)).toString('base64');
-						session.privkey = privkey;
-						var validationKey = utils.decryptRSA(response.validationKey, response.pubkey, privkey),
-							hash = CryptoJS.SHA256(utils.parseLatin(validationKey)).toString(CryptoJS.enc.Base64);
-						ws.callServer("auth", [hash], callback);
- 					} catch (e) {
-						debug("wrong password", true, e);
-                        callback(false);
-					}
-				});
+				doLogin();
 				return session.pass.enc;
 			},
 			register: function(user,password,callback) {
-				if(session.user === undefined) {
-					session.user = user;
-					session.pass.enc = utils.buildAESKey(password);
+				var doRegister = function() {
+					utils.runBackgroundTask('generateKeypair', [], function(keypair) {
+						keypair.crypt = utils.encryptAES(new Buffer((keypair.privkey),'base64').toString(), session.pass.enc);
+						ws.callServer("register", [session.user, keypair.pubkey, keypair.crypt], callback);
+					});
 				}
-				var keypair = utils.generateKeypair();
-				keypair.crypt = utils.encryptAES(new Buffer((keypair.privkey),'base64').toString(), session.pass.enc);
-				ws.callServer("register", [session.user, keypair.pubkey, keypair.crypt], callback);
+				if(session.user === undefined)
+					utils.runBackgroundTask('buildAESKey', [password], function(hash) {
+						session.user = user;
+						session.pass.enc = hash;
+						doRegister();
+					});
+				else
+					doRegister();
 			},
 			changePassword: function(newpass, callback) {
-				var passAES = utils.buildAESKey(newpass),
-					privkey = new Buffer(session.privkey,'base64').toString();
-				ws.callServer("changePass", [utils.encryptAES(privkey, passAES)], callback);
+				utils.runBackgroundTask('buildAESKey', [newpass], function(hash) {
+					var privkey = new Buffer(session.privkey,'base64').toString();
+					session.pass.enc = hash;
+					ws.callServer("changePass", [utils.encryptAES(privkey, hash)], callback);
+				});
 			},
 			setStatus: function(status, callback) {
 				ws.callServer("setStatus",[status],callback);
@@ -344,13 +358,16 @@ var Antiprism = function(host,debugFlag) {
 		}
 	};
 	events.added = function(msg) {
-		session.conversations[msg.user] = utils.decryptRSA(msg.convkey,session.pubkey,session.privkey);
-		delete msg.convkey;
-		try {
-			clientEvents.added(msg);
-		} catch(e) {
-			debug(msg,true,e);
-		}
+		utils.runBackgroundTask(
+		'decryptRSA', [msg.convkey,session.pubkey,session.privkey], function(decrypted) {
+			session.conversations[msg.user] = decrypted;
+			delete msg.convkey;
+			try {
+				clientEvents.added(msg);
+			} catch(e) {
+				debug(msg,true,e);
+			}
+		});
 	};
 	events.online = function(msg) { clientEvents.online(msg); };
 	for(action in actions)
