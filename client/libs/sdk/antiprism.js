@@ -176,8 +176,9 @@ var Antiprism = function(host,debugFlag) {
 				ws.callServer("register", [session.user, keypair.pubkey, keypair.crypt], callback);
 			},
 			changePassword: function(newpass, callback) {
-				var passAES = utils.buildAESKey(newpass);
-				ws.callServer("changePass", [utils.encryptAES(session.privkey, passAES)], callback);
+				var passAES = utils.buildAESKey(newpass),
+					privkey = new Buffer(session.privkey,'base64').toString();
+				ws.callServer("changePass", [utils.encryptAES(privkey, passAES)], callback);
 			},
 			setStatus: function(status, callback) {
 				ws.callServer("setStatus",[status],callback);
