@@ -770,13 +770,13 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 				userIcon = userIcon.children;
 				if(userIcon.length > 0) {
 					var className = "glyphicon  glyphicon-";
-					if(isGroup) {
-						className += "th";
-					} else if(msg.confirmed === false) {
+					if(msg.confirmed === false) {
 						className += "time";
+					} else if(msg.request) {
+						className += "question-sign";
 					} else {
-						if(msg.request)
-							className += "question-sign";
+						if(isGroup)
+							className += "th";
 						else if(msg.online)
 							className += "user online";
 						else
