@@ -1,0 +1,33 @@
+<html>
+<head>
+	<script type="text/javascript">
+		function print(str) {
+			//document.writeln(str+"<br>\n");
+			alert(str);
+		}
+		function require() {
+			var xhr = new XMLHttpRequest();
+			for(var file in arguments) {
+				print("loading "+arguments[file]);
+				xhr.open('GET', arguments[file], false);
+				xhr.send();
+				eval.call(window,xhr.response); // execute in global context
+				print("finished.");
+			}
+		}
+	</script>
+</head>
+<body>
+	<input type="submit" id="clickme">
+	<script>
+	document.getElementById("clickme").onclick = function() {
+		require("libs/sdk/crypto/buffer.js","libs/sdk/crypto/scrypt.js");
+		print(new Buffer("414243","hex").toString());
+		var testvar = "penis",
+			salt = "i_iz_static_salt",
+			hash = scrypt.crypto_scrypt(scrypt.encode_utf8(testvar),scrypt.encode_utf8(salt), 16384, 8, 1, 32);
+		print(new Buffer(String.fromCharCode.apply(this,hash)).toString('hex'));
+	};
+	</script>
+</body>
+</html>

@@ -17,8 +17,8 @@ var Antiprism = function(host,debugFlag) {
 		utils = {
 			runBackgroundTask: function(action, params, callback) {
 				var workerFinished = function(e) {
-					callback(e.data);
 					bgworker.removeEventListener('message', workerFinished);
+					callback(e.data);
 				};
 				bgworker.addEventListener('message', workerFinished, false);
 				bgworker.postMessage({action:action,params:params});

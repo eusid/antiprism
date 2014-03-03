@@ -931,8 +931,10 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 			password = password || utils.getPassword();
 			var registration = utils.register(),
 				host = location.origin.replace(/^http/, 'ws');
+			$("#loadingBar").slideToggle(300);
 			antiprism = new Antiprism(host, true); // params: host,[debugFlag]
 			var callback = function(msg) {
+				$("#loadingBar").slideToggle(300);
 				if(msg) {
 					if(msg && msg.error)
 						errorHandler(0, 0, msg.error);
