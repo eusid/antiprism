@@ -226,7 +226,7 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 					ctx.sendClient({error:Error.UNKNOWN_USER});
 			});
 		},
-		register: function(ctx, username, pubkey, privkey) {
+		register: function(ctx, username, pubkey, privkey, salt) {
 			ctx.storage.redis.exists("users."+username,function(err,reply) {
 				if(reply)
 					return ctx.sendClient({'registered':false});
@@ -235,7 +235,8 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 					ctx.storage.redis.hmset("users."+username, {
 							pubkey: pubkey,
 							privkey: privkey,
-							lastseen: new Date().getTime()
+							lastseen: new Date().getTime(),
+							salt: salt
 						},
 						function(err,res) {
 							if(err)
@@ -261,7 +262,8 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 				ctx.sendClient({
 					validationKey: ret,
 					pubkey: reply.pubkey,
-					privkey: reply.privkey
+					privkey: reply.privkey,
+					salt: reply.salt
 				});
 			});
 		},

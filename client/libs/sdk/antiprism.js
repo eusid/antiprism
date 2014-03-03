@@ -139,56 +139,63 @@ var Antiprism = function(host,debugFlag) {
 				clientEvents[event] = callback;
 			},
 			login: function(user,password,callback,storePass) { // give {hash:'<bytes>'} for raw hash login
-				var doLogin = function() {
-					ws.callServer("login", [session.user], function(response) {
-						session.pubkey = response.pubkey;
-						try {
-							var privkey = new Buffer(utils.decryptAES(response.privkey,session.pass.enc)).toString('base64');
-							session.privkey = privkey;
-							utils.runBackgroundTask(
-							'decryptRSA',[response.validationKey, response.pubkey, privkey], function(validationKey) {
-								var hash = CryptoJS.SHA256(utils.parseLatin(validationKey)).toString(CryptoJS.enc.Base64);
-								ws.callServer("auth", [hash], callback);
-							});
-	 					} catch (e) {
-							debug("wrong password", true, e);
-	                        callback(false);
-						}
+				var doLogin = function(response) {
+					try {
+						var privkey = new Buffer(utils.decryptAES(response.privkey,session.pass.enc)).toString('base64');
+		 			} catch (e) {
+						debug("wrong password", true, e);
+		                return callback(false);
+					}
+					session.privkey = privkey;
+					utils.runBackgroundTask(
+					'decryptRSA',[response.validationKey, response.pubkey, privkey], function(validationKey) {
+						var hash = CryptoJS.SHA256(utils.parseLatin(validationKey)).toString(CryptoJS.enc.Base64);
+						ws.callServer("auth", [hash], callback);
 					});
-				};
-				if(session.user === undefined) {
-					session.user = user;
-					if(typeof password === 'string')
-						return utils.runBackgroundTask('buildAESKey',[password],function(hash) {
-							session.pass.enc = hash;
-							doLogin();
-							if(storePass)
-								storePass(hash);
-						});
-					else
-						session.pass.enc = password.hash;
 				}
-				doLogin();
-				return session.pass.enc;
+				ws.callServer("login", [user], function(response) {
+					session.pubkey = response.pubkey;
+					console.log("loginresponse",response);
+					if(!response.salt) //TODO: get rid of this shit, for backwards-compability only
+						session.pass.salt = "i_iz_static_salt";
+					else
+						session.pass.salt = new Buffer(response.salt,'base64').toString();
+					if(session.user === undefined) {
+						session.user = user;
+						if(typeof password === 'string')
+							return utils.runBackgroundTask('buildAESKey',[password, session.pass.salt],function(hash) {
+								session.pass.enc = hash;
+								doLogin(response);
+								if(storePass)
+									storePass(hash);
+							});
+						else
+							session.pass.enc = password.hash;
+					}
+					doLogin(response);
+				});
 			},
 			register: function(user,password,callback) {
 				var doRegister = function() {
 					utils.runBackgroundTask('generateKeypair', [], function(keypair) {
 						keypair.crypt = utils.encryptAES(new Buffer((keypair.privkey),'base64').toString(), session.pass.enc);
-						ws.callServer("register", [session.user, keypair.pubkey, keypair.crypt], callback);
+						var salt = new Buffer(session.pass.salt).toString('base64');
+						ws.callServer("register", [session.user, keypair.pubkey, keypair.crypt, salt], callback);
 					});
 				}
+				var salt = new SecureRandom().getString(32);
 				if(session.user === undefined)
-					utils.runBackgroundTask('buildAESKey', [password], function(hash) {
+					utils.runBackgroundTask('buildAESKey', [password,salt], function(hash) {
 						session.user = user;
 						session.pass.enc = hash;
+						session.pass.salt = salt;
 						doRegister();
 					});
 				else
 					doRegister();
 			},
 			changePassword: function(newpass, callback) {
-				utils.runBackgroundTask('buildAESKey', [newpass], function(hash) {
+				utils.runBackgroundTask('buildAESKey', [newpass, session.pass.salt], function(hash) {
 					var privkey = new Buffer(session.privkey,'base64').toString();
 					session.pass.enc = hash;
 					ws.callServer("changePass", [utils.encryptAES(privkey, hash)], callback);

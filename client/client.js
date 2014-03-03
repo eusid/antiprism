@@ -934,7 +934,7 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 			$("#loadingBar").slideToggle(300);
 			antiprism = new Antiprism(host, true); // params: host,[debugFlag]
 			var callback = function(msg) {
-				$("#loadingBar").slideToggle(300);
+				$("#loadingBar").hide();
 				if(msg) {
 					if(msg && msg.error)
 						errorHandler(0, 0, msg.error);

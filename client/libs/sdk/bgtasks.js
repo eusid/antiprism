@@ -3,8 +3,7 @@ self.addEventListener('message', function(e) {
 	importScripts('crypto/buffer.js','crypto/jsbn.full.js','crypto/scrypt.js');
 	var ctx = e.data,
 		actions = {
-			buildAESKey: function(password) {
-				var salt = "i_iz_static_salt";
+			buildAESKey: function(password,salt) {
 				var hash = scrypt.crypto_scrypt(scrypt.encode_utf8(password),scrypt.encode_utf8(salt), 16384, 8, 1, 32);
 				return String.fromCharCode.apply(null, new Uint8Array(hash));
 			},
