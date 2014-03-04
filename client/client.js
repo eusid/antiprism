@@ -13,6 +13,7 @@
 
 
 var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
+	cache = {pubkeys:{},requests:{}},
 	helper = {
 		clearStorageUserdata:function() {
 			var muted = localStorage.getObject("muted");
@@ -29,8 +30,7 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 				var value = this.getItem(key);
 				try {
 					value = JSON.parse(value);
-				} catch(e) {
-				}
+				} catch(e) { }
 				return value;
 			};
 		},
@@ -673,7 +673,19 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 				time = new Date(message.ts),
 				receivedMessage = utils.htmlEncode(message.msg);
 			img.width = 18;
-			MonsterId.getAvatar(username,img);
+			if(cache.pubkeys[username])
+				MonsterId.getAvatar(cache.pubkeys[username],img);
+			else
+				if(!cache.requests[username]) {
+					cache.requests[username] = [img];
+					antiprism.getPubkey(username,function(pubkey) {
+						cache.pubkeys[username] = pubkey;
+						for(var img in cache.requests[username])
+							MonsterId.getAvatar(cache.pubkeys[username],cache.requests[username][img]);
+					});
+				}
+				else
+					cache.requests[username].push(img);
 			panelContent.innerHTML = utils.urlToLink(receivedMessage);
 			if(time.toDateString() !== (new Date()).toDateString())
 				time = time.toDateString() + ", " + time.toLocaleTimeString();

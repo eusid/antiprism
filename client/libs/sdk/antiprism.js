@@ -138,6 +138,12 @@ var Antiprism = function(host,debugFlag) {
 					return "unknown event";
 				clientEvents[event] = callback;
 			},
+			getPubkey: function(user, callback) {
+				ws.callServer("pubkey",[user],function(reply) {
+					if(callback)
+						callback(reply.pubkey);
+				});
+			},
 			login: function(user,password,callback,storePass) { // give {hash:'<bytes>'} for raw hash login
 				var doLogin = function(response) {
 					try {
@@ -156,7 +162,7 @@ var Antiprism = function(host,debugFlag) {
 				ws.callServer("login", [user], function(response) {
 					session.pubkey = response.pubkey;
 					console.log("loginresponse",response);
-					if(!response.salt) //TODO: get rid of this shit, for backwards-compability only
+					if(!response.salt) //TODO: get rid of this shit asap, for backwards-compability only
 						session.pass.salt = "i_iz_static_salt";
 					else
 						session.pass.salt = new Buffer(response.salt,'base64').toString();
