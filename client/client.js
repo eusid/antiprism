@@ -20,6 +20,7 @@
 
 
 var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
+	cache = {pubkeys:{},requests:{}},
 	helper = {
 		clearStorageUserdata:function() {
 			var muted = localStorage.getObject("muted");
@@ -36,8 +37,7 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 				var value = this.getItem(key);
 				try {
 					value = JSON.parse(value);
-				} catch(e) {
-				}
+				} catch(e) { }
 				return value;
 			};
 		},
@@ -681,7 +681,19 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 				time = new Date(message.ts),
 				receivedMessage = utils.htmlEncode(message.msg);
 			img.width = 18;
-			MonsterId.getAvatar(username,img);
+			if(cache.pubkeys[username])
+				MonsterId.getAvatar(cache.pubkeys[username],img);
+			else
+				if(!cache.requests[username]) {
+					cache.requests[username] = [img];
+					antiprism.getPubkey(username,function(pubkey) {
+						cache.pubkeys[username] = pubkey;
+						for(var img in cache.requests[username])
+							MonsterId.getAvatar(cache.pubkeys[username],cache.requests[username][img]);
+					});
+				}
+				else
+					cache.requests[username].push(img);
 			panelContent.innerHTML = utils.urlToLink(receivedMessage);
 			if(time.toDateString() !== (new Date()).toDateString())
 				time = time.toDateString() + ", " + time.toLocaleTimeString();
@@ -939,8 +951,10 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 			password = password || utils.getPassword();
 			var registration = utils.register(),
 				host = location.origin.replace(/^http/, 'ws');
+			$("#loadingBar").slideToggle(300);
 			antiprism = new Antiprism(host, true); // params: host,[debugFlag]
 			var callback = function(msg) {
+				$("#loadingBar").hide();
 				if(msg) {
 					if(msg && msg.error)
 						errorHandler(0, 0, msg.error);
@@ -995,9 +1009,10 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 					antiprism.login(username, password, callback);
 				});
 			else {
-				var passhash = antiprism.login(username, password, callback);
-				if(utils.rememberMe())
-					localStorage.password = passhash;
+				var storePass = function(hash) {
+					localStorage.password = hash;
+				}
+				antiprism.login(username, password, callback, utils.rememberMe() ? storePass : undefined);
 			}
 			if(!localStorage.getObject("rememberUser") && utils.rememberMe()) {
 				localStorage.setObject("rememberUser", true);
