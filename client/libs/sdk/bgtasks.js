@@ -13,11 +13,9 @@ self.addEventListener('message', function(e) {
 				return {pubkey: rsa.getPublic(), privkey: rsa.getPrivate()};
 			},
 			decryptRSA: function(cipher, pubkey, privkey) {
-				var start = new Date().getTime();
-					rsa = new RSA();
+				var rsa = new RSA();
 					rsa.loadPrivate(pubkey, privkey, 2048);
 				var plain = rsa.decrypt(new Buffer(cipher,'base64').toString('hex'));
-				console.log("RSA-Decrypt: "+(new Date().getTime()-start)+"ms");
 				return plain;
 			}
 		};
