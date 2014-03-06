@@ -306,6 +306,12 @@ var Antiprism = function(host,debugFlag) {
 					ws.callServer("invite", [group, user, key], callback);
 				});
 			},
+			getMembers: function(group, callback) {
+				ws.callServer("members", [group], function(msg) {
+					if(callback)
+						callback(msg.members||msg);
+				});
+			},
 			// <Developer-Mode>
 			debug: function() { // call to get benchmarked debug-func
 				var id = new Date().getTime().toString();
