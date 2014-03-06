@@ -5,9 +5,16 @@
  * -------------------------------------------------------
  *
  * ideas for features:
- * -------------------------
+ * -------------------
  *
- *    - Groupchat (wait for server implementation)
+ *    - Smileysupport
+ *
+ *    - "is writing"-support
+ *
+ *    - use webrtc (P2P):
+ *    		- videochat
+ *    		- datachannel (filetransferring)
+ *    		- temporary chatsession(?)
  *
  */
 
@@ -346,10 +353,11 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 			bootbox.prompt("What's up?", utils.statusPromptCallback);
 		},
 		statusPromptCallback:function(result) {
+			var maxLength = 75;
 			if(result !== null) {
-				if(result.length > 75) {
+				if(result.length > maxLength) {
 					bootbox.prompt("Unfortunately your status was too long. :(\n" +
-						"Allowed are 75, you entered " + result.length + ". " +
+						"Allowed are " + maxLength + ", you entered " + result.length + ". " +
 						"Anyway, what's on your mind?", utils.statusPromptCallback);
 				} else {
 					client.setStatus(result);
