@@ -19,6 +19,7 @@
 
 var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 	cache = {pubkeys:{}, requests:{}},
+	$isWritingContainer = [],
 	helper = {
 		clearStorageUserdata:function() {
 			var muted = localStorage.getObject("muted");
@@ -372,6 +373,10 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 			$('#messageField').keyup(function(e) {
 				if(e.keyCode === 13) {
 					client.sendMessage();
+				} else {
+					var activeUser = $('.active')[0].id;
+					if(activeUser && activeUser[0] !== '$')
+						antiprism.sendMessage(activeUser, "{\"type\":\"writing\"}", undefined, true);
 				}
 			});
 			$('#addFriendField').keyup(function(e) {
@@ -659,6 +664,7 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 				$active = $('.active'),
 				userObj = sessionStorage.getObject(contactName),
 				iconClass = $contactNode.children()[0].className;
+			$isWritingContainer = [];
 			if($active.length)
 				$active.removeClass("active");
 			$contactNode.addClass("active");
@@ -708,6 +714,30 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 			}
 			utils.pushOneMessageToStorage(sender, msg);
 			utils.displayMessage(msg, isGroup ? msg.to : sender);
+		},
+		displayIsWriting:function(contactName) {
+			if($isWritingContainer.length) {
+				utils.messageDisplay().append($isWritingContainer);
+				$isWritingContainer.show();
+				setTimeout(function() {
+					if($isWritingContainer.length)
+						$isWritingContainer.hide(500);
+				}, 3000);
+				utils.animateDisplay();
+				return;
+			} else
+				console.log(contactName + " is writing...");
+			var panelContainer = helper.div("panel col-md-8 panel-info"),
+				panelHeader = helper.div("panel panel-heading");
+			panelHeader.innerHTML = utils.htmlEncode(contactName) + " is writing...";
+			panelContainer.appendChild(panelHeader);
+			panelContainer.id = "isWritingContainer";
+			$isWritingContainer = $(panelContainer);
+			utils.messageDisplay().append($isWritingContainer);
+			setTimeout(function() {
+				$(panelContainer).hide(500);
+			}, 2000);
+			utils.animateDisplay();
 		},
 		displayMessageContent:function(message, contactName, moreMessages) {
 			var panelContainer = helper.div("panel col-md-8"),
@@ -777,7 +807,7 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 			}
 		},
 		animateDisplay:function() {
-			utils.messageDisplay().animate({ scrollTop:utils.messageDisplay().prop("scrollHeight") - utils.messageDisplay().height() }, 300);
+			utils.messageDisplay().animate({ scrollTop:(utils.messageDisplay().prop("scrollHeight") - utils.messageDisplay().height() + 100) }, 400); //+100 is random :D
 		},
 		createConfirmDenyButton:function(contactName) {
 			var buttonDiv = helper.div("col-md-12"),
@@ -1020,9 +1050,26 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 			if(enableWebRTC) {
 				webRTC = new WebRTC(antiprism);
 				messageCallback = function(msg) {
-					console.log("Got msg:",msg);
-					if(msg.temp)
-						webRTC.onMessage(msg);
+					console.log("Got msg:", msg);
+					if(msg.temp) {
+						var message;
+						try {
+							message = JSON.parse(msg.msg);
+						} catch(e) {
+							errorHandler(null, null, 4);
+							utils.onMessage(msg);
+							return;
+						}
+						if(message.type === 'writing') {
+							var $active = $('.active');
+							if($active.length && $active[0].id === msg.from)
+								utils.displayIsWriting(msg.from);
+						}
+						else {
+							msg.msg = message;
+							webRTC.onMessage(msg);
+						}
+					}
 					else
 						utils.onMessage(msg);
 				};
@@ -1166,13 +1213,7 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 
 		// Handle messages received from the server
 		this.onMessage = function(msg) {
-			var message;
-			try {
-				message = JSON.parse(msg.msg);
-			} catch(e) {
-				errorHandler(null, null, 4);
-				return;
-			}
+			var message = msg.msg;
 			switch(message.type) {
 				// Respond to an offer
 				case 'offer':
