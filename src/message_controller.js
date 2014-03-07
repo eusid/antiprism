@@ -554,6 +554,8 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 			var pushMessage = function() { 
 				if(isRemoteUser)
 					return;
+				if(isTemporary)
+					storeMsg.temp = true;
 				helpers.broadcast(ctx, user, storeMsg);
 				ctx.storage.redis.smembers("sess."+ctx.storage.username, function(err,reply) {
 					if(err)
