@@ -1,12 +1,14 @@
-(function (exports) {
+(function(exports) {
 	var getSmileyCodes = function(self) {
 			var path = "/libs/smileys.JSON",
 				URL = exports.location.origin + path,
 				xmlhttp = new XMLHttpRequest();
 
 			xmlhttp.onreadystatechange = function() {
-				if(xmlhttp.readyState === 4 && xmlhttp.status === 200)
+				if(xmlhttp.readyState === 4 && xmlhttp.status === 200) {
 					self.smileyCodes = JSON.parse(xmlhttp.responseText);
+					exports.emotify = emotify;
+				}
 			};
 
 			xmlhttp.open("GET", URL, true);
@@ -34,5 +36,4 @@
 			return chunks.join(" ");
 		};
 	getSmileyCodes(this);
-	exports.emotify = emotify;
 })(window);

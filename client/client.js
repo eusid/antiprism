@@ -482,7 +482,7 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 				utils.onContactSelect(contactName);
 			});
 			if(msg.contacts[contact] && msg.contacts[contact].status !== null)
-				status.innerHTML = emotify(utils.htmlEncode(msg.contacts[contact].status));
+				status.innerHTML = emotify ? emotify(utils.htmlEncode(msg.contacts[contact].status)) : utils.htmlEncode(msg.contacts[contact].status);
 			else
 				status.innerHTML = "";
 			contactElement.appendChild(status);
@@ -694,7 +694,7 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 				}
 				else
 					cache.requests[username].push(img);
-			panelContent.innerHTML = emotify(utils.urlToLink(receivedMessage));
+			panelContent.innerHTML = emotify ? emotify(utils.urlToLink(receivedMessage)) : utils.urlToLink(receivedMessage);
 			if(time.toDateString() !== (new Date()).toDateString())
 				time = time.toDateString() + ", " + time.toLocaleTimeString();
 			else
