@@ -482,7 +482,7 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 				utils.onContactSelect(contactName);
 			});
 			if(msg.contacts[contact] && msg.contacts[contact].status !== null)
-				status.innerHTML = utils.htmlEncode(msg.contacts[contact].status);
+				status.innerHTML = emotify(utils.htmlEncode(msg.contacts[contact].status));
 			else
 				status.innerHTML = "";
 			contactElement.appendChild(status);
