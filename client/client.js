@@ -10,15 +10,15 @@
  *    - "is writing"-support
  *
  *    - use webrtc (P2P):
- *    		- videochat
- *    		- datachannel (filetransferring)
- *    		- temporary chatsession(?)
+ *            - videochat
+ *            - datachannel (filetransferring)
+ *            - temporary chatsession(?)
  *
  */
 
 
 var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
-	cache = {pubkeys:{},requests:{}},
+	cache = {pubkeys:{}, requests:{}},
 	helper = {
 		clearStorageUserdata:function() {
 			var muted = localStorage.getObject("muted");
@@ -446,12 +446,12 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 						}
 						msgStr += "</table>";
 						bootbox.dialog({
-							message: msgStr,
-							title: "Members of " + utils.htmlEncode(result),
-							buttons: {
-								main: {
-									label: "Got it, thanks",
-									className: "btn-primary"
+							message:msgStr,
+							title:"Members of " + utils.htmlEncode(result),
+							buttons:{
+								main:{
+									label:"Got it, thanks",
+									className:"btn-primary"
 								}
 							}
 						});
@@ -466,7 +466,7 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 			});
 			$('.tt-hint').remove();
 		},
-		createGroupPrompt: function() {
+		createGroupPrompt:function() {
 			bootbox.prompt("Type a name for your group", function(result) {
 				if(result !== null) {
 					antiprism.createGroup('$' + result, client.getContacts);
@@ -719,18 +719,17 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 				receivedMessage = utils.htmlEncode(message.msg);
 			img.width = 18;
 			if(cache.pubkeys[username])
-				MonsterId.getAvatar(cache.pubkeys[username],img);
+				MonsterId.getAvatar(cache.pubkeys[username], img);
+			else if(!cache.requests[username]) {
+				cache.requests[username] = [img];
+				antiprism.getPubkey(username, function(pubkey) {
+					cache.pubkeys[username] = pubkey;
+					for(var img in cache.requests[username])
+						MonsterId.getAvatar(cache.pubkeys[username], cache.requests[username][img]);
+				});
+			}
 			else
-				if(!cache.requests[username]) {
-					cache.requests[username] = [img];
-					antiprism.getPubkey(username,function(pubkey) {
-						cache.pubkeys[username] = pubkey;
-						for(var img in cache.requests[username])
-							MonsterId.getAvatar(cache.pubkeys[username],cache.requests[username][img]);
-					});
-				}
-				else
-					cache.requests[username].push(img);
+				cache.requests[username].push(img);
 			panelContent.innerHTML = emotify ? emotify(utils.urlToLink(receivedMessage)) : utils.urlToLink(receivedMessage);
 			if(time.toDateString() !== (new Date()).toDateString())
 				time = time.toDateString() + ", " + time.toLocaleTimeString();
@@ -1166,7 +1165,13 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 
 		// Handle messages received from the server
 		this.onMessage = function(msg) {
-			var message = JSON.parse(msg.msg);
+			var message;
+			try {
+				message = JSON.parse(msg.msg);
+			} catch(e) {
+				errorHandler(null, null, 4);
+				return;
+			}
 			switch(message.type) {
 				// Respond to an offer
 				case 'offer':
