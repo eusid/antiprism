@@ -7,9 +7,9 @@
  * ideas for features:
  * -------------------
  *
- *    - Smileysupport
- *
  *    - "is writing"-support
+ *
+ *    - show group members
  *
  *    - use webrtc (P2P):
  *    		- videochat
@@ -694,7 +694,7 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 				}
 				else
 					cache.requests[username].push(img);
-			panelContent.innerHTML = utils.urlToLink(receivedMessage);
+			panelContent.innerHTML = emotify(utils.urlToLink(receivedMessage));
 			if(time.toDateString() !== (new Date()).toDateString())
 				time = time.toDateString() + ", " + time.toLocaleTimeString();
 			else
@@ -952,6 +952,7 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 			var registration = utils.register(),
 				host = location.origin.replace(/^http/, 'ws');
 			$("#loadingBar").slideToggle(300);
+			//$('#loginForm').prop("disabled", true); //todo
 			antiprism = new Antiprism(host, true); // params: host,[debugFlag]
 			var callback = function(msg) {
 				$("#loadingBar").hide();
