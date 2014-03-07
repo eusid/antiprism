@@ -1020,6 +1020,7 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 			if(enableWebRTC) {
 				webRTC = new WebRTC(antiprism);
 				messageCallback = function(msg) {
+					console.log("Got msg:",msg);
 					if(msg.temp)
 						webRTC.onMessage(msg);
 					else
@@ -1178,7 +1179,7 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 					connection.setRemoteDescription(new RTCSessionDescription(message));
 					connection.createAnswer(function(sessionDescription) {
 						connection.setLocalDescription(sessionDescription);
-						antiprism.sendMessage(msg.from, JSON.stringify(sessionDescription), true);
+						antiprism.sendMessage(msg.from, JSON.stringify(sessionDescription), undefined, true);
 					});
 					break;
 				// Respond to an answer
@@ -1227,7 +1228,7 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 					label:event.candidate.sdpMLineIndex,
 					id:event.candidate.sdpMid,
 					candidate:event.candidate.candidate
-				}), true);
+				}), undefined, true);
 			}
 		};
 
@@ -1271,7 +1272,7 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 			}
 			connection.createOffer(function(sessionDescription) {
 				connection.setLocalDescription(sessionDescription);
-				antiprism.sendMessage(to, JSON.stringify(sessionDescription), true);
+				antiprism.sendMessage(to, JSON.stringify(sessionDescription), undefined, true);
 			});
 		};
 
