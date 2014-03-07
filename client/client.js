@@ -320,6 +320,7 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 			document.getElementById('createGroup').onclick = utils.createGroupPrompt;
 			document.getElementById('inviteToGroup').onclick = utils.groupInvitePrompt;
 			document.getElementById('setStatusButton').onclick = utils.statusPrompt;
+			document.getElementById('getMember').onclick = utils.getMembersPrompt;
 			document.getElementById('reconnectButton').onclick = function() {
 				antiprism.reconnect();
 				$('#serverLost').modal('hide');
@@ -424,6 +425,44 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 
 			$('.typeahead').typeahead({
 				local:dataSource,
+				items:4,
+				minLength:1
+			});
+			$('.tt-hint').remove();
+		},
+		getMembersPrompt:function() {
+			var dataSource = utils.getContactList(),
+				groups = [];
+			for(var i = 0; i < dataSource.length; i++) {
+				if(dataSource[i][0] === '$')
+					groups.push(dataSource[i].substring(1));
+			}
+			bootbox.prompt("From which group do you want to see a list of users?", function(result) {
+				if(result !== null) {
+					antiprism.getMembers("$" + result, function(members) {
+						var msgStr = "<table>";
+						for(var i = 0; i < members.length; i++) {
+							msgStr += "<tr><td>" +
+								utils.htmlEncode(members[i]) +
+								"</td></tr>";
+						}
+						msgStr += "</table>";
+						bootbox.dialog({
+							message: msgStr,
+							title: "Members of " + utils.htmlEncode(result),
+							buttons: {
+								main: {
+									label: "Got it, thanks",
+									className: "btn-primary"
+								}
+							}
+						});
+					});
+				}
+			});
+			$('.bootbox-input').addClass("typeahead").attr("placeholder", "Groupname");
+			$('.typeahead').typeahead({
+				local:groups,
 				items:4,
 				minLength:1
 			});
