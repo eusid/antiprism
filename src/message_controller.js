@@ -504,6 +504,19 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 					ctx.storage.username = orig;
 				});
 		},
+		members: function(ctx, group) {
+			if(group === undefined || group[0] !== '$')
+				return Error.INVALID_PARAMS;
+			if(!ctx.storage.loggedIn)
+				return Error.INVALID_AUTH;
+			ctx.storage.redis.hkeys("convs."+group, function(err, reply) {
+				if(!reply)
+					return ctx.sendClient({error: Error.UNKNOWN_USER});
+				if(reply.indexOf(ctx.storage.username) === -1)
+					return ctx.sendClient({error: Error.NOT_ALLOWED});
+				ctx.sendClient({members: reply});
+			});
+		},
 		countMessages: function(ctx, user) {
 			if(user === undefined || user === null)
 				return Error.INVALID_PARAMS;
