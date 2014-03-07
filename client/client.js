@@ -9,8 +9,6 @@
  *
  *    - "is writing"-support
  *
- *    - show group members
- *
  *    - use webrtc (P2P):
  *    		- videochat
  *    		- datachannel (filetransferring)
@@ -929,7 +927,7 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 				utils.displayMessages(msg, contactName);
 			});
 		},
-		sendMessage:function() {
+		sendMessage:function(temporary) {
 			var $messageField = $('#messageField');
 			var message = $messageField.val();
 			if(!message)
@@ -946,7 +944,7 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 					var sentMessage = {to:to, ts:msg.ts, msg:message};
 					utils.pushOneMessageToStorage(to, sentMessage);
 					utils.displayMessage(sentMessage, to);
-				});
+				}, temporary);
 			else {
 				utils.displayMessage({to:null, ts:(new Date()).getTime(), msg:"You didn\'t choose a contact!"});
 			}
@@ -1023,11 +1021,10 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 			if(enableWebRTC) {
 				webRTC = new WebRTC(antiprism);
 				messageCallback = function(msg) {
-					try {
+					if(msg.temp)
 						webRTC.onMessage(msg);
-					} catch(e) {
+					else
 						utils.onMessage(msg);
-					}
 				};
 				$('#turnOnVideo').show().click(function() {
 					webRTC.requestMedia();
@@ -1176,7 +1173,7 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 					connection.setRemoteDescription(new RTCSessionDescription(message));
 					connection.createAnswer(function(sessionDescription) {
 						connection.setLocalDescription(sessionDescription);
-						antiprism.sendMessage(msg.from, JSON.stringify(sessionDescription));
+						antiprism.sendMessage(msg.from, JSON.stringify(sessionDescription), true);
 					});
 					break;
 				// Respond to an answer
@@ -1225,7 +1222,7 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 					label:event.candidate.sdpMLineIndex,
 					id:event.candidate.sdpMid,
 					candidate:event.candidate.candidate
-				}));
+				}), true);
 			}
 		};
 
@@ -1269,7 +1266,7 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 			}
 			connection.createOffer(function(sessionDescription) {
 				connection.setLocalDescription(sessionDescription);
-				antiprism.sendMessage(to, JSON.stringify(sessionDescription));
+				antiprism.sendMessage(to, JSON.stringify(sessionDescription), true);
 			});
 		};
 
