@@ -1016,7 +1016,7 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 				}
 				$('#password').val("");
 			};
-			messageCallback = utils.onMessage;
+			var messageCallback = utils.onMessage;
 			if(enableWebRTC) {
 				webRTC = new WebRTC(antiprism);
 				messageCallback = function(msg) {
