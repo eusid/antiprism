@@ -15,7 +15,7 @@
  *            - temporary chatsession(?)
  *
  */
-define(["jquery","sdk/antiprism","bootbox","typeahead","emotifier","monsterid"], function($, Antiprism) {
+define(["jquery","sdk/antiprism","bootbox","jquery.typeahead","emotifier","monsterid"], function($, Antiprism) {
 var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 	cache = {pubkeys:{}, requests:{}},
 	$isWritingContainer = [],

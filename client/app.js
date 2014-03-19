@@ -8,7 +8,7 @@ requirejs.config({
 	  "crypto/jsbn": "sdk/crypto/jsbn.full"
     },
 	shim: {
-		'typeahead': ['jquery'],
+		'jquery.typeahead': ['jquery'],
         'bootstrap': { deps: ['jquery'] },
 		'bootbox': { deps: ['bootstrap'] }
     }
