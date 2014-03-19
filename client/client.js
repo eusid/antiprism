@@ -12,11 +12,10 @@
  *            - datachannel (filetransferring)
  *            - temporary chatsession(?)
  *
- *    - use closest() (jQuery) for contactelement.onclick
- *
  *    - is writing bugfixing
  *
  */
+
 define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "monsterid"], function($, Antiprism) {
 	var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 		cache = {pubkeys:{}, requests:{}},
@@ -305,7 +304,8 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 			},
 			rememberMe:function() {
 				return localStorage.getObject("rememberUser") || $('#rememberMe').prop('checked');
-			}, setOnClickEvents:function() {
+			},
+			setOnClickEvents:function() {
 				document.getElementById('registration').onclick = utils.changeButton;
 				document.getElementById('rememberMe').onclick = utils.rememberMePrompt;
 				document.getElementById('signInButton').onclick = function() {
@@ -521,7 +521,7 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 				contactElement.innerHTML += utils.htmlEncode(contact);
 				contactElement.id = contact;
 				contactElement.addEventListener("click", function(ctx) {
-					var contactName = ctx.target.id || ctx.target.parentNode.id;
+					var contactName = ctx.target.id || $(ctx.target).closest("a")[0].id;
 					utils.onContactSelect(contactName);
 				});
 				if(msg.contacts[contact] && msg.contacts[contact].status !== null)
