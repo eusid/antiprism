@@ -214,7 +214,7 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 			switchToChat:function(showChat, time) { //showChat - boolean true if chat shall be shown
 				var $login = $('#loginContainer'),
 					chatActive = $login.attr("style") && $login.attr("style").indexOf("display: none;") !== -1;
-				if((chatActive != showChat) && showChat !== undefined) {
+				if((chatActive !== showChat) && showChat !== undefined) {
 
 					time = time === 0 ? time : time || 1000;
 					$login.toggle(time);
@@ -531,16 +531,15 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 				contactElement.appendChild(status);
 				return contactElement;
 			},
-			appendContactElement:function(contacts, msg, contactListDOM) {
-				for(var contact in contacts) {
-					var contactElement = utils.createContactElement(contacts[contact], msg);
+			appendContactElement:function(contacts, msg, contactListDOM) { //contacts: array
+				for(var i = 0; i < contacts.length; i++) {
+					var contactElement = utils.createContactElement(contacts[i], msg);
 					contactListDOM.appendChild(contactElement);
 				}
 			},
 			displayContacts:function(msg) {
 				if(msg && msg.error)
 					errorHandler(0, 0, msg.error);
-				console.log(msg);
 				var $friendList = $('#friendList'),
 					contactList = helper.div("list-group"),
 					contactsHeadline = helper.jsLink("<strong>Contactlist</strong>"),
@@ -559,10 +558,10 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 					if(msg.contacts.hasOwnProperty(contact))
 						utils.displayOnline({user:contact, online:msg.contacts[contact].online});
 				}
-				for(var i in msg.requests.to) {
+				for(var i = 0; i < msg.requests.to.length; i++) {
 					utils.displayOnline({user:msg.requests.to[i], online:false, request:true});
 				}
-				for(i in msg.requests.from)
+				for(i = 0; i < msg.requests.from; i++)
 					utils.displayOnline({user:msg.requests.from[i], online:false, request:true, confirmed:false});
 				if(formerSelectedContact)
 					$(document.getElementById(formerSelectedContact)).addClass("active");
@@ -747,6 +746,7 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 					img = document.createElement("img"),
 					username = message.from || utils.getUsername(),
 					time = new Date(message.ts),
+					text = document.createElement("span"),
 					receivedMessage = utils.htmlEncode(message.msg);
 				img.width = 18;
 				if(cache.pubkeys[username])
@@ -767,7 +767,6 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 				else
 					time = "today, " + time.toLocaleTimeString();
 				if(username === utils.getUsername()) {
-					var text = document.createElement("span");
 					text.innerText = time + " | me ";
 					panelContainer.className += " panel-success pull-right";
 					panelHeader.appendChild(text);
@@ -775,7 +774,6 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 					panelContent.align = "right";
 					panelHeader.align = "right";
 				} else {
-					var text = document.createElement("span");
 					text.innerText = " " + username + " | " + time;
 					panelContainer.className += " panel-info";
 					panelHeader.appendChild(img);
@@ -815,7 +813,7 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 					confirmButton = helper.button("Confirm " + utils.htmlEncode(contactName), "btn btn-success", function() {
 						antiprism.confirm(contactName, function(ack) {
 							if(ack.error)
-								errorHandler(0, 0, msg.error);
+								errorHandler(0, 0, ack.error);
 							if(ack) {
 								utils.messageDisplay().empty();
 								client.getContacts();
@@ -828,7 +826,7 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 							if(confirmed)
 								antiprism.deny(contactName, function(ack) {
 									if(ack.error)
-										errorHandler(0, 0, msg.error);
+										errorHandler(0, 0, ack.error);
 									if(ack) {
 										utils.messageDisplay().empty();
 										client.getContacts();
@@ -907,7 +905,7 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 				utils.setMuteTooltip();
 				window.addEventListener("storage", function(storageEvent) {
 					console.log(storageEvent);
-					if(storageEvent.key == "muted" && storageEvent.url == document.URL)
+					if(storageEvent.key === "muted" && storageEvent.url === document.URL)
 						utils.changeMuteButton(storageEvent.newValue);
 				}, true);
 			},
@@ -1096,7 +1094,7 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 				else {
 					var storePass = function(hash) {
 						localStorage.password = hash;
-					}
+					};
 					antiprism.login(username, password, callback, utils.rememberMe() ? storePass : undefined);
 				}
 				if(!localStorage.getObject("rememberUser") && utils.rememberMe()) {
