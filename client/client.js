@@ -7,12 +7,14 @@
  * ideas for features:
  * -------------------
  *
- *    - "is writing"-support
- *
  *    - use webrtc (P2P):
  *            - videochat
  *            - datachannel (filetransferring)
  *            - temporary chatsession(?)
+ *
+ *    - use closest() (jQuery) for contactelement.onclick
+ *
+ *    - is writing bugfixing
  *
  */
 
