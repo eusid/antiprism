@@ -17,8 +17,7 @@
  *    - is writing bugfixing
  *
  */
-
-
+define(["jquery","sdk/antiprism","bootbox","jquery.typeahead","emotifier","monsterid"], function($, Antiprism) {
 var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 	cache = {pubkeys:{}, requests:{}},
 	$isWritingContainer = [],
@@ -1338,8 +1337,6 @@ var enableWebRTC = navigator.userAgent.indexOf("Chrome") !== -1,
 			return btoa(JSON.stringify(msg));
 		};
 	};
-
-$(document).ready(function() {
 	helper.addStorageObjectFunctions();
 	if(utils.rememberMe()) {
 		document.getElementById("username").value = localStorage.username || "";
