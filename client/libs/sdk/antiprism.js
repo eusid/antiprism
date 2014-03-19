@@ -8,20 +8,24 @@
  */
 
 // TODO: modularize. AMDs, seriously.
-
-var Antiprism = function(host,debugFlag) {
+define(['crypto/buffer','crypto/jsbn','crypto/CryptoJS','crypto/aes','crypto/sha256'], function(Buffer, JSBN) {
+return function(host,debugFlag) {
 	// define all the methods!!11
 	var retries,
 		seq = 0,
-		bgworker = new Worker('libs/sdk/bgtasks.js'),
+		bgtasks = { queue: [], ready: false, worker: new Worker('libs/sdk/bgtasks.js') }, // how to fix this absolute path?
 		utils = {
 			runBackgroundTask: function(action, params, callback) {
-				var workerFinished = function(e) {
-					bgworker.removeEventListener('message', workerFinished);
-					callback(e.data);
-				};
-				bgworker.addEventListener('message', workerFinished, false);
-				bgworker.postMessage({action:action,params:params});
+				var call = { action: action, params: params },
+					workerFinished = function(e) {
+						bgtasks.worker.removeEventListener('message', workerFinished);
+						callback(e.data);
+					};
+				if(!bgtasks.ready)
+					return bgtasks.queue.push(arguments);
+				debug("calling w0rker: "+action);
+				bgtasks.worker.addEventListener('message', workerFinished, false);
+				bgtasks.worker.postMessage(call);
 			},
 			parseLatin: function(string) {
 				return CryptoJS.enc.Latin1.parse(string);
@@ -36,12 +40,12 @@ var Antiprism = function(host,debugFlag) {
 			},
 			encryptAES: function(string, key) {
 				key = utils.parseLatin(key);
-				var iv = utils.parseLatin(new SecureRandom().getString(16));
+				var iv = utils.parseLatin(new JSBN.PRNG().getString(16));
 				var cipher = CryptoJS.AES.encrypt(string, key, { iv: iv });
 				return new Buffer(cipher.iv+cipher.ciphertext,'hex').toString('base64');
 			},
 			encryptRSA: function(plain, pubkey) {
-				var rsa = new RSA();
+				var rsa = new JSBN.RSA();
 				try {
 					rsa.loadPublic(pubkey, 2048);
 				} catch(e) {
@@ -189,7 +193,7 @@ var Antiprism = function(host,debugFlag) {
 						ws.callServer("register", [session.user, keypair.pubkey, keypair.crypt, salt], callback);
 					});
 				}
-				var salt = new SecureRandom().getString(32);
+				var salt = new JSBN.PRNG().getString(32);
 				if(session.user === undefined)
 					utils.runBackgroundTask('buildAESKey', [password,salt], function(hash) {
 						session.user = user;
@@ -231,7 +235,7 @@ var Antiprism = function(host,debugFlag) {
 			initConversation: function(user,callback) {
 				ws.callServer("pubkey", [user], function(msg) { // request pubkey first
 					console.log(msg);
-					var convkey = new SecureRandom().getString(32), keys = [];
+					var convkey = new JSBN.PRNG().getString(32), keys = [];
 					session.conversations[user] = convkey;
 					keys.push(utils.encryptRSA(convkey, session.pubkey));
 					keys.push(utils.encryptRSA(convkey, msg.pubkey));
@@ -289,7 +293,7 @@ var Antiprism = function(host,debugFlag) {
 				actions.login(session.user,session.pass); // todo: still not cool :S
 			},
 			createGroup: function(name, callback) {
-				var plainKey = new SecureRandom().getString(32),
+				var plainKey = new JSBN.PRNG().getString(32),
 					key = utils.encryptRSA(plainKey, session.pubkey);
 				session.conversations[name] = plainKey;
 				ws.callServer("createGroup",[name, key], callback);
@@ -356,18 +360,24 @@ var Antiprism = function(host,debugFlag) {
 				console.log(msg);
 			console.groupEnd();
 		},
+		workerReady = function() {
+			bgtasks.ready = true;
+			bgtasks.worker.removeEventListener('message', workerReady);
+			while(bgtasks.queue.length)
+				utils.runBackgroundTask.apply(this, bgtasks.queue.shift());
+		},
 		clientEvents = {online:debug,msg:debug,added:debug,closed:debug, error:debug};
 	debug("created new websocket");
 	helpers.registerWsCallbacks();
+	bgtasks.worker.addEventListener('message', workerReady, false);
 	events.msg = function(msg) {
 		var keyUser = msg.to || msg.from;
 		if(session.conversations[keyUser]) {
 			msg.msg = utils.decryptAES(msg.msg, session.conversations[keyUser]);
-			try {
+			if(clientEvents.msg)
 				clientEvents.msg(msg);
-			} catch(e) {
-				debug(msg,true,e);
-			}
+			else
+				return debug(msg,true,e);
 		} else {
 			session.inqueue.push(msg);
 			helpers.getKey(keyUser, function (resp) {
@@ -381,14 +391,14 @@ var Antiprism = function(host,debugFlag) {
 		'decryptRSA', [msg.convkey,session.pubkey,session.privkey], function(decrypted) {
 			session.conversations[msg.user] = decrypted;
 			delete msg.convkey;
-			try {
+			if(clientEvents.added)
 				clientEvents.added(msg);
-			} catch(e) {
-				debug(msg,true,e);
-			}
+			else
+				return debug(msg,true,e);
 		});
 	};
 	events.online = function(msg) { clientEvents.online(msg); };
 	for(action in actions)
 		this.constructor.prototype[action] = actions[action]; // TODO: add chaining!
 };
+});

@@ -1,6 +1,6 @@
-self.addEventListener('message', function(e) {
-	window = self;
-	importScripts('crypto/buffer.js','crypto/jsbn.full.js','crypto/scrypt.js');
+importScripts('/require.js');
+require({ baseUrl: './' }, ['crypto/buffer', 'crypto/jsbn.full', 'crypto/scrypt'], function(Buffer, JSBN) {
+addEventListener('message', function(e) {
 	var ctx = e.data,
 		actions = {
 			buildAESKey: function(password,salt) {
@@ -8,19 +8,20 @@ self.addEventListener('message', function(e) {
 				return String.fromCharCode.apply(null, new Uint8Array(hash));
 			},
 			generateKeypair: function() {
-				var rsa = new RSA();
+				var rsa = new JSBN.RSA();
 				rsa.generate(2048,"10001");
 				return {pubkey: rsa.getPublic(), privkey: rsa.getPrivate()};
 			},
 			decryptRSA: function(cipher, pubkey, privkey) {
-				var rsa = new RSA();
+				var rsa = new JSBN.RSA();
 					rsa.loadPrivate(pubkey, privkey, 2048);
-				var plain = rsa.decrypt(new Buffer(cipher,'base64').toString('hex'));
-				return plain;
+				return rsa.decrypt(new Buffer(cipher,'base64').toString('hex'));
 			}
 		};
 	if(actions[ctx.action])
-		self.postMessage(actions[ctx.action].apply(this, ctx.params));
+		postMessage(actions[ctx.action].apply(this, ctx.params));
 	else
 		throw new Error("backgroundWorker: unknown action");
-}, false);
+});
+postMessage(); // ready-notifier
+});

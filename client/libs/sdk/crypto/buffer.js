@@ -1,7 +1,4 @@
-try {
-	var exports = window;
-} catch(e) { }
-(function(exports){
+define(function() {
 "use strict"
 	var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",
 		hexchars = "0123456789abcdef";
@@ -46,9 +43,7 @@ try {
 		return this;
 	};
 	Buffer.prototype.toHex = function () {
-		var hex = "",
-			byte;
-		
+		var hex = "";
 		for (var i = 0; i < this.buf.length; i++)
 			hex += hexchars[this.buf[i]>>4]+hexchars[this.buf[i]%16];
 		return hex;
@@ -97,8 +92,5 @@ try {
 		return base64;
 	}
 
-	if(typeof exports === 'object')
-		exports.Buffer = Buffer;
-	else
-		return Buffer;
-})(exports);
+	return Buffer;
+});

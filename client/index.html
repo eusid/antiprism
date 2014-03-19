@@ -175,42 +175,11 @@
 	<!-- /.modal-dialog -->
 </div>
 <!-- /.modal -->
-<!-- dirty fix for most loaderrors -->
-<script src="libs/jquery.js" type="text/javascript"></script>
+<script data-main="app" src="require.js"></script>
 <script type="text/javascript">
 	var title = "#ANTiPRiSM",
-			headline = "AntiPrism";
-	window.onfocus = function() {document.title = title;};
-	(function() {
-		var script = function(src) {
-					var tag = document.createElement("script");
-					tag.type = "text/javascript";
-					tag.src = src;
-					return tag;
-				},
-				scripts = [
-					"libs/sdk/crypto/aes.js",
-					"libs/sdk/crypto/CryptoJS.js",
-					"libs/sdk/crypto/scrypt.js",
-					"libs/sdk/crypto/prng4.js",
-					"libs/sdk/crypto/rng.js",
-					"libs/sdk/crypto/sha256.js",
-					"libs/sdk/crypto/buffer.js",
-					"libs/sdk/crypto/jsbn.full.js",
-					"libs/sdk/antiprism.js",
-					"libs/sdk/bgtasks.js",
-					"libs/emotifier.js",
-					"libs/bootstrap.min.js",
-					"libs/bootbox.min.js",
-					"libs/typeahead.js",
-					"libs/monsterid.min.js",
-					"client.js"
-				],
-				fragment = document.createDocumentFragment();
-		for(var i = 0; scripts.length > i; i++)
-			fragment.appendChild(script(scripts[i]));
-		document.body.appendChild(fragment.cloneNode(true));
-	})();
+		headline = "AntiPrism";
+	window.onfocus = function() { document.title = title };
 </script>
 </body>
 </html>
