@@ -12,7 +12,7 @@
  *            - datachannel (filetransferring)
  *            - temporary chatsession(?)
  *
- *    - is writing bugfixing
+ *    - is writing bugfixing (idea: create 2 events: start writing(e.g. as soon as one char is in the messagefield) - stop writing (when you choose another contact, sent a message or deleted all chars)
  *
  */
 
@@ -418,7 +418,7 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 				bootbox.prompt("What Contact do you want to remove?", function(result) {
 					if(result !== null) {
 						var firstResult = result;
-						bootbox.confirm("Are you sure that you want to remove " + result + "?", function(result) {
+						bootbox.confirm("Are you sure that you want to remove " + utils.htmlEncode(result) + "?", function(result) {
 							if(result)
 								antiprism.removeContact(firstResult, client.getContacts);
 						});
