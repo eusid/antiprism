@@ -571,7 +571,7 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 			},
 			displayRetrieveMoreMessagesButton:function(contactName) {
 				console.log("displaying retrieveMoreMessagesButton...");
-				var container = helper.div("col-md-12");
+				var container = helper.div("col-md-12 col-sm-12 col-xs-12");
 				var button = helper.button("Retrieve More Messages", "btn btn-info btn-sm btn-block", function() {
 					utils.retrieveMessages(contactName);
 				});
@@ -727,7 +727,7 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 					return;
 				} else
 					console.log(contactName + " is writing...");
-				var panelContainer = helper.div("panel col-md-8 panel-info"),
+				var panelContainer = helper.div("panel col-md-8 col-sm-8 col-xs-8 panel-info"),
 					panelHeader = helper.div("panel panel-heading");
 				panelHeader.innerHTML = utils.htmlEncode(contactName) + " is writing...";
 				panelContainer.appendChild(panelHeader);
@@ -740,7 +740,7 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 				utils.animateDisplay();
 			},
 			displayMessageContent:function(message, contactName, moreMessages) {
-				var panelContainer = helper.div("panel col-md-8"),
+				var panelContainer = helper.div("panel col-md-8 col-sm-8 col-xs-8"),
 					panelHeader = helper.div("panel panel-heading"),
 					panelContent = helper.div("panel panel-body"),
 					img = document.createElement("img"),
@@ -809,7 +809,7 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 				utils.messageDisplay().animate({ scrollTop:(utils.messageDisplay().prop("scrollHeight") - utils.messageDisplay().height() + 100) }, 400); //+100 is random :D
 			},
 			createConfirmDenyButton:function(contactName) {
-				var buttonDiv = helper.div("col-md-12"),
+				var buttonDiv = helper.div("col-md-12 col-sm-12 col-xs-12"),
 					confirmButton = helper.button("Confirm " + utils.htmlEncode(contactName), "btn btn-success", function() {
 						antiprism.confirm(contactName, function(ack) {
 							if(ack.error)
