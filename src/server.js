@@ -13,9 +13,9 @@ var DEBUG = true, // change to your needs!
 	},
 	port = process.env.PORT||9000,
 	http = require('http'),
-	file = new(require('node-static').Server)('./client'),
+	files = new (require('node-static').Server)('./client'),
 	webserver = http.createServer(function (req, res) {
-		file.serve(req,res);
+		files.serve(req,res);
 	}).listen(port),
 	webSocketServer = new (require("ws").Server)({server: webserver}),
 	messageController = require("./message_controller.js"),

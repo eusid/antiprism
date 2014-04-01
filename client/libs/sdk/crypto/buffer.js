@@ -2,6 +2,7 @@ define(function() {
 "use strict"
 	var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",
 		hexchars = "0123456789abcdef";
+
 	function Buffer(input, format) {
 		if(!input)
 			return this.buf = [];
