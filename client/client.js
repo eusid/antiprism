@@ -12,7 +12,7 @@
  *            - datachannel (filetransferring)
  *            - temporary chatsession(?)
  *
- *    - is writing bugfixing
+ *    - is writing bugfixing (idea: create 2 events: start writing(e.g. as soon as one char is in the messagefield) - stop writing (when you choose another contact, sent a message or deleted all chars)
  *
  */
 
@@ -214,7 +214,7 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 			switchToChat:function(showChat, time) { //showChat - boolean true if chat shall be shown
 				var $login = $('#loginContainer'),
 					chatActive = $login.attr("style") && $login.attr("style").indexOf("display: none;") !== -1;
-				if((chatActive != showChat) && showChat !== undefined) {
+				if((chatActive !== showChat) && showChat !== undefined) {
 
 					time = time === 0 ? time : time || 1000;
 					$login.toggle(time);
@@ -418,7 +418,7 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 				bootbox.prompt("What Contact do you want to remove?", function(result) {
 					if(result !== null) {
 						var firstResult = result;
-						bootbox.confirm("Are you sure that you want to remove " + result + "?", function(result) {
+						bootbox.confirm("Are you sure that you want to remove " + utils.htmlEncode(result) + "?", function(result) {
 							if(result)
 								antiprism.removeContact(firstResult, client.getContacts);
 						});
@@ -531,16 +531,15 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 				contactElement.appendChild(status);
 				return contactElement;
 			},
-			appendContactElement:function(contacts, msg, contactListDOM) {
-				for(var contact in contacts) {
-					var contactElement = utils.createContactElement(contacts[contact], msg);
+			appendContactElement:function(contacts, msg, contactListDOM) { //contacts: array
+				for(var i = 0; i < contacts.length; i++) {
+					var contactElement = utils.createContactElement(contacts[i], msg);
 					contactListDOM.appendChild(contactElement);
 				}
 			},
 			displayContacts:function(msg) {
 				if(msg && msg.error)
 					errorHandler(0, 0, msg.error);
-				console.log(msg);
 				var $friendList = $('#friendList'),
 					contactList = helper.div("list-group"),
 					contactsHeadline = helper.jsLink("<strong>Contactlist</strong>"),
@@ -559,10 +558,10 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 					if(msg.contacts.hasOwnProperty(contact))
 						utils.displayOnline({user:contact, online:msg.contacts[contact].online});
 				}
-				for(var i in msg.requests.to) {
+				for(var i = 0; i < msg.requests.to.length; i++) {
 					utils.displayOnline({user:msg.requests.to[i], online:false, request:true});
 				}
-				for(i in msg.requests.from)
+				for(i = 0; i < msg.requests.from; i++)
 					utils.displayOnline({user:msg.requests.from[i], online:false, request:true, confirmed:false});
 				if(formerSelectedContact)
 					$(document.getElementById(formerSelectedContact)).addClass("active");
@@ -572,7 +571,7 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 			},
 			displayRetrieveMoreMessagesButton:function(contactName) {
 				console.log("displaying retrieveMoreMessagesButton...");
-				var container = helper.div("col-md-12");
+				var container = helper.div("col-md-12 col-sm-12 col-xs-12");
 				var button = helper.button("Retrieve More Messages", "btn btn-info btn-sm btn-block", function() {
 					utils.retrieveMessages(contactName);
 				});
@@ -728,7 +727,7 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 					return;
 				} else
 					console.log(contactName + " is writing...");
-				var panelContainer = helper.div("panel col-md-8 panel-info"),
+				var panelContainer = helper.div("panel col-md-8 col-sm-8 col-xs-8 panel-info"),
 					panelHeader = helper.div("panel panel-heading");
 				panelHeader.innerHTML = utils.htmlEncode(contactName) + " is writing...";
 				panelContainer.appendChild(panelHeader);
@@ -741,12 +740,13 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 				utils.animateDisplay();
 			},
 			displayMessageContent:function(message, contactName, moreMessages) {
-				var panelContainer = helper.div("panel col-md-8"),
+				var panelContainer = helper.div("panel col-md-8 col-sm-8 col-xs-8"),
 					panelHeader = helper.div("panel panel-heading"),
 					panelContent = helper.div("panel panel-body"),
 					img = document.createElement("img"),
 					username = message.from || utils.getUsername(),
 					time = new Date(message.ts),
+					text = document.createElement("span"),
 					receivedMessage = utils.htmlEncode(message.msg);
 				img.width = 18;
 				if(cache.pubkeys[username])
@@ -767,7 +767,6 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 				else
 					time = "today, " + time.toLocaleTimeString();
 				if(username === utils.getUsername()) {
-					var text = document.createElement("span");
 					text.innerText = time + " | me ";
 					panelContainer.className += " panel-success pull-right";
 					panelHeader.appendChild(text);
@@ -775,7 +774,6 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 					panelContent.align = "right";
 					panelHeader.align = "right";
 				} else {
-					var text = document.createElement("span");
 					text.innerText = " " + username + " | " + time;
 					panelContainer.className += " panel-info";
 					panelHeader.appendChild(img);
@@ -811,11 +809,11 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 				utils.messageDisplay().animate({ scrollTop:(utils.messageDisplay().prop("scrollHeight") - utils.messageDisplay().height() + 100) }, 400); //+100 is random :D
 			},
 			createConfirmDenyButton:function(contactName) {
-				var buttonDiv = helper.div("col-md-12"),
+				var buttonDiv = helper.div("col-md-12 col-sm-12 col-xs-12"),
 					confirmButton = helper.button("Confirm " + utils.htmlEncode(contactName), "btn btn-success", function() {
 						antiprism.confirm(contactName, function(ack) {
 							if(ack.error)
-								errorHandler(0, 0, msg.error);
+								errorHandler(0, 0, ack.error);
 							if(ack) {
 								utils.messageDisplay().empty();
 								client.getContacts();
@@ -828,7 +826,7 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 							if(confirmed)
 								antiprism.deny(contactName, function(ack) {
 									if(ack.error)
-										errorHandler(0, 0, msg.error);
+										errorHandler(0, 0, ack.error);
 									if(ack) {
 										utils.messageDisplay().empty();
 										client.getContacts();
@@ -907,7 +905,7 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 				utils.setMuteTooltip();
 				window.addEventListener("storage", function(storageEvent) {
 					console.log(storageEvent);
-					if(storageEvent.key == "muted" && storageEvent.url == document.URL)
+					if(storageEvent.key === "muted" && storageEvent.url === document.URL)
 						utils.changeMuteButton(storageEvent.newValue);
 				}, true);
 			},
@@ -1096,7 +1094,7 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 				else {
 					var storePass = function(hash) {
 						localStorage.password = hash;
-					}
+					};
 					antiprism.login(username, password, callback, utils.rememberMe() ? storePass : undefined);
 				}
 				if(!localStorage.getObject("rememberUser") && utils.rememberMe()) {
