@@ -12,7 +12,7 @@
  *            - datachannel (filetransferring)
  *            - temporary chatsession(?)
  *
- *    - is writing bugfixing (idea: create 2 events: start writing(e.g. as soon as one char is in the messagefield) - stop writing (when you choose another contact, sent a message or deleted all chars)
+ *    - is writing bugfixing (idea: create 2 events: start writing(e.g. as soon as one char is in the messagefield) - stop writing (do nothing for 5s, when you choose another contact, sent a message or deleted all chars)
  *
  */
 
