@@ -398,7 +398,7 @@ return function(host,debugFlag) {
 		});
 	};
 	events.online = function(msg) { clientEvents.online(msg); };
-	for(action in actions)
+	for(var action in actions)
 		this.constructor.prototype[action] = actions[action]; // TODO: add chaining!
 };
 });
