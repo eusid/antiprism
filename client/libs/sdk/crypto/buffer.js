@@ -4,19 +4,27 @@ define(function() {
 		hexchars = "0123456789abcdef";
 
 	function Buffer(input, format) {
-		if(!input)
-			return this.buf = [];
+		if(!input) {
+			this.buf = [];
+			return this;
+		}
 		this.format = format || typeof input;
 		switch(this.format) {
 			case 'base64':
 				return this.fromBase64(input);
 			case 'hex':
 				return this.fromHex(input);
+			case 'object': // treated as Uint8Array
+				return this.fromArray(input);
 			default:
 				return this.fromString(input.toString());
 		}
 	}
 
+	Buffer.prototype.fromArray = function(arr) {
+		this.buf = arr;
+		return this;
+	}
 	Buffer.prototype.fromString = function(str) {
 		this.buf = new Array(str.length);
 		for(var i = 0; i < str.length; i++)
