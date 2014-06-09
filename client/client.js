@@ -515,19 +515,32 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 			createContactElement:function(contact, msg) {
 				var contactElement = helper.jsLink(""),
 					icon = helper.span("online"),
-					status = helper.small();
+					status = helper.small(),
+					clickJobs = [];
 				contactElement.className = "list-group-item";
 				contactElement.appendChild(icon);
 				contactElement.innerHTML += utils.htmlEncode(contact);
 				contactElement.id = contact;
 				contactElement.addEventListener("click", function(ctx) {
 					var contactName = ctx.target.id || $(ctx.target).closest("a")[0].id;
+					for(var i in clickJobs)
+						clickJobs[i]();
 					utils.onContactSelect(contactName);
 				});
 				if(msg.contacts[contact] && msg.contacts[contact].status !== null)
 					status.innerHTML = emotify ? emotify(utils.htmlEncode(msg.contacts[contact].status)) : utils.htmlEncode(msg.contacts[contact].status);
 				else
 					status.innerHTML = "";
+				var missed = msg.contacts[contact].missed;
+				if(missed) {
+					var badge = document.createElement("span");
+					badge.className = "badge badge-warning";
+					badge.innerHTML = missed;
+					contactElement.appendChild(badge);
+					clickJobs.push(function() {
+						badge.remove();
+					});
+				}
 				contactElement.appendChild(status);
 				return contactElement;
 			},

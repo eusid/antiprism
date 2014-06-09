@@ -30,12 +30,12 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 				console.log(user+" has "+reply.length+" active session(s)");
 				if(err)
 					return helpers.dbg("redis-Error: "+err);
-				for(var id in reply) {
+				for(var id in reply)
 					if(ctx.storage.sockets[reply[id]] !== undefined) // not sure if redis and node are in sync
 						ctx.storage.sockets[reply[id]].send(msg);
-				}
 			});
-			if(callback) callback();
+			if(callback)
+				callback();
 		},
 		encryptRSA: function(plain, pubkey, bits) {
 			var rsa = new (require('node-bignumber').Key)(),
@@ -334,9 +334,12 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 				.hgetall("convs."+ctx.storage.username)
 				.hgetall("reqs.to."+ctx.storage.username)
 				.hgetall("reqs.from."+ctx.storage.username)
+				.hgetall("miss."+ctx.storage.username)
+				.del("miss."+ctx.storage.username)
 				.exec(function(err,replies) {
 					var contacts = replies[0],
-						requests = {to: replies[1] || {}, from: replies[2] || {}};
+						requests = {to: replies[1] || {}, from: replies[2] || {}},
+						missed = replies[3] || {};
 					if(!contacts)
 						return ctx.sendClient({contacts:{}, requests:requests});
 					var	multi = ctx.storage.redis.multi(),
@@ -371,6 +374,7 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 								online: !!reply[0],
 								status: users[i].local ? reply[1][0] : null,
 								lastseen: users[i].local ? reply[1][1] : 0,
+								missed: missed[users[i].name]
 							};
 						}
 						helpers.dbg("replying to contacts-request");
@@ -568,6 +572,10 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 							&& reply[id] != ctx.storage.id) // do not push back to sending session
 							ctx.storage.sockets[reply[id]].send(pushMsg);
 				});
+				ctx.storage.redis.smembers("sess."+user, function(err, reply) {
+					if(!reply.length)
+						ctx.storage.redis.hincrby("miss."+user, ctx.storage.username, 1);
+				})
 				ctx.sendClient({ts:storeMsg.ts, sent:true});
 			}
 			if(!isTemporary)
@@ -578,8 +586,10 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 						pushMessage();
 					else {
 						var rediscallback = function(err, reply){
-							if(reply)
+							if(reply) {
+								pushMessage();
 								ctx.storage.redis.rpush("msgs."+convid, storeMsgJSON, pushMessage);
+							}
 							else
 								ctx.sendClient({error:Error.NOT_ALLOWED});
 						};
