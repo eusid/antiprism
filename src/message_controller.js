@@ -335,7 +335,7 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 				.hgetall("reqs.to."+ctx.storage.username)
 				.hgetall("reqs.from."+ctx.storage.username)
 				.hgetall("miss."+ctx.storage.username)
-				.del("miss."+ctx.storage.username)
+				.del("miss."+ctx.storage.username) // does this necessarily have to be done here?
 				.exec(function(err,replies) {
 					var contacts = replies[0],
 						requests = {to: replies[1] || {}, from: replies[2] || {}},
