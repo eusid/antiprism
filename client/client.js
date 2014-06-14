@@ -531,7 +531,7 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 					status.innerHTML = emotify ? emotify(utils.htmlEncode(msg.contacts[contact].status)) : utils.htmlEncode(msg.contacts[contact].status);
 				else
 					status.innerHTML = "";
-				var missed = msg.contacts[contact].missed;
+				var missed = msg.contacts[contact] ? msg.contacts[contact].missed : null;
 				if(missed) {
 					var badge = document.createElement("span");
 					badge.className = "badge badge-warning";
