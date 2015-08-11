@@ -24,5 +24,5 @@ require({ baseUrl: './' }, ['crypto/buffer', 'crypto/jsbn.full', 'crypto/scrypt'
 		else
 			throw new Error("backgroundWorker: unknown action");
 	});
-	postMessage(); // ready-notifier
+	postMessage(""); // ready-notifier
 });
