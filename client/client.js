@@ -38,12 +38,12 @@ var helper = {
 		},
 		h4:function(headline) {
 			var h4 = document.createElement("h4");
-			h4.innerHTML = utils.htmlEncode(headline);
+			h4.textContent = headline;
 			return h4;
 		},
 		p:function(text) {
 			var p = document.createElement("p");
-			p.innerHTML = utils.htmlEncode(text);
+			p.textContent = text;
 			return p;
 		},
 		div:function(className) {
@@ -54,7 +54,7 @@ var helper = {
 		span:function(className, value) {
 			var span = document.createElement("span");
 			span.className = className || "";
-			span.innerHTML = value || "";
+			span.innerHTML = value || ""; // TODO: value already escaped
 			return span;
 		},
 		input:function(type, name) {
@@ -67,7 +67,7 @@ var helper = {
 		},
 		a:function(linkName, location) {
 			var a = document.createElement("a");
-			a.innerHTML = linkName;
+			a.innerHTML = linkName; // TODO: value already escaped
 			a.href = location;
 			return a;
 		},
@@ -75,13 +75,13 @@ var helper = {
 			var small = document.createElement("small");
 			if(innerHTML === undefined)
 				innerHTML = "";
-			small.innerHTML = innerHTML;
+			small.innerHTML = innerHTML; // TODO: value already escaped
 			return small;
 		},
 		button:function(value, className, clickEvent) {
 			var button = document.createElement("button");
 			button.className = className || "";
-			button.innerHTML = value || "";
+			button.innerHTML = value || ""; // TODO: value already escaped
 			button.type = "button";
 			if(clickEvent)
 				button.onclick = clickEvent;
@@ -100,7 +100,7 @@ var helper = {
 		option:function(optionName) {
 			var option = document.createElement("option");
 			option.value = optionName;
-			option.innerHTML = optionName;
+			option.innerHTML = optionName; // TODO: value already escaped
 			return option;
 		},
 		select:function(optionsArray) {
@@ -420,16 +420,16 @@ var helper = {
 				status = helper.small();
 			contactElement.className = "list-group-item";
 			contactElement.appendChild(icon);
-			contactElement.innerHTML += utils.htmlEncode(contact);
+			contactElement.innerHTML += utils.htmlEncode(contact); // TODO: .textContent might break this
 			contactElement.id = contact;
 			contactElement.addEventListener("click", function(ctx) {
 				var contactName = ctx.target.id || ctx.target.parentNode.id;
 				utils.onContactSelect(contactName);
 			});
 			if(msg.contacts[contact] && msg.contacts[contact].status !== null)
-				status.innerHTML = utils.htmlEncode(msg.contacts[contact].status);
+				status.textContent = msg.contacts[contact].status;
 			else
-				status.innerHTML = "";
+				status.textContent = "";
 			contactElement.appendChild(status);
 			return contactElement;
 		},
@@ -618,19 +618,19 @@ var helper = {
 				username = message.from || utils.getUsername(),
 				time = new Date(message.ts),
 				receivedMessage = utils.htmlEncode(message.msg);
-			panelContent.innerHTML = utils.urlToLink(receivedMessage);
+			panelContent.innerHTML = utils.urlToLink(receivedMessage); // TODO: refactor urlToLink
 			if(time.toDateString() !== (new Date()).toDateString())
 				time = time.toDateString() + ", " + time.toLocaleTimeString();
 			else
 				time = "today, " + time.toLocaleTimeString();
 			if(username === utils.getUsername()) {
 				panelContainer.className = "panel panel-success col-md-8 pull-right";
-				panelHeader.innerHTML = time + " | me";
+				panelHeader.textContent = time + " | me";
 				panelContent.align = "right";
 				panelHeader.align = "right";
 			} else {
 				panelContainer.className = "panel panel-info col-md-8";
-				panelHeader.innerHTML = username + " | " + time;
+				panelHeader.textContent = username + " | " + time;
 			}
 			panelContainer.appendChild(panelHeader);
 			panelContainer.appendChild(panelContent);
