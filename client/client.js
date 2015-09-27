@@ -54,7 +54,7 @@ var helper = {
 		span:function(className, value) {
 			var span = document.createElement("span");
 			span.className = className || "";
-			span.innerHTML = value || ""; // TODO: value already escaped
+			span.textContent = value || "";
 			return span;
 		},
 		input:function(type, name) {
@@ -71,17 +71,15 @@ var helper = {
 			a.href = location;
 			return a;
 		},
-		small:function(innerHTML) {
+		small:function(text) {
 			var small = document.createElement("small");
-			if(innerHTML === undefined)
-				innerHTML = "";
-			small.innerHTML = innerHTML; // TODO: value already escaped
+			small.textContent = text || "";
 			return small;
 		},
 		button:function(value, className, clickEvent) {
 			var button = document.createElement("button");
 			button.className = className || "";
-			button.innerHTML = value || ""; // TODO: value already escaped
+			button.textContent = value || "";
 			button.type = "button";
 			if(clickEvent)
 				button.onclick = clickEvent;
@@ -100,7 +98,7 @@ var helper = {
 		option:function(optionName) {
 			var option = document.createElement("option");
 			option.value = optionName;
-			option.innerHTML = optionName; // TODO: value already escaped
+			option.textContent = optionName;
 			return option;
 		},
 		select:function(optionsArray) {
@@ -276,9 +274,6 @@ var helper = {
 			$('#newPassFieldCheck').val("");
 			$('#changePass').modal('hide');
 		},
-		htmlEncode:function(value) {
-			return $('<div/>').text(value).html();
-		},
 		getUsername:function() {
 			return localStorage.username || $('#username').val();
 		},
@@ -417,10 +412,11 @@ var helper = {
 		createContactElement:function(contact, msg) {
 			var contactElement = helper.jsLink(""),
 				icon = helper.span("online"),
-				status = helper.small();
+				status = helper.small(),
+				label = helper.span(contact);
 			contactElement.className = "list-group-item";
 			contactElement.appendChild(icon);
-			contactElement.innerHTML += utils.htmlEncode(contact); // TODO: .textContent might break this
+			contactElement.appendChild(label);
 			contactElement.id = contact;
 			contactElement.addEventListener("click", function(ctx) {
 				var contactName = ctx.target.id || ctx.target.parentNode.id;
@@ -445,7 +441,7 @@ var helper = {
 			console.log(msg);
 			var $friendList = $('#friendList'),
 				contactList = helper.div("list-group"),
-				contactsHeadline = helper.jsLink("<strong>Contactlist</strong>"),
+				contactsHeadline = helper.jsLink("<strong>Contactlist</strong>"), // TODO: this prevents refactoring of helper.a
 				$active = $('.active');
 			contactsHeadline.className = "list-group-item";
 			contactsHeadline.id = "contactsHeadline";
@@ -617,7 +613,7 @@ var helper = {
 				panelContent = helper.div("panel panel-body"),
 				username = message.from || utils.getUsername(),
 				time = new Date(message.ts),
-				receivedMessage = utils.htmlEncode(message.msg);
+				receivedMessage = message.msg;
 			panelContent.innerHTML = utils.urlToLink(receivedMessage); // TODO: refactor urlToLink
 			if(time.toDateString() !== (new Date()).toDateString())
 				time = time.toDateString() + ", " + time.toLocaleTimeString();
@@ -663,7 +659,7 @@ var helper = {
 		},
 		createConfirmDenyButton:function(contactName) {
 			var buttonDiv = helper.div("col-md-12"),
-				confirmButton = helper.button("Confirm " + utils.htmlEncode(contactName), "btn btn-success", function() {
+				confirmButton = helper.button("Confirm " + contactName, "btn btn-success", function() {
 					antiprism.confirm(contactName, function(ack) {
 						if(ack.error)
 							errorHandler(0, 0, msg.error);
@@ -673,8 +669,8 @@ var helper = {
 						}
 					});
 				}),
-				denyButton = helper.button("Deny " + utils.htmlEncode(contactName), "btn btn-danger pull-right", function() {
-					bootbox.confirm("Are you sure you want to remove " + utils.htmlEncode(contactName) +
+				denyButton = helper.button("Deny " + contactName, "btn btn-danger pull-right", function() {
+					bootbox.confirm("Are you sure you want to remove " + contactName +
 						"? You can send a new Request if you want to add him later, though.", function(confirmed) {
 						if(confirmed)
 							antiprism.deny(contactName, function(ack) {
@@ -852,7 +848,7 @@ var helper = {
 					client.getContacts();
 				else {
 					var errorType = "Contact Error",
-						errorMsg = "Did not initiate conversation with " + utils.htmlEncode(friend) + ". You may already added him or he may not exist.";
+						errorMsg = "Did not initiate conversation with " + friend + ". You may already added him or he may not exist.";
 					errorHandler(errorType, errorMsg);
 				}
 			});
