@@ -16,6 +16,8 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 			}
 			else if(user.indexOf('$') !== -1) {
 				ctx.storage.redis.hgetall("convs."+user, function(err, reply) {
+				    if(err)
+					    return helpers.dbg("redis-Error: "+err);
 					console.log("broadcasting to group "+user+" from user "+msg.from+", message:", msg);
 					msg.to = user;
 					for(var member in reply)
@@ -29,7 +31,7 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 			ctx.storage.redis.smembers("sess."+user, function(err,reply) {
 				console.log(user+" has "+reply.length+" active session(s)");
 				if(err)
-					return helpers.dbg("redis-Error: "+err);
+                    return helpers.dbg("redis-Error: "+err);
 				for(var id in reply)
 					if(ctx.storage.sockets[reply[id]] !== undefined) // not sure if redis and node are in sync
 						ctx.storage.sockets[reply[id]].send(msg);
@@ -118,6 +120,8 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 			console.log("got "+server+" and "+port);
 			if(!(require("net")).isIPv4(server))
 				return (require("dns")).lookup(server, 4, function(err,ip) {
+				    if(err)
+					    return helpers.dbg("redis-Error: "+err);
 					console.log("looked up "+server+", got "+err||ip);
 					if(err == null)
 						registerServer([ip,port].join(":"), callback);
@@ -220,6 +224,10 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 			if(user.indexOf("@") !== -1)
 				return { forward: user };
 			ctx.storage.redis.hget("users."+user, "pubkey", function(err,reply) {
+				if(err) {
+                    helpers.dbg("redis-Error: "+err);
+                    return ctx.sendClient({error:Error.REDIS_ERROR});
+                }
 				if(reply)
 					ctx.sendClient({user:user,pubkey:reply});
 				else
@@ -228,6 +236,10 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 		},
 		register: function(ctx, username, pubkey, privkey, salt) {
 			ctx.storage.redis.exists("users."+username,function(err,reply) {
+				if(err) {
+					helpers.dbg("redis-Error: "+err);
+                    return ctx.sendclient({error:Error.REDIS_ERROR});
+                }
 				if(reply)
 					return ctx.sendClient({'registered':false});
 				else {
@@ -249,6 +261,10 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 			if(username === undefined)
 				return Error.INVALID_PARAMS;
 			ctx.storage.redis.hgetall("users."+username, function(err,reply) {
+				if(err) {
+					helpers.dbg("redis-Error: "+err);
+                    return ctx.sendclient({error:Error.REDIS_ERROR});
+                }
 				if(!reply)
 					return ctx.sendClient({error:Error.UNKNOWN_USER});
 				ctx.storage.username = username;
@@ -273,8 +289,10 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 			if(!ctx.storage.loggedIn)
 				return Error.INVALID_AUTH;
 			ctx.storage.redis.hset("users."+ctx.storage.username, "privkey", privkey, function(err,reply) {
-				if(err)
-					return helpers.dbg("redis-Error: "+err);
+				if(err) {
+					helpers.dbg("redis-Error: "+err);
+                    return ctx.sendclient({error:Error.REDIS_ERROR});
+                }
 				ctx.sendClient({updated:true});
 			});
 		},
@@ -285,13 +303,22 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 				return Error.INVALID_AUTH;
 			ctx.storage.loggedIn = true;
 			ctx.storage.redis.sadd("sess."+ctx.storage.username, ctx.storage.id, function(err, reply) {
-				if(err)
-					return helpers.dbg("redis-Error: "+err);
+				if(err) {
+					helpers.dbg("redis-Error: "+err);
+                    return ctx.sendclient({error:Error.REDIS_ERROR});
+                }
 				ctx.storage.redis.scard("sess."+ctx.storage.username, function(err, reply) {
-					if(err)
-						return helpers.dbg("redis-Error: "+err);
+					if(err) {
+						helpers.dbg("redis-Error: "+err);
+                        return ctx.sendclient({error:Error.REDIS_ERROR});
+                    }
 					if(parseInt(reply) == 1)
 						ctx.storage.redis.hgetall("convs."+ctx.storage.username, function(err, contacts) {
+				            if(err) {
+					            helpers.dbg("redis-Error: "+err);
+                                return ctx.sendclient({error:Error.REDIS_ERROR});
+                            }
+                    }
 							for (var user in contacts)
 								helpers.broadcast(ctx, user, {online:true, user:ctx.storage.username});
 						});
@@ -306,8 +333,10 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 			if(!ctx.storage.loggedIn)
 				return Error.INVALID_AUTH;
 			ctx.storage.redis.hset("users."+ctx.storage.username,"status",status, function(err,reply) {
-				if(err)
+				if(err) {
 					helpers.dbg("redis-Error: "+err);
+                    return ctx.sendclient({error:Error.REDIS_ERROR});
+                }
 				ctx.sendClient({status:true});
 			});
 		},
@@ -315,6 +344,10 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 			if(!ctx.storage.loggedIn)
 				return Error.INVALID_AUTH;
 			ctx.storage.redis.hget("users."+ctx.storage.username, "status", function(err, reply) {
+				if(err) {
+					helpers.dbg("redis-Error: "+err);
+                    return ctx.sendclient({error:Error.REDIS_ERROR});
+                }
 				ctx.sendClient({status:reply});
 			});
 		},
@@ -324,6 +357,10 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 			if(!ctx.storage.loggedIn)
 				return Error.INVALID_AUTH;
 			ctx.storage.redis.hdel("convs."+ctx.storage.username, user, function(err, reply) {
+				if(err) {
+					helpers.dbg("redis-Error: "+err);
+                    return ctx.sendclient({error:Error.REDIS_ERROR});
+                }
 				ctx.sendClient({removed:!!reply});
 			});
 		},
@@ -337,6 +374,10 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 				.hgetall("miss."+ctx.storage.username)
 				.del("miss."+ctx.storage.username) // does this necessarily have to be done here?
 				.exec(function(err,replies) {
+				    if(err) {
+					    helpers.dbg("redis-Error: "+err);
+                        return ctx.sendclient({error:Error.REDIS_ERROR});
+                    }
 					var contacts = replies[0],
 						requests = {to: replies[1] || {}, from: replies[2] || {}},
 						missed = replies[3] || {};
@@ -363,6 +404,10 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 							opCount = multi.queue.length - 1;
 					}
 					multi.exec(function(err,replies) {
+				        if(err) {
+					        helpers.dbg("redis-Error: "+err);
+                            return ctx.sendclient({error:Error.REDIS_ERROR});
+                        }
 						var ret = {};
 						for(var i in users) {
 							var redisIndex = i*opCount,
@@ -388,6 +433,10 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 			if(!ctx.storage.loggedIn)
 				return Error.INVALID_AUTH;
 			ctx.storage.redis.hget("convs."+ctx.storage.username, user, function(err,reply) {
+				if(err) {
+					helpers.dbg("redis-Error: "+err);
+                    return ctx.sendclient({error:Error.REDIS_ERROR});
+                }
 				ctx.sendClient({user:user,convkey:reply});
 			});
 		},
@@ -404,8 +453,10 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 			if(!isRemoteUser)
 				multi.hsetnx("reqs.to."+user, ctx.storage.username, convkeys[1]);
 			multi.exec(function(err,replies) {
-				if(err)
-					return helpers.dbg("redis-Error: "+err);
+				if(err) {
+					helpers.dbg("redis-Error: "+err);
+                    return ctx.sendclient({error:Error.REDIS_ERROR});
+                }
 				if(replies[0] || !replies[1])
 					return ctx.sendClient({initiated:false,with:user});
 				ctx.sendClient({initiated:true,with:user});
@@ -438,8 +489,10 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 					.hdel("reqs.from."+user, ctx.storage.username);
 			}
 			multi.exec(function(err,replies) {
-				if(err)
-					return helpers.dbg("redis-Error: "+err);
+				if(err) {
+				    helpers.dbg("redis-Error: "+err);
+                    return ctx.sendclient({error:Error.REDIS_ERROR});
+                }
 				if(replies[0] || !replies[1])
 					return ctx.sendClient({ack:false});
 				if(!ctx.isServer) {
@@ -461,14 +514,20 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 			if(!ctx.storage.loggedIn)
 				return Error.INVALID_AUTH;
 			ctx.storage.redis.hget("reqs.to."+ctx.storage.username, user, function(err, reply) {
-				if(err)
-					return helpers.dbg("redis-Error: "+err);
+				if(err) {
+					helpers.dbg("redis-Error: "+err);
+                    return ctx.sendclient({error:Error.REDIS_ERROR});
+                }
 				if(reply === null)
 					return ctx.sendClient({ack:false, error:Error.UNKNOWN_USER});
 				ctx.storage.redis.multi()
 					.hdel("reqs."+ctx.storage.username, user)
 					.hdel("convs."+user, ctx.storage.username)
 					.exec(function(err,replies) {
+				        if(err) {
+					        helpers.dbg("redis-Error: "+err);
+                            return ctx.sendclient({error:Error.REDIS_ERROR});
+                        }
 						ctx.sendClient({ack:true});
 					});
 			});
@@ -479,8 +538,10 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 			if(!ctx.storage.loggedIn)
 				return Error.INVALID_AUTH;
 			ctx.storage.redis.exists("convs."+name, function(err, reply) {
-				if(err)
-					return helpers.dbg("redis-Error: "+err);
+				if(err) {
+					helpers.dbg("redis-Error: "+err);
+                    return ctx.sendclient({error:Error.REDIS_ERROR});
+                }
 				if(reply)
 					return ctx.sendClient({error: Error.NOT_ALLOWED});
 				ctx.storage.redis.multi()
@@ -500,6 +561,10 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 				.hexists("convs."+group, ctx.storage.username)
 				.hexists("convs."+group, user)
 				.exec(function(err, replies) {
+				    if(err) {
+					    helpers.dbg("redis-Error: "+err);
+                        return ctx.sendclient({error:Error.REDIS_ERROR});
+                    }
 					if(!replies[0] || replies[1])
 						return ctx.sendClient({error: Error.NOT_ALLOWED});
 					var orig = ctx.storage.username;
@@ -514,6 +579,10 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 			if(!ctx.storage.loggedIn)
 				return Error.INVALID_AUTH;
 			ctx.storage.redis.hkeys("convs."+group, function(err, reply) {
+				if(err) {
+					helpers.dbg("redis-Error: "+err);
+                    return ctx.sendclient({error:Error.REDIS_ERROR});
+                }
 				if(!reply)
 					return ctx.sendClient({error: Error.UNKNOWN_USER});
 				if(reply.indexOf(ctx.storage.username) === -1)
@@ -528,8 +597,10 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 				return Error.INVALID_AUTH;
 			var convid = helpers.getConvid(ctx, user);
 			ctx.storage.redis.llen("msgs."+convid, function(err, reply) {
-				if(err)
-					return helpers.dbg("redis-Error: "+err);
+				if(err) {
+					helpers.dbg("redis-Error: "+err);
+                    return ctx.sendclient({error:Error.REDIS_ERROR});
+                }
 				ctx.sendClient({msgcount:reply, user:user});
 			});
 		},
@@ -543,6 +614,10 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 				return Error.INVALID_PARAMS;
 			var convid = helpers.getConvid(ctx, user);
 			ctx.storage.redis.lrange("msgs."+convid, start, end, function(err, reply) {
+				if(err) {
+					helpers.dbg("redis-Error: "+err);
+                    return ctx.sendclient({error:Error.REDIS_ERROR});
+                }
 				ctx.sendClient({msglist:reply.map(JSON.parse)});
 			});
 		},
@@ -562,8 +637,10 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 					storeMsg.temp = true;
 				helpers.broadcast(ctx, user, storeMsg);
 				ctx.storage.redis.smembers("sess."+ctx.storage.username, function(err,reply) {
-					if(err)
-						return helpers.dbg("redis-Error: "+err);
+					if(err) {
+						helpers.dbg("redis-Error: "+err);
+                        return ctx.sendclient({error:Error.REDIS_ERROR});
+                    }
 					var pushMsg = Object.create(storeMsg);
 					pushMsg.to = user;
 					delete pushMsg.from;
@@ -573,6 +650,10 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 							ctx.storage.sockets[reply[id]].send(pushMsg);
 				});
 				ctx.storage.redis.smembers("sess."+user, function(err, reply) {
+				    if(err) {
+					    helpers.dbg("redis-Error: "+err);
+                        return ctx.sendclient({error:Error.REDIS_ERROR});
+                    }
 					if(!reply.length)
 						ctx.storage.redis.hincrby("miss."+user, ctx.storage.username, 1);
 				})
@@ -580,12 +661,18 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 			}
 			if(!isTemporary)
 				ctx.storage.redis.rpushx("msgs."+convid, storeMsgJSON, function(err, reply) {
-					if(err)
-						return helpers.dbg("redis-Error: "+err);
+					if(err) {
+						helpers.dbg("redis-Error: "+err);
+                        return ctx.sendclient({error:Error.REDIS_ERROR});
+                    }
 					if(reply)
 						pushMessage();
 					else {
 						var rediscallback = function(err, reply){
+				            if(err) {
+					            helpers.dbg("redis-Error: "+err);
+                                return ctx.sendclient({error:Error.REDIS_ERROR});
+                            }
 							if(reply) {
 								pushMessage();
 								ctx.storage.redis.rpush("msgs."+convid, storeMsgJSON, pushMessage);
@@ -601,6 +688,10 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 				});
 			else
 				ctx.storage.redis.hexists("convs."+ctx.storage.username,user,function(err,reply) {
+				    if(err) {
+					    helpers.dbg("redis-Error: "+err);
+                        return ctx.sendclient({error:Error.REDIS_ERROR});
+                    }
 					if(reply)
 						pushMessage();
 					else
@@ -623,7 +714,8 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 		"UNKNOWN_USER": 5,
 		"INVALID_AUTH": 6,
 		"UNKNOWN_PUBKEY": 7,
-		"NOT_ALLOWED": 8
+		"NOT_ALLOWED": 8,
+        "REDIS_ERROR": 9
 	},
 
 	parseRequest = function(data, ctx, isServerRequest) {

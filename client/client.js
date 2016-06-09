@@ -171,6 +171,9 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 						case 8:
 							error.msg = "Requested action is not permitted.";
 							break;
+                        case 9:
+                            error.msg = "Redis error.";
+                            break;
 						default:
 							error.msg = "Unknown Error.";
 							break;

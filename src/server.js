@@ -9,7 +9,7 @@
 var DEBUG = true, // change to your needs!
 	dbg = function(text) {
 		if(DEBUG)
-			console.log("#AP @ "+(new Date()).toISOString()+" / "+text);
+			console.log("#AP @ "+(new Date()).toISOString()+" /", text);
 	},
 	port = process.env.PORT||9000,
 	http = require('http'),
