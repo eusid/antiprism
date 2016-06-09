@@ -318,7 +318,6 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 					            helpers.dbg("redis-Error: "+err);
                                 return ctx.sendclient({error:Error.REDIS_ERROR});
                             }
-                    }
 							for (var user in contacts)
 								helpers.broadcast(ctx, user, {online:true, user:ctx.storage.username});
 						});
@@ -417,8 +416,8 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 							ret[users[i].name] = {
 								key: contacts[users[i].name],
 								online: !!reply[0],
-								status: users[i].local ? reply[1][0] : null,
-								lastseen: users[i].local ? reply[1][1] : 0,
+								status: users[i].local && false ? reply[1][0] : null, //FEATURE TURNED TEMPORARILY OFF DUE TO MISBEHAVINGS
+								lastseen: users[i].local && false ? reply[1][1] : 0,  //FEATURE TURNED TEMPORARILY OFF DUE TO MISBEHAVINGS
 								missed: missed[users[i].name]
 							};
 						}
