@@ -178,7 +178,7 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 							error.msg = "Unknown Error.";
 							break;
 					}
-                    error.msg += " Check Server logs for more details or contact Administator.";
+                    error.msg += " Check Server logs for more details or contact Administator. Hint: Sometimes Ctrl-R / F5 can help. :)";
 
 					return error;
 				},
