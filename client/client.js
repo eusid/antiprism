@@ -187,16 +187,17 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 					var errorContainer = helper.div("alert alert-danger fade in"),
 						closeButton = helper.button("x", "close"),
 						headline = helper.h4(error.type),
-						errorMessage = helper.p(error.msg);
+						errorMessage = helper.p(error.msg),
+                        randomNumber = Math.floor(Math.random() * 1048576); //fix for not fading out error messages
 					closeButton.setAttribute("data-dismiss", "alert");
 					closeButton.setAttribute("aria-hidden", true);
 					errorContainer.appendChild(closeButton);
 					errorContainer.appendChild(headline);
 					errorContainer.appendChild(errorMessage);
-					errorContainer.id = "alertError";
+					errorContainer.id = "alertError" + randomNumber;
 					$('#headline').append(errorContainer);
-					$('#alertError').hide().slideDown(200).delay(3000).fadeOut(1000, function() {
-						$('#alertError').remove();
+					$('#alertError' + randomNumber).hide().slideDown(200).delay(3000).fadeOut(1000, function() {
+						$('#alertError' + randomNumber).remove();
 					});
 				};
 			if(!isNaN(errorCode))
