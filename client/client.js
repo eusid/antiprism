@@ -144,6 +144,9 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 				getErrorByCode = function(errorCode) { //TODO change errortext
 					var error = {type:"Error", msg:""};
 					switch(errorCode) {
+                        case -1:
+                            error.msg = "JSON error.";
+                            break;
 						case 1:
 							error.msg = "Missing action parameter.";
 							break;
@@ -151,16 +154,16 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 							error.msg = "Action does not exist.";
 							break;
 						case 3:
-							error.msg = "Invalid action parameters.";
+							error.msg = "Invalid action.";
 							break;
 						case 4:
-							error.msg = "JSON parse error.";
+							error.msg = "Invalid action parameters.";
 							break;
 						case 5:
-							error.msg = "Invalid authentication-key";
+							error.msg = "Tried to access unknown user.";
 							break;
 						case 6:
-							error.msg = "Tried to access unknown user.";
+							error.msg = "Invalid authentication.";
 							break;
 						case 7:
 							error.msg = "Requested pubkey does not exist.";
@@ -172,6 +175,7 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 							error.msg = "Unknown Error.";
 							break;
 					}
+                    error.msg += " Check Server logs for more details or contact Administator.";
 
 					return error;
 				},
