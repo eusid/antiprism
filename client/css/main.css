@@ -116,7 +116,7 @@ a {
 	background: #f4fff8;
 }
 
-#alertError {
+.alertError {
 	position: absolute;
 	left: 50%;
 	z-index: 1;

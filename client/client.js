@@ -184,7 +184,7 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 				},
 				displayError = function(error) {
 					console.error("An error occured: ", error);
-					var errorContainer = helper.div("alert alert-danger fade in"),
+					var errorContainer = helper.div("alert alert-danger fade in alertError"),
 						closeButton = helper.button("x", "close"),
 						headline = helper.h4(error.type),
 						errorMessage = helper.p(error.msg),
