@@ -141,7 +141,7 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 
 		errorHandler = function(errorType, errorMsg, errorCode) { //You can call it with errorType and errorMessage or with an errorcode
 			var error = {type:errorType || "Error", msg:errorMsg || "Unknown Error."},
-				getErrorByCode = function(errorCode) { //TODO change errortext
+				getErrorByCode = function(errorCode) {
 					var error = {type:"Error", msg:""};
 					switch(errorCode) {
                         case -1:
