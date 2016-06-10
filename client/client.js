@@ -663,10 +663,11 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 			updateContactObject:function(contactName, callback, numberOfMessages) {
 				if(numberOfMessages === undefined) {
 					// this querying-global is the dirtiest piece of shit ever
-					// time to fix the loop-bug that occurs without it!
 					antiprism.countMessages(contactName, function(msg) {
 						if(msg && msg.error)
 							errorHandler(0, 0, msg.error);
+                        if(msg.msgcount === undefined)  //fixes loop-bug
+                                msg.msgcount = 0;
 						utils.updateContactObject(contactName, callback, msg.msgcount);
 					});
 					return;
@@ -1084,13 +1085,11 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 								var $active = $('.active');
 								if($active.length && $active[0].id === msg.from)
 									utils.displayIsWriting(msg.from);
-							}
-							else {
+							} else {
 								msg.msg = message;
 								webRTC.onMessage(msg);
 							}
-						}
-						else
+						} else
 							utils.onMessage(msg);
 					};
 					$('#turnOnVideo').show().click(function() {
