@@ -1044,8 +1044,10 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 				var callback = function(msg) {
 					$("#loadingBar").hide();
 					if(msg) {
-						if(msg && msg.error)
+						if(msg && msg.error) {
 							errorHandler(0, 0, msg.error);
+                            return;
+                        }
 						utils.switchToChat(true, restored ? 400 : undefined);
 						client.getContacts();
 						antiprism.getStatus(function(msg) {

@@ -299,8 +299,10 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 		auth: function(ctx, validationKey) {
 			if(!validationKey)
 				return Error.INVALID_PARAMS;
-			if(ctx.storage.validationKey == undefined || validationKey !== ctx.storage.validationKey)
+			if(ctx.storage.validationKey == undefined || validationKey !== ctx.storage.validationKey) {
+                helpers.dbg("Validationkey error! Sent key: " + validationKey + " - Stored Key: " + ctx.storage.validationKey);
 				return Error.INVALID_AUTH;
+            }
 			ctx.storage.loggedIn = true;
 			ctx.storage.redis.sadd("sess."+ctx.storage.username, ctx.storage.id, function(err, reply) {
 				if(err) {

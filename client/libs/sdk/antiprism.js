@@ -89,8 +89,8 @@ return function(host,debugFlag) {
 						return pingfails = 3;
 					}
                     var response = JSON.parse(msg.data);
-					if(response.error)
-						clientEvents.error(null, null, response.error);
+					//if(response.error)
+					//	clientEvents.error(null, null, response.error);
 					if(response.seq && events[response.seq])
 						return events[response.seq](response);
 					for(var field in response)
