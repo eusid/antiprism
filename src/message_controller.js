@@ -415,11 +415,13 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 								reply = [];
 							for(var j = 0; j < opCount; j++)
 								reply.push(replies[redisIndex+j]);
+                            if (reply[1] === undefined) //TEMPORARY FIX FOR WEIRD BUG
+                                reply[1] = [null, 0]
 							ret[users[i].name] = {
 								key: contacts[users[i].name],
 								online: !!reply[0],
-								status: users[i].local && false ? reply[1][0] : null, //FEATURE TURNED TEMPORARILY OFF DUE TO MISBEHAVINGS
-								lastseen: users[i].local && false ? reply[1][1] : 0,  //FEATURE TURNED TEMPORARILY OFF DUE TO MISBEHAVINGS
+								status: users[i].local ? reply[1][0] : null,
+								lastseen: users[i].local ? reply[1][1] : 0,
 								missed: missed[users[i].name]
 							};
 						}
