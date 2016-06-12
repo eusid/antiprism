@@ -413,10 +413,12 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 						for(var i in users) {
 							var redisIndex = i*opCount,
 								reply = [];
-							for(var j = 0; j < opCount; j++)
+							for(var j = 0; j <= opCount; j++)
 								reply.push(replies[redisIndex+j]);
-                            if (reply[1] === undefined) //TEMPORARY FIX FOR WEIRD BUG
+                            if (reply[1] === undefined) {
                                 reply[1] = [null, 0]
+                                helpers.dbg("Somethings wrong with user status and lastseen");
+                            }
 							ret[users[i].name] = {
 								key: contacts[users[i].name],
 								online: !!reply[0],
