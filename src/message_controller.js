@@ -402,7 +402,7 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 							multi.scard("sess."+users[i].name);
 						multi.hmget("users."+users[i].name,"status","lastseen");
 						if(opCount === undefined)
-							opCount = multi.queue.length - 1;
+							opCount = multi.queue.length;
 					}
 					multi.exec(function(err,replies) {
 				        if(err) {
@@ -413,7 +413,7 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 						for(var i in users) {
 							var redisIndex = i*opCount,
 								reply = [];
-							for(var j = 0; j <= opCount; j++)
+							for(var j = 0; j < opCount; j++)
 								reply.push(replies[redisIndex+j]);
                             if (reply[1] === undefined) {
                                 reply[1] = [null, 0]
