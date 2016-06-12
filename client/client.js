@@ -636,8 +636,7 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 								utils.displayMessages(msg, contactName, true);
 							});
 					}
-				}
-				else {
+				} else {
 					console.log("retrieveMessages is called and has no sessionStorage[\"" + contactName + "\"]!");
 					utils.updateContactObject(contactName, function() {
 						utils.retrieveMessages(contactName);
@@ -655,8 +654,7 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 					$addFriendField.focusout(function() {
 						$addFriendField.popover("show");
 					});
-				}
-				else {
+				} else {
 					$('#addFriendField').unbind("focus").unbind("focusout");
 				}
 			},
@@ -780,8 +778,7 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 						for(var img in cache.requests[username])
 							MonsterId.getAvatar(cache.pubkeys[username], cache.requests[username][img]);
 					});
-				}
-				else
+				} else
 					cache.requests[username].push(img);
 				panelContent.innerHTML = emotify ? emotify(utils.urlToLink(receivedMessage)) : utils.urlToLink(receivedMessage);
 				if(time.toDateString() !== (new Date()).toDateString())
@@ -946,8 +943,7 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 							obj.numberOfMessages = undefined;
 							sessionStorage.setObject(userObj, obj);
 						}
-					}
-				else if(antiprism)
+					} else if(antiprism)
 					$('#serverLost').modal();
 			},
 			getContacts:function(msg) {
@@ -1157,8 +1153,7 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 					console.log("The first function took " + (first - second) + "ms longer than the second function.");
 					console.log("The second function is " + (first / second) + " times faster than the first function.");
 					console.log("Mean saved time for one call by the second function: ~" + (first - second) / calls + "ms.");
-				}
-				else {
+				} else {
 					console.log("The second function took " + (second - first) + "ms longer than the first function.");
 					console.log("The first function is " + (second / first) + " times faster than the second function.");
 					console.log("Mean saved time for one call by the first function: ~" + (second - first) / calls + "ms.");
@@ -1362,8 +1357,7 @@ define(["jquery", "sdk/antiprism", "bootbox", "jquery.typeahead", "emotifier", "
 		document.getElementById("username").value = localStorage.username || "";
 		document.getElementById("password").value = document.getElementById("username").value && "password";
 		client.login(localStorage.username, localStorage.password, true);
-	}
-	else
+	} else
 		helper.clearStorageUserdata();
 	client.init();
 	$('form').submit(function(e) {
