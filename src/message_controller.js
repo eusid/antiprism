@@ -269,7 +269,7 @@ var RemoteAllowed = [ "pubkey","initConversation","confirm","storeMessage" ], se
 					return ctx.sendClient({error:Error.UNKNOWN_USER});
 				ctx.storage.username = username;
 				var crypto = require('crypto'),
-					randomString = crypto.randomBytes(32).toString(),
+					randomString = crypto.randomBytes(32).toString('hex'),
 					sha256 = crypto.createHash('sha256'),
 					ret = helpers.encryptRSA(randomString, reply.pubkey, 2048);
 				if(!ret)
