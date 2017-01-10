@@ -38,12 +38,12 @@ var helper = {
 		},
 		h4:function(headline) {
 			var h4 = document.createElement("h4");
-			h4.innerHTML = utils.htmlEncode(headline);
+			h4.textContent = headline;
 			return h4;
 		},
 		p:function(text) {
 			var p = document.createElement("p");
-			p.innerHTML = utils.htmlEncode(text);
+			p.textContent = text;
 			return p;
 		},
 		div:function(className) {
@@ -54,7 +54,7 @@ var helper = {
 		span:function(className, value) {
 			var span = document.createElement("span");
 			span.className = className || "";
-			span.innerHTML = value || "";
+			span.textContent = value || "";
 			return span;
 		},
 		input:function(type, name) {
@@ -67,21 +67,19 @@ var helper = {
 		},
 		a:function(linkName, location) {
 			var a = document.createElement("a");
-			a.innerHTML = linkName;
+			a.innerHTML = linkName; // TODO: value already escaped
 			a.href = location;
 			return a;
 		},
-		small:function(innerHTML) {
+		small:function(text) {
 			var small = document.createElement("small");
-			if(innerHTML === undefined)
-				innerHTML = "";
-			small.innerHTML = innerHTML;
+			small.textContent = text || "";
 			return small;
 		},
 		button:function(value, className, clickEvent) {
 			var button = document.createElement("button");
 			button.className = className || "";
-			button.innerHTML = value || "";
+			button.textContent = value || "";
 			button.type = "button";
 			if(clickEvent)
 				button.onclick = clickEvent;
@@ -100,7 +98,7 @@ var helper = {
 		option:function(optionName) {
 			var option = document.createElement("option");
 			option.value = optionName;
-			option.innerHTML = optionName;
+			option.textContent = optionName;
 			return option;
 		},
 		select:function(optionsArray) {
@@ -276,9 +274,6 @@ var helper = {
 			$('#newPassFieldCheck').val("");
 			$('#changePass').modal('hide');
 		},
-		htmlEncode:function(value) {
-			return $('<div/>').text(value).html();
-		},
 		getUsername:function() {
 			return localStorage.username || $('#username').val();
 		},
@@ -417,19 +412,20 @@ var helper = {
 		createContactElement:function(contact, msg) {
 			var contactElement = helper.jsLink(""),
 				icon = helper.span("online"),
-				status = helper.small();
+				status = helper.small(),
+				label = helper.span(contact);
 			contactElement.className = "list-group-item";
 			contactElement.appendChild(icon);
-			contactElement.innerHTML += utils.htmlEncode(contact);
+			contactElement.appendChild(label);
 			contactElement.id = contact;
 			contactElement.addEventListener("click", function(ctx) {
 				var contactName = ctx.target.id || ctx.target.parentNode.id;
 				utils.onContactSelect(contactName);
 			});
 			if(msg.contacts[contact] && msg.contacts[contact].status !== null)
-				status.innerHTML = utils.htmlEncode(msg.contacts[contact].status);
+				status.textContent = msg.contacts[contact].status;
 			else
-				status.innerHTML = "";
+				status.textContent = "";
 			contactElement.appendChild(status);
 			return contactElement;
 		},
@@ -445,7 +441,7 @@ var helper = {
 			console.log(msg);
 			var $friendList = $('#friendList'),
 				contactList = helper.div("list-group"),
-				contactsHeadline = helper.jsLink("<strong>Contactlist</strong>"),
+				contactsHeadline = helper.jsLink("<strong>Contactlist</strong>"), // TODO: this prevents refactoring of helper.a
 				$active = $('.active');
 			contactsHeadline.className = "list-group-item";
 			contactsHeadline.id = "contactsHeadline";
@@ -617,20 +613,20 @@ var helper = {
 				panelContent = helper.div("panel panel-body"),
 				username = message.from || utils.getUsername(),
 				time = new Date(message.ts),
-				receivedMessage = utils.htmlEncode(message.msg);
-			panelContent.innerHTML = utils.urlToLink(receivedMessage);
+				receivedMessage = message.msg;
+			panelContent.innerHTML = utils.urlToLink(receivedMessage); // TODO: refactor urlToLink
 			if(time.toDateString() !== (new Date()).toDateString())
 				time = time.toDateString() + ", " + time.toLocaleTimeString();
 			else
 				time = "today, " + time.toLocaleTimeString();
 			if(username === utils.getUsername()) {
 				panelContainer.className = "panel panel-success col-md-8 pull-right";
-				panelHeader.innerHTML = time + " | me";
+				panelHeader.textContent = time + " | me";
 				panelContent.align = "right";
 				panelHeader.align = "right";
 			} else {
 				panelContainer.className = "panel panel-info col-md-8";
-				panelHeader.innerHTML = username + " | " + time;
+				panelHeader.textContent = username + " | " + time;
 			}
 			panelContainer.appendChild(panelHeader);
 			panelContainer.appendChild(panelContent);
@@ -663,7 +659,7 @@ var helper = {
 		},
 		createConfirmDenyButton:function(contactName) {
 			var buttonDiv = helper.div("col-md-12"),
-				confirmButton = helper.button("Confirm " + utils.htmlEncode(contactName), "btn btn-success", function() {
+				confirmButton = helper.button("Confirm " + contactName, "btn btn-success", function() {
 					antiprism.confirm(contactName, function(ack) {
 						if(ack.error)
 							errorHandler(0, 0, msg.error);
@@ -673,8 +669,8 @@ var helper = {
 						}
 					});
 				}),
-				denyButton = helper.button("Deny " + utils.htmlEncode(contactName), "btn btn-danger pull-right", function() {
-					bootbox.confirm("Are you sure you want to remove " + utils.htmlEncode(contactName) +
+				denyButton = helper.button("Deny " + contactName, "btn btn-danger pull-right", function() {
+					bootbox.confirm("Are you sure you want to remove " + contactName +
 						"? You can send a new Request if you want to add him later, though.", function(confirmed) {
 						if(confirmed)
 							antiprism.deny(contactName, function(ack) {
@@ -852,7 +848,7 @@ var helper = {
 					client.getContacts();
 				else {
 					var errorType = "Contact Error",
-						errorMsg = "Did not initiate conversation with " + utils.htmlEncode(friend) + ". You may already added him or he may not exist.";
+						errorMsg = "Did not initiate conversation with " + friend + ". You may already added him or he may not exist.";
 					errorHandler(errorType, errorMsg);
 				}
 			});
